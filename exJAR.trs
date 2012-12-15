@@ -1,0 +1,5 @@
+(VAR x y z)
+(RULES    h(x, c(y, z)) -> h(c(s(y), x), z) 
+       h(c(s(x), c(s(0), y)), z) -> h(y, c(s(0), c(x, z)))
+)
+    

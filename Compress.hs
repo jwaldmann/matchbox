@@ -11,11 +11,13 @@ import TPDB.Input ( get_trs )
 import qualified Data.Map as M
 import qualified Data.Set as S
 import Control.Monad.State
-import Control.Monad ( forM )
+import Control.Monad ( forM, void )
 import Prelude hiding (abs)
 import System.Environment
 import Text.PrettyPrint.HughesPJ
 import qualified Text.Parsec
+import Data.List ( sortBy )
+import Data.Function (on)
 
 for = flip map
 
@@ -44,7 +46,7 @@ main = do
 
 -- * test helpers
 
-run :: (Ord var, Pretty var, Ord sym, Pretty sym)
+run :: (Ord var, Pretty var, Ord sym, Pretty sym, Show sym)
     => [Term var sym] -> IO ()
 run terms = do
 
@@ -57,6 +59,8 @@ run terms = do
 
    print $ cost_map dag
    print $ cost dag
+
+   void $ trace_compression  dag
    
 read_term_with_variables :: [ String ] -> String -> Term Identifier Identifier
 read_term_with_variables vs s = 
@@ -79,21 +83,36 @@ data DAG var sym =
      DAG { roots :: [ Addr ]
          , table :: M.Map Addr ( Node var sym) 
          , nodes :: M.Map (Node var sym) Addr
+         , digs  :: S.Set (Digram sym)
          , next :: Addr
          }
 
+mapsym f dag = 
+    let m = flip M.map (table dag) $ either Left $ \ (s, addrs) -> Right (f s, addrs)
+    in  DAG { roots = roots dag
+         , table = m
+         , nodes = M.fromList $ do (k,v) <- M.toList m; return (v,k)
+         , next  = next dag
+         , digs = undefined
+         }
 
-instance ( Pretty var, Pretty sym ) => Pretty (DAG var sym) where
-    pretty d = text "DAG" <+> vcat ( for (M.toList $ table d) $ \ (k,v) -> 
-        pretty k <+> equals <+> case v of
-            Left v -> pretty v
-            Right (s, addrs) -> pretty s <+> hsep ( map pretty addrs ) )
 
-instance ( Pretty var, Pretty sym ) => Show (DAG var sym) where
+instance ( Pretty var, Pretty sym , Show sym ) => Pretty (DAG var sym) where
+    pretty d = 
+        let ds = text "digrams" <+> vcat ( for (S.toList $ digs d) pretty )
+            ns = text "nodes" <+> vcat ( for (M.toList $ table d) $ \ (k,v) -> 
+                    pretty k <+> equals <+> case v of
+                        Left v -> pretty v
+                        Right (s, addrs) -> pretty s <+> hsep ( map pretty addrs ) )
+            rs = text "roots" <+> hsep ( for (roots d  ) pretty )
+        in  text "DAG" <+> vcat [ rs, ns, ds ]
+
+instance ( Pretty var, Pretty sym, Show sym ) => Show (DAG var sym) where
     show = render . pretty
 
 dag0 :: DAG var sym
-dag0 =  DAG { roots = [], table = M.empty, nodes = M.empty, next = Addr 0 } 
+dag0 =  DAG { roots = [], table = M.empty, nodes = M.empty, next = Addr 0
+            , digs = S.empty } 
 
 fold :: ( var -> a ) -> ( sym -> [a] -> a ) 
          -> DAG var sym -> M.Map Addr a
@@ -164,10 +183,12 @@ data LF sym = PROJ Int Int
 
 data Cost = 
      Cost { m_times_m :: Int
-          } deriving Show
+          } deriving (Eq, Ord, Show)
+
+instance Pretty Cost where pretty = text . show
 
 instance Num Cost where
-    fromInteger 0 = Cost { m_times_m = 0 }
+    fromInteger i = Cost { m_times_m = fromInteger i }
     c1 + c2 = Cost { m_times_m = m_times_m c1 + m_times_m c2 
                    }
 
@@ -177,11 +198,105 @@ cost_map dag = M.fromList $ do
                     dag
         arg_cost = flip M.mapWithKey (table dag) $ \ k v -> case v of
             Left _  -> 0
-            Right _ -> Cost { m_times_m = S.size $ vars M.! k }
+            Right _ -> fromIntegral $ S.size $ vars M.! k 
     (k, Right (s,addrs)) <- M.toList $ table dag
     return ( k, sum $ map (arg_cost M.!) addrs )
             
 cost :: Ord var => DAG var sym -> Cost
-cost dag = sum $ M.elems $ cost_map dag
+cost dag = sum ( for (S.toList $ digs dag ) $ \ d -> fromIntegral ( child_arity d))
+    + sum ( M.elems $ cost_map dag )
 
+
+
+isLeft :: Either a b -> Bool
 isLeft = either (const True) (const False )
+
+-- * digrams
+
+data Digram sym = Digram
+     { parent :: sym
+     , position :: Int
+     , child :: sym
+     , child_arity :: Int
+     } deriving ( Eq, Ord )
+
+instance Pretty sym => Pretty (Digram sym) where
+    pretty d = parens $ hsep [ text "Digram" , pretty (parent d)
+                      , pretty (position d), pretty (child d), text "Arity"
+                      , pretty (child_arity d) ]
+
+instance Pretty sym => Show (Digram sym) where
+    show = render . pretty
+
+digrams :: (Ord var, Ord sym) 
+        => DAG var sym -> S.Set (Digram sym)
+digrams dag = S.fromList $ do
+    (k, Right (f, fargs)) <- M.toList $ table dag
+    (i, a) <- zip [1..] fargs
+    case table dag M.! a of
+        Left _ -> []
+        Right (g, gargs) -> return 
+              $ Digram { parent = f, position = i, child = g
+                       , child_arity = length gargs }
+        
+-- * replacement 
+
+step dag = do
+    dig <- S.toList $ digrams dag
+    return $ replace_all dag dig 
+
+trace_compression dag = do
+    let handle (co,dag) = do
+            outs <- trace_step (co,dag)
+            case outs of
+                (co', dag') : _ | co' < co -> handle (co', dag')
+                _ -> return (co, dag)
+    out <- handle (cost dag, Main.lift dag)
+    putStrLn $ replicate 50 '*'
+    print $ pretty out
+
+trace_step (co, dag) = do
+    putStrLn $ replicate 50 '*'
+    print $ pretty dag
+    print $ co
+    putStrLn $ replicate 50 '*'
+    let candidates = sortBy (compare `on` fst )
+                   $ for (step dag) $ \ d -> (cost d, d)
+    forM candidates ( print . pretty )
+    return candidates
+    
+
+data Sym o = Orig o | Dig (Digram (Sym o))  
+    deriving (Eq, Ord, Show)
+instance Show o => Pretty (Sym o) where pretty = text . show
+
+lift :: (Ord var, Ord o) => DAG var o -> DAG var (Sym o)
+lift dag = ( mapsym Orig dag ) { digs = S.empty }
+
+
+replace_all dag dig =
+    let occs = nonoverlapping_occurences dag dig
+        dag' = foldl (replace_at dig) dag $ S.toList occs
+    in  (garbage_collect dag') { digs = S.insert dig $ digs dag' }
+
+replace_at dig dag k = 
+    let Right (f', fargs) = table dag M.! k
+        (pre, this : post) = splitAt (position dig - 1) fargs
+        Right (g', gargs) = table dag M.! this
+    in  dag { table = M.insert k (Right (Dig dig, pre ++ gargs ++ post )) 
+                    $ table dag
+            , nodes = undefined
+            }
+
+nonoverlapping_occurences
+  :: Eq t => DAG var t -> Digram t -> S.Set Addr
+nonoverlapping_occurences dag dig = 
+    let m = M.fromList $ do
+            (k, Right (f, addrs)) <- M.toList $ table dag
+            let a =  addrs !! (position dig - 1)
+                g_ok = case  table dag M.! a of
+                    Right (g, _) |  g == child dig ->  not $ m M.! a
+                    _ -> False
+            return ( k,  f == parent dig && g_ok )
+    in  M.keysSet $ M.filter id m
+
