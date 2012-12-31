@@ -3,10 +3,11 @@ import TPDB.DP
 import TPDB.Pretty
 import TPDB.Plain.Write
 import TPDB.Plain.Read
-import TPDB.Input ( get_trs )
+import TPDB.Input ( getE_trs )
 
 import System.Environment
 import System.Directory
+import System.IO
 
 import qualified Data.Set as S
 import Data.Function ( on )
@@ -23,19 +24,24 @@ data Stat = Stat
 main = do
     tops <- getArgs
     paths <- collect tops
-    stats <- forM paths $ \ p -> do
-        sys <- get_trs p
+    statss <- forM paths $ \ p -> do
         let tsize = length . subterms
-        return $ Stat 
+        esys <- getE_trs p 
+        return $ case esys of
+            Right sys -> return $ Stat 
                { path = p
                , size = sum $ map tsize $ 
                     do u <- rules sys ; [lhs u, rhs u]
-               , variables = maximum 
+               , variables = maximum $ (0 : )
                     $ map (S.size . vars )
                     $ do u <- rules sys; [lhs u, rhs u]
-               }                                   
-    print $ take 10 
-          $ sortBy ( compare `on` size ) stats
+               } 
+            Left err -> []
+    let stats = concat statss
+        top prop = print $ take 10 
+          $ sortBy ( flip compare `on` prop ) stats
+    top size
+    top variables
 
 collect fs = do
     let special d = isPrefixOf "." d
@@ -43,9 +49,12 @@ collect fs = do
         d <- doesDirectoryExist f
         if d 
         then do
+           hPutStr stderr f
            fs <- getDirectoryContents f
-           collect $ map ( ( f ++ "/" ) ++ )
+           out <- collect $ map ( ( f ++ "/" ) ++ )
                    $ filter (not . special) fs
+           hPutStrLn stderr $ " " ++ show (length out)
+           return out
         else if isSuffixOf ".xml" f ||
                 isSuffixOf ".trs" f ||
                 isSuffixOf ".srs" f
