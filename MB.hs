@@ -1,5 +1,7 @@
 -- | simplified Matchbox Termination Prover
 
+import qualified Compress.Simple as C
+
 import qualified Satchmo.SMT.Integer as I
 import qualified Satchmo.SMT.Linear as L
 import qualified Satchmo.SMT.Matrix as M
@@ -18,16 +20,21 @@ import System.Environment
 import System.Console.GetOpt
 import qualified Data.Map as M
 import qualified Data.Set as S
-import Control.Monad ( forM, void )
+import Control.Monad ( forM, void, foldM )
 
 handle opts sys = do
     print $ pretty sys
+
+    let (co, trees) = 
+          ( if compress opts
+            then C.compress else C.nocompress 
+          ) $ rules sys
 
     out <- Satchmo.SAT.Mini.solve $ do
         let ldict = L.linear mdict
             mdict = M.matrix idict
             idict = I.binary_fixed (bits opts)
-        funmap <- system ldict (dim opts) sys
+        funmap <- system ldict (dim opts) trees
         return $ mdecode ldict funmap
 
     case out of
@@ -41,18 +48,35 @@ mdecode dict f = do
 
 -- | assert that at least one rule can be removed.
 -- returns interpretation of function symbols.
-system dict dim sys = do
-    let fs = S.fromList $ do 
-           u <- rules sys ; t <- [ lhs u, rhs u ]
-           Node f xs <- subterms t 
+system dict dim trees = do
+    let ofs = S.fromList $ do 
+           u <- C.roots trees ; t <- [ lhs u, rhs u ]
+           Node (f @ C.Orig{}) xs <- subterms t 
            return (f, length xs)
-    pairs <- forM (S.toList fs) $ \ (f,ar) -> do
+    opairs <- forM (S.toList ofs) $ \ (f,ar) -> do
         l <- L.make dict ar (dim, dim)
         s <- L.positive dict l
         B.assert [s]
         return (f, l)
-    let funmap = M.fromList pairs
-    flags <- forM (rules sys) $ rule dict dim funmap
+    let dig m (C.Dig d) = do
+            let p = m M.! C.parent d 
+                pos = C.position d - 1
+                (pre,post) = splitAt pos $ L.lin p
+                c = m M.! C.child d 
+            h <- L.substitute dict
+                ( L.Linear {L.abs = L.abs p
+                   , L.lin = [L.lin p !! pos ]
+                   } ) [ c ]
+            let fg = L.Linear { L.abs = L.abs h
+                     , L.lin = pre ++ L.lin h ++ post
+                     , L.dim = (L.to p, L.from c)
+                     }
+            return $ M.insert (C.Dig d) fg m
+    funmap <- foldM dig ( M.fromList opairs )
+           $ reverse $ C.extras trees
+
+    flags <- forM (C.roots trees) 
+             $ rule dict dim funmap
     B.assert flags 
     return funmap
 
