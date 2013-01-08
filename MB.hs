@@ -104,10 +104,21 @@ system_dp dict dim trees = do
     B.assert flags 
     return funmap
 
-original_function_symbols trees = S.fromList $ do 
+original_function_symbols trees = 
+    let remaining_ofs = S.fromList $ do 
            u <- C.roots trees ; t <- [ lhs u, rhs u ]
            Node (f @ C.Orig{}) xs <- subterms t 
            return (f, length xs)
+        ofs_in_digrams ds = do
+           C.Dig d <- ds
+           (f,a) <- [ (C.parent d, C.parent_arity d)
+                    , (C.child  d, C.child_arity  d)
+                    ]
+           case f of
+                C.Orig {} -> [ (f,a) ]
+                C.Dig {}  -> ofs_in_digrams [f]
+    in  S.union remaining_ofs 
+        $ S.fromList $ ofs_in_digrams $ C.extras trees
 
 digger dict m (C.Dig d) = do
             let p = m M.! C.parent d 
@@ -136,6 +147,7 @@ rule dict dim funmap u = do
     return s
 
 -- | asserts weak decrease and returns strict decrease
+-- for strict rule
 rule_dp dict dim funmap u = do
     let vs = S.union (vars $ lhs u) (vars $ rhs u)
         varmap = M.fromList $ zip (S.toList vs) [0..]

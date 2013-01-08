@@ -89,6 +89,7 @@ cost trees =
 
 data Digram sym = Digram
      { parent :: sym
+     , parent_arity :: Int
      , position :: Int
      , child :: sym
      , child_arity :: Int
@@ -112,7 +113,8 @@ digrams trees = S.fromList $ do
     (i, a) <- zip [1..] fargs
     Node g gargs <- return $ fargs !! (i-1)
     return $ Digram 
-       { parent = f, position = i, child = g
+       { parent = f, parent_arity = length fargs
+       , position = i, child = g
        , child_arity = length gargs }
         
 -- * replacement 
