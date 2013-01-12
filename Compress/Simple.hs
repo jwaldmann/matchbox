@@ -1,16 +1,16 @@
-module Compress.Simple where
+module Compress.Simple 
+  (compress, nocompress)
+where
 
+import Compress.Common
 import TPDB.Data
-import TPDB.Pretty
-import TPDB.Plain.Write
+import TPDB.Pretty (Pretty)
 
 import qualified Data.Set as S
 import qualified Data.Map as M
 import Control.Monad ( guard, forM )
 import Data.List ( inits, tails, sortBy, minimumBy )
 import Data.Function ( on )
-import Text.PrettyPrint.HughesPJ
-
 
 -- | main (exported) functions
 compress, nocompress
@@ -23,30 +23,6 @@ nocompress rules =
     let t = lift $ build rules
     in  ( cost t, t )
 
--- * type for storing a Set (list) of rules
--- (rule is pair of trees)
-
-data Trees var sym = 
-     Trees { roots :: [ Rule ( Term var sym ) ]
-           , extras :: [ sym ]
-         }
-    deriving ( Eq, Ord )
-
-instance ( Pretty var, Pretty sym ) 
-     => Pretty (Trees var sym) where
-   pretty ts = vcat  
-     [ text "roots:" <+> vcat (map pretty $ roots ts)
-     , text "extras:" 
-        <+> vcat (map pretty $ extras ts) 
-     ]
-
-mapsym f trees =
-    trees { roots = map (maprule f) $ roots trees } 
-
-instance ( Pretty var, Pretty sym, Show sym ) 
-       => Show (Trees var sym) where
-    show = render . pretty
-
 -- * constructing Trees from terms
 
 build :: (Ord v, Ord s) 
@@ -55,18 +31,6 @@ build :: (Ord v, Ord s)
 build ts = Trees { roots = ts, extras = [] }
 
 -- * cost for evaluating substitutions
-
-data Cost = 
-     Cost { m_times_m :: Int
-          } deriving (Eq, Ord, Show)
-
-instance Pretty Cost where pretty = text . show
-
-instance Num Cost where
-    fromInteger i = Cost { m_times_m = fromInteger i }
-    c1 + c2 = Cost { m_times_m = m_times_m c1 + m_times_m c2 
-                   }
-
 cost_terms us = sum $ do
     u <- us 
     t <- [ lhs u, rhs u ]
@@ -84,25 +48,6 @@ cost_digrams ds = sum $ do
 cost trees = 
       cost_terms (roots trees) 
     + cost_digrams (extras trees)
-
--- * digrams
-
-data Digram sym = Digram
-     { parent :: sym
-     , parent_arity :: Int
-     , position :: Int
-     , child :: sym
-     , child_arity :: Int
-     } deriving ( Eq, Ord )
-
-instance Pretty sym => Pretty (Digram sym) where
-    pretty d = brackets $ hcat [ pretty (parent d)
-         , text "/", pretty (position d)
-         , text "/", pretty (child d)
-         , text ".", pretty (child_arity d) ]
-
-instance Pretty sym => Show (Digram sym) where
-    show = render . pretty
 
 digrams :: (Ord var, Ord sym) 
         => Trees var sym -> S.Set (Digram sym)
@@ -145,26 +90,6 @@ step (co, trees) =
 step_all trees = do
     dig <- S.toList $ digrams trees
     return $ apply_all dig trees 
-
--- *     
-
-data Sym o = Orig o | Dig (Digram (Sym o))  
-    deriving (Eq, Ord, Show)
-instance Pretty o => Pretty (Sym o) where 
-    pretty s = case s of
-        Orig o -> pretty o
-        Dig dig -> pretty dig
-
-lift :: (Ord var, Ord o) 
-     => Trees var o -> Trees var (Sym o)
-lift trees = 
-    Trees { roots = map (maprule (fmap Orig))
-                  $ roots trees 
-          , extras = [] }
-
-maprule f u = 
-    u { lhs = f $ lhs u, rhs = f $ rhs u }
-
 
 -- | apply at all non-overlapping positions,
 -- start searching for positions from the root (?)

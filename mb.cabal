@@ -1,0 +1,24 @@
+Name:			        mb
+Version:        	0.0.1
+Cabal-Version:  	>= 1.9.2
+License:          AllRightsReserved
+Build-type:       Simple
+Author:         	Johannes Waldmann, Eric Noeth, Alexander Bau
+Maintainer:       Johannes Waldmann, Eric Noeth, Alexander Bau
+
+Executable mb
+  Main-Is:          MB.hs
+  Ghc-options:        -W -fno-warn-incomplete-patterns
+  Build-Depends:      base >= 4.2 && < 5.0
+                    , containers == 0.5.*
+                    , pretty == 1.1.*
+                    , tpdb == 0.6.*
+                    , satchmo == 2.5.*
+                    , satchmo-smt == 0.2.*
+Executable statistik
+  Main-Is:          Statistik.hs
+  Ghc-options:        -W -fno-warn-incomplete-patterns
+  Build-Depends:      base >= 4.2 && < 5.0
+                    , containers == 0.5.*
+                    , directory == 1.2.*
+                    , tpdb == 0.6.*

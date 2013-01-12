@@ -48,16 +48,16 @@ collect fs = do
     fss <- forM fs $ \ f -> do
         d <- doesDirectoryExist f
         if d 
-        then do
-           hPutStr stderr f
-           fs <- getDirectoryContents f
-           out <- collect $ map ( ( f ++ "/" ) ++ )
-                   $ filter (not . special) fs
-           hPutStrLn stderr $ " " ++ show (length out)
-           return out
-        else if isSuffixOf ".xml" f ||
-                isSuffixOf ".trs" f ||
-                isSuffixOf ".srs" f
-             then return [f]
-             else return []
+          then do
+             hPutStr stderr f
+             fs <- getDirectoryContents f
+             out <- collect $ map ( ( f ++ "/" ) ++ )
+                     $ filter (not . special) fs
+             hPutStrLn stderr $ " " ++ show (length out)
+             return out
+          else if isSuffixOf ".xml" f ||
+                  isSuffixOf ".trs" f ||
+                  isSuffixOf ".srs" f
+               then return [f]
+               else return []
     return $ concat fss

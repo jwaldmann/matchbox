@@ -1,5 +1,6 @@
 -- | simplified Matchbox Termination Prover
 
+import qualified Compress.Common as C
 import qualified Compress.Simple as C
 
 import qualified Satchmo.SMT.Integer as I
@@ -7,13 +8,10 @@ import qualified Satchmo.SMT.Linear as L
 import qualified Satchmo.SMT.Matrix as M
 import qualified Satchmo.Boolean as B
 import qualified Satchmo.SAT.Mini
-import Satchmo.Code
 
 import TPDB.Data
 import qualified TPDB.DP
 import TPDB.Pretty
-import TPDB.Plain.Write
-import TPDB.Plain.Read
 import TPDB.Input ( get_trs )
 
 import System.Environment
