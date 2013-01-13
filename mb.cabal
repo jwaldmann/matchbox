@@ -15,6 +15,8 @@ Executable mb
                     , tpdb == 0.6.*
                     , satchmo == 2.5.*
                     , satchmo-smt == 0.2.*
+                    , mtl == 2.1.*
+
 Executable statistik
   Main-Is:          Statistik.hs
   Ghc-options:        -W -fno-warn-incomplete-patterns
@@ -22,3 +24,12 @@ Executable statistik
                     , containers == 0.5.*
                     , directory == 1.2.*
                     , tpdb == 0.6.*
+
+Executable paper
+  Main-Is:          Compress/Paper/Main.hs
+  Ghc-options:        -W -fno-warn-incomplete-patterns
+  Build-Depends:      base >= 4.2 && < 5.0
+                    , containers == 0.5.*
+                    , pretty == 1.1.*
+                    , tpdb == 0.6.*
+                    , mtl == 2.1.*

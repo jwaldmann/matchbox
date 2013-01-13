@@ -23,13 +23,6 @@ nocompress rules =
     let t = lift $ build rules
     in  ( cost t, t )
 
--- * constructing Trees from terms
-
-build :: (Ord v, Ord s) 
-      => [ Rule (Term v s) ] 
-      -> Trees v s 
-build ts = Trees { roots = ts, extras = [] }
-
 -- * cost for evaluating substitutions
 cost_terms us = sum $ do
     u <- us 

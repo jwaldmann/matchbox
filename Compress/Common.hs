@@ -37,12 +37,13 @@ instance ( Pretty var, Pretty sym ) => Pretty (Trees var sym) where
      , text "extras:" <+> vcat (map pretty $ extras ts) 
      ]
 
-mapsym f trees =
-    trees { roots = map (fmap f) $ roots trees } 
-
 instance ( Pretty var, Pretty sym, Show sym ) 
        => Show (Trees var sym) where
     show = render . pretty
+
+-- |Returns all terms of all trees
+terms :: Trees var sym -> [Term var sym]
+terms = concatMap (\rule -> [lhs rule, rhs rule]) . roots
 
 -- |Cost type
 data Cost = Cost { m_times_m :: Int } deriving (Eq, Ord, Show)
@@ -69,11 +70,14 @@ instance Pretty o => Pretty (Sym o) where
 instance Functor Rule where
   fmap f u = u { lhs = f $ lhs u, rhs = f $ rhs u }
 
+-- |Lifts trees' functions symbols to @Sym@
 lift :: (Ord var, Ord o) => Trees var o -> Trees var (Sym o)
 lift trees = 
     Trees { roots = map (fmap (fmap Orig)) $ roots trees 
           , extras = [] 
           }
 
-
+-- |Constructing trees from terms
+build :: (Ord v, Ord s) => [ Rule (Term v s) ] -> Trees v s 
+build ts = Trees { roots = ts, extras = [] }
 
