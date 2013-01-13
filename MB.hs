@@ -7,6 +7,7 @@ import MB.Options
 -- import MB.Strategy
 
 import qualified MB.Natural
+import qualified MB.Additive
 
 import qualified TPDB.DP
 import TPDB.Input ( get_trs )
@@ -20,6 +21,16 @@ import Control.Monad ( void )
 
 import Prelude hiding ( iterate )
 
+
+remove handle opts sys0 = 
+    if null $ strict_rules sys0
+    then return "no strict rules"
+    else case MB.Additive.find sys0 of
+        Nothing -> iterate handle opts 1 sys0
+        Just ( f, sys1 ) -> do
+            later <- remove handle opts sys1
+            return $ pretty sys0 $$ pretty f $$ later
+
 iterate handle opts d sys0 = do    
     if null $ strict_rules sys0
        then return "no strict rules"
@@ -28,7 +39,7 @@ iterate handle opts d sys0 = do
            case x of
                Nothing -> iterate handle opts (d+1) sys0
                Just (f, sys1) -> do
-                  later <- iterate handle opts 1 sys1
+                  later <- remove handle opts sys1
                   return $ pretty sys0 $$ pretty f $$ later
 
 main = do
@@ -38,8 +49,8 @@ main = do
            let opts = foldl (flip id) options0 os
            sys <- get_trs path
            out <- case dp opts of
-               False -> iterate MB.Natural.handle    opts 1 $            sys
-               True  -> iterate MB.Natural.handle_dp opts 1 $ TPDB.DP.dp sys
+               False -> remove MB.Natural.handle    opts $            sys
+               True  -> remove MB.Natural.handle_dp opts $ TPDB.DP.dp sys
            print $ vcat
                  [ "YES"
                  , "input" <+> pretty sys
