@@ -27,9 +27,11 @@ import Text.PrettyPrint.HughesPJ (render, vcat, hsep, ( <+>), text )
 
 handle :: (Show s, Ord v, Pretty v, Pretty s, Ord s)
        => Options -> TRS v s 
-       -> IO ( Maybe ( M.Map s (L.Linear (M.Matrix Integer))))
+       -> IO ( Maybe ( M.Map s (L.Linear (M.Matrix Integer))
+                     , TRS v s))
 handle opts sys = do
-    print $ pretty sys
+    eprint $ pretty sys
+    eprint $ show opts
 
     let (co, trees) = 
           ( if compress opts
@@ -45,7 +47,7 @@ handle opts sys = do
 
     case out of
         Just f -> do
-            void $ print $ pretty f
+            eprint $ pretty f
             let dict = L.linear $ M.matrix $ I.direct
             case remaining dict (dim opts) f sys of
                 Right sys' -> return $ Just ( f, sys' )
@@ -54,7 +56,6 @@ handle opts sys = do
                     , "input system: " <+> pretty sys
                     , "interpretation: " <+> pretty f
                     ]
-            return $ Just f
         Nothing -> return Nothing
 
 handle_dp :: (Show s, Ord v, Pretty v, Pretty s, Ord s)
@@ -62,7 +63,8 @@ handle_dp :: (Show s, Ord v, Pretty v, Pretty s, Ord s)
        -> IO ( Maybe ( M.Map (TPDB.DP.Marked s) (L.Linear (M.Matrix Integer))
                      , TRS v (TPDB.DP.Marked s)))
 handle_dp opts sys = do
-    print $ pretty sys
+    eprint $ pretty sys
+    eprint $ show opts
 
     let (co, trees) = 
           ( if compress opts
@@ -78,7 +80,7 @@ handle_dp opts sys = do
 
     case out of
         Just f -> do
-            void $ print $ pretty f
+            eprint $ pretty f
             let dict = L.linear $ M.matrix $ I.direct
             case remaining dict (dim opts) f sys of
                 Right sys' -> return $ Just ( f, sys' )

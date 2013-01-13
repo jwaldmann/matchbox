@@ -1,4 +1,5 @@
 {-# language OverloadedStrings #-}
+{-# language NoMonomorphismRestriction #-}
 
 module MB.Pretty where
 
@@ -13,6 +14,7 @@ import Text.PrettyPrint.HughesPJ (render, vcat, hsep, ( <+>), text )
 import qualified Data.Map as M
 import Data.List ( transpose )
 
+import System.IO
 
 instance Pretty a => Show (TPDB.DP.Marked a) where
     show = render . pretty
@@ -46,3 +48,5 @@ beside sep x y = vcat $
         $ zipWith merge (xs ++ repeat "") (ys ++ repeat "")
 
 instance Pretty Integer where pretty = text . show
+
+eprint = hPutStrLn stderr . show
