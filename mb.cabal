@@ -16,6 +16,7 @@ Executable mb
                     , satchmo == 2.5.*
                     , satchmo-smt == 0.2.*
                     , mtl == 2.1.*
+                    , array
 
 Executable statistik
   Main-Is:          Statistik.hs
