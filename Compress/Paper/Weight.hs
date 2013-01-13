@@ -13,4 +13,4 @@ simple _ _ _ = 1
 
 numVarsInChild :: (Ord var) => DigramWeight var sym 
 numVarsInChild digram pos term = 
-  S.size $ vars (peek term $ pos ++ [(position digram)])
+  S.size $ vars (peek term $ pos ++ [position digram])
