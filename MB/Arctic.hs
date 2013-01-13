@@ -12,7 +12,7 @@ import qualified Compress.Simple as C
 import qualified Satchmo.SMT.Integer as I
 import qualified Satchmo.SMT.Linear as L
 import qualified Satchmo.SMT.Matrix as M
-import qualified Satchmo.Boolean as B
+-- import qualified Satchmo.Boolean as B
 import qualified Satchmo.SAT.Mini
 
 import qualified Data.Map as M
@@ -28,7 +28,8 @@ instance Pretty a => Show (TPDB.DP.Marked a) where
 
 
 handle :: (Show s, Ord v, Pretty v, Pretty s, Ord s)
-       => Options -> TRS v s -> IO ()
+       => Options -> TRS v s 
+       -> IO ( Maybe ( M.Map s (L.Linear (M.Matrix Integer))))
 handle opts sys = do
     print $ pretty sys
 
@@ -42,13 +43,17 @@ handle opts sys = do
             mdict = M.matrix idict
             idict = I.binary_fixed (bits opts)
         funmap <- system ldict (dim opts) trees
-        return $ mdecode ldict funmap
+        return $ mdecode ldict $ originals_only funmap
 
     case out of
-        Just f -> void $ forM (M.toList f) print    
+        Just f -> do
+            void $ forM (M.toList f) print    
+            return $ Just f
+        Nothing -> return Nothing
 
 handle_dp :: (Show s, Ord v, Pretty v, Pretty s, Ord s)
-       => Options -> TRS v (TPDB.DP.Marked s) -> IO ()
+       => Options -> TRS v (TPDB.DP.Marked s) 
+       -> IO ( Maybe ( M.Map (TPDB.DP.Marked s) (L.Linear (M.Matrix Integer))))
 handle_dp opts sys = do
     print $ pretty sys
 
@@ -62,16 +67,26 @@ handle_dp opts sys = do
             mdict = M.matrix idict
             idict = I.binary_fixed (bits opts)
         funmap <- system_dp ldict (dim opts) trees
-        return $ mdecode ldict funmap
+        return $ mdecode ldict $ originals_only funmap
 
     case out of
-        Just f -> void $ forM (M.toList f) print    
+        Just f -> do
+            void $ forM (M.toList f) print    
+            return $ Just f
+        Nothing -> return Nothing
     
+
+
+
 mdecode dict f = do
     pairs <- forM ( M.toList f) $ \ (k,v) -> do
         w <- L.decode dict v
         return (k,w)
     return $ M.fromList pairs 
+
+originals_only funmap = M.fromList $ do
+    ( C.Orig o, f ) <- M.toList funmap
+    return ( o, f )
 
 -- | assert that at least one rule can be removed.
 -- returns interpretation of function symbols.
@@ -80,13 +95,13 @@ system dict dim trees = do
     opairs <- forM (S.toList ofs) $ \ (f,ar) -> do
         l <- L.make dict ar (dim , dim)
         s <- L.positive dict l
-        B.assert [s]
+        L.assert dict [s]
         return (f, l)
     funmap <- foldM (digger dict) ( M.fromList opairs )
            $ reverse $ C.extras trees
     flags <- forM (C.roots trees) 
              $ rule dict dim funmap
-    B.assert flags 
+    L.assert dict flags 
     return funmap
 
 -- | assert that at least one rule can be removed.
@@ -105,7 +120,7 @@ system_dp dict dim trees = do
            $ reverse $ C.extras trees
     flags <- forM (C.roots trees) 
              $ rule_dp dict dim funmap
-    B.assert flags 
+    L.assert dict flags 
     return funmap
 
 original_function_symbols trees = 
@@ -146,22 +161,20 @@ rule dict dim funmap u = do
     l <- term dict dim funmap varmap $ lhs u
     r <- term dict dim funmap varmap $ rhs u
     w <- L.weakly_greater dict l r
-    B.assert [w]
-    s <- L.strictly_greater dict l r
-    return s
+    L.assert dict [w]
+    L.strictly_greater dict l r
 
--- | asserts weak decrease and returns strict decrease
--- for strict rule
+-- | asserts weak decrease and returns strict decrease (for strict rules)
 rule_dp dict dim funmap u = do
     let vs = S.union (vars $ lhs u) (vars $ rhs u)
         varmap = M.fromList $ zip (S.toList vs) [0..]
     l <- term dict dim funmap varmap $ lhs u
     r <- term dict dim funmap varmap $ rhs u
     w <- L.weakly_greater dict l r
-    B.assert [w]    
-    s <- L.strictly_greater dict l r
-    su <- B.constant $ strict u
-    B.and [ s, su ]
+    L.assert dict [w] 
+    case relation u of
+        Strict -> L.strictly_greater dict l r
+        Weak   -> L.bconstant dict False
 
 term dict dim funmap varmap t = case t of
     Var v -> return 

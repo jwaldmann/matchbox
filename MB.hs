@@ -8,6 +8,7 @@ import TPDB.Input ( get_trs )
 
 import System.Environment
 import System.Console.GetOpt
+import Control.Monad ( void )
 
 main = do
    argv <- getArgs
@@ -16,8 +17,8 @@ main = do
            let opts = foldl (flip id) options0 os
            sys <- get_trs path
            case dp opts of
-               False -> handle opts sys
-               True -> handle_dp opts $ TPDB.DP.dp sys
+               False -> void $ handle opts sys
+               True  -> void $ handle_dp opts $ TPDB.DP.dp sys
        (_,_,errs) -> do
            ioError $ userError $ concat errs
               ++ usageInfo "MB" options
