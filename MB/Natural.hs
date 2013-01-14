@@ -10,7 +10,8 @@ import TPDB.Pretty
 import qualified TPDB.DP
 
 import qualified Compress.Common as C
-import qualified Compress.Simple as C
+import qualified Compress.Simple as CS
+import qualified Compress.Simple as CP
 
 import qualified Satchmo.SMT.Integer as I
 import qualified Satchmo.SMT.Linear as L
@@ -34,8 +35,10 @@ handle opts sys = do
     eprint $ show opts
 
     let (co, trees) = 
-          ( if compress opts
-            then C.compress else C.nocompress 
+          ( case compression opts of
+              None -> CS.nocompress
+              Simple -> CS.compress 
+              Paper -> CP.compress
           ) $ rules sys
 
     out <- Satchmo.SAT.Mini.solve $ do
@@ -67,8 +70,10 @@ handle_dp opts sys = do
     eprint $ show opts
 
     let (co, trees) = 
-          ( if compress opts
-            then C.compress else C.nocompress 
+          ( case compression opts of
+              None -> CS.nocompress
+              Simple -> CS.compress 
+              Paper -> CP.compress
           ) $ rules sys
 
     out <- Satchmo.SAT.Mini.solve $ do
