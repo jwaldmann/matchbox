@@ -15,7 +15,7 @@ Executable mb
                     , tpdb == 0.6.*
                     , satchmo == 2.5.*
                     , satchmo-smt == 0.2.*
-                    , mtl == 2.1.*
+                    , mtl == 2.*
                     , array
 
 Executable statistik
@@ -23,7 +23,7 @@ Executable statistik
   Ghc-options:        -W -fno-warn-incomplete-patterns
   Build-Depends:      base >= 4.2 && < 5.0
                     , containers == 0.5.*
-                    , directory == 1.2.*
+                    , directory == 1.*
                     , tpdb == 0.6.*
 
 Executable paper
@@ -33,4 +33,4 @@ Executable paper
                     , containers == 0.5.*
                     , pretty == 1.1.*
                     , tpdb == 0.6.*
-                    , mtl == 2.1.*
+                    , mtl == 2.*
