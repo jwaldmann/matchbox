@@ -6,8 +6,11 @@ import MB.Options
 
 -- import MB.Strategy
 
-import qualified MB.Natural
 import qualified MB.Additive
+
+import qualified MB.Matrix 
+import qualified Satchmo.SMT.Integer as I
+import qualified Satchmo.SMT.Arctic  as A
 
 import qualified TPDB.DP
 import TPDB.Input ( get_trs )
@@ -49,8 +52,18 @@ main = do
            let opts = foldl (flip id) options0 os
            sys <- get_trs path
            out <- case dp opts of
-               False -> remove MB.Natural.handle    opts $            sys
-               True  -> remove MB.Natural.handle_dp opts $ TPDB.DP.dp sys
+               False -> 
+                   remove 
+                     (MB.Matrix.handle  
+                     I.binary_fixed I.direct  )
+                     opts $            sys
+               True  -> 
+                   remove 
+                     (MB.Matrix.handle_dp 
+                     I.binary_fixed I.direct
+                     -- A.unary_fixed A.direct
+                     )
+                     opts $ TPDB.DP.dp sys
            print $ vcat
                  [ "YES"
                  , "input" <+> pretty sys

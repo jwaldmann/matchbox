@@ -14,7 +14,7 @@ Executable mb
                     , pretty == 1.1.*
                     , tpdb == 0.6.*
                     , satchmo == 2.5.*
-                    , satchmo-smt == 0.2.*
+                    , satchmo-smt == 0.3.*
                     , mtl == 2.*
                     , array
 

@@ -6,6 +6,8 @@ module MB.Pretty where
 import TPDB.Pretty
 import qualified TPDB.DP
 
+import qualified Satchmo.SMT.Exotic.Semiring.Arctic as A
+
 import qualified Satchmo.SMT.Integer as I
 import qualified Satchmo.SMT.Linear as L
 import qualified Satchmo.SMT.Matrix as M
@@ -48,5 +50,10 @@ beside sep x y = vcat $
         $ zipWith merge (xs ++ repeat "") (ys ++ repeat "")
 
 instance Pretty Integer where pretty = text . show
+
+instance Pretty a => Pretty (A.Arctic a) where
+    pretty a = case a of
+        A.Minus_Infinite -> text "-"
+        A.Finite x -> pretty x
 
 eprint = hPutStrLn stderr . show
