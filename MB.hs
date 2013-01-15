@@ -2,7 +2,8 @@
 
 {-# language OverloadedStrings #-}
 
-import MB.Options
+import MB.Options hiding ( parallel )
+import qualified MB.Options as O
 
 -- import MB.Strategy
 
@@ -19,9 +20,12 @@ import Text.PrettyPrint.HughesPJ
 import TPDB.Data
 
 import System.Environment
+import System.IO
 import System.Console.GetOpt
-import Control.Monad ( void )
-
+import Control.Monad ( void, forM )
+import Control.Concurrent.Async
+import Control.Concurrent.STM
+import Data.Maybe (isJust)
 import Prelude hiding ( iterate )
 
 
@@ -29,7 +33,9 @@ remove handle opts sys0 =
     if null $ strict_rules sys0
     then return "no strict rules"
     else case MB.Additive.find sys0 of
-        Nothing -> iterate handle opts 1 sys0
+        Nothing -> case O.parallel opts of
+            False -> iterate  handle opts 1 sys0
+            True  -> parallel handle opts 1 sys0
         Just ( f, sys1 ) -> do
             later <- remove handle opts sys1
             return $ pretty sys0 $$ pretty f $$ later
@@ -45,7 +51,30 @@ iterate handle opts d sys0 = do
                   later <- remove handle opts sys1
                   return $ pretty sys0 $$ pretty f $$ later
 
+parallel handle opts _ sys0 = do
+    running <- atomically $ newTVar ( dim opts )
+    result <- atomically $ newTVar Nothing
+    pids <- forM [ 1 .. dim opts ] $ \ d -> async $ do
+        x <- handle ( opts { dim = d } ) sys0
+        atomically $ modifyTVar running pred
+        case x of 
+            Nothing -> return ()
+            Just (f, sys1) -> atomically $ do
+                    writeTVar result x
+    out <- atomically $ do
+        u <- readTVar running
+        r <- readTVar result
+        check $ 0 == u || isJust r
+        return r
+    forM pids cancel
+    case out of
+        Just (f, sys1) -> do
+            later <- remove handle opts sys1
+            return $ pretty sys0 $$ pretty f $$ later 
+
 main = do
+   hSetBuffering stdout LineBuffering
+   hSetBuffering stderr LineBuffering
    argv <- getArgs
    case getOpt Permute options argv of
        (os, [path], []) -> do

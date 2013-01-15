@@ -10,6 +10,7 @@ data Options =
              , bits :: Int
              , compression :: Compression
              , dp :: Bool
+             , parallel :: Bool
              }
     deriving Show
 
@@ -17,6 +18,7 @@ options0 = Options
          { dim = 5, bits = 3
          , compression = None
          , dp = False 
+         , parallel = False
          }
 
 options = 
@@ -30,4 +32,6 @@ options =
        ( NoArg ( \ opts -> opts { compression = Paper }) ) "compress"
     , Option [ 'p' ] [ "dp" ]
        ( NoArg ( \ opts -> opts { dp = True })) "dependency pairs transformation"   
+    , Option [     ] [ "parallel" ]
+       ( NoArg ( \ opts -> opts { parallel = True })) "start threads for different dimensions in parallel"   
     ]
