@@ -10,6 +10,7 @@ data Options =
              , bits :: Int
              , compression :: Compression
              , dp :: Bool
+             , mirror :: Bool
              , parallel :: Bool
              }
     deriving Show
@@ -18,6 +19,7 @@ options0 = Options
          { dim = 5, bits = 3
          , compression = None
          , dp = False 
+         , mirror = False
          , parallel = False
          }
 
@@ -33,5 +35,7 @@ options =
     , Option [ 'p' ] [ "dp" ]
        ( NoArg ( \ opts -> opts { dp = True })) "dependency pairs transformation"   
     , Option [     ] [ "parallel" ]
-       ( NoArg ( \ opts -> opts { parallel = True })) "start threads for different dimensions in parallel"   
+       ( NoArg ( \ opts -> opts { parallel = True })) "start threads for different dimensions in parallel"
+    , Option [ 'm' ] [ "mirror" ]
+       ( NoArg ( \ opts -> opts { mirror = True })) "if input is SRS, then mirror lhs and rhs"   
     ]

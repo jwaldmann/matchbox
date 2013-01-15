@@ -14,6 +14,7 @@ import qualified Satchmo.SMT.Integer as I
 import qualified Satchmo.SMT.Arctic  as A
 
 import qualified TPDB.DP
+import qualified TPDB.Mirror
 import TPDB.Input ( get_trs )
 import TPDB.Pretty ( pretty )
 import Text.PrettyPrint.HughesPJ
@@ -26,7 +27,7 @@ import Control.Monad ( void, forM )
 import Control.Concurrent.Async
 import Control.Concurrent.STM
 import Control.Concurrent.STM.TVar (modifyTVar)
-import Data.Maybe (isJust)
+import Data.Maybe (isJust, fromMaybe)
 import Prelude hiding ( iterate )
 
 
@@ -67,7 +68,7 @@ parallel handle opts _ sys0 = do
         r <- readTVar result
         check $ 0 == u || isJust r
         return r
-    forM pids cancel
+    forM pids $ \ pid -> async $ cancel pid
     case out of
         Just (f, sys1) -> do
             later <- remove handle opts sys1
@@ -80,12 +81,17 @@ main = do
    case getOpt Permute options argv of
        (os, [path], []) -> do
            let opts = foldl (flip id) options0 os
-           sys <- get_trs path
+           sys0 <- get_trs path
+
+           let sys = case O.mirror opts of
+                   True -> fromMaybe sys0 $ TPDB.Mirror.mirror sys0
+                   False -> sys0
+
            out <- case dp opts of
                False -> 
                    remove 
                      (MB.Matrix.handle  
-                     I.binary_fixed I.direct  )
+                     I.binary_fixed_plain I.direct  )
                      opts $            sys
                True  -> 
                    remove 
