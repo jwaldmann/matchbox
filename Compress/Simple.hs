@@ -1,5 +1,8 @@
+{-# language ConstraintKinds #-}
+{-# language NoMonomorphismRestriction #-}
+
 module Compress.Simple 
-  (compress, nocompress)
+  (compress, bicompress, nocompress)
 where
 
 import Compress.Common
@@ -12,20 +15,39 @@ import Control.Monad ( guard, forM )
 import Data.List ( inits, tails, sortBy, minimumBy )
 import Data.Function ( on )
 
--- | main (exported) functions
-compress, nocompress
-  :: (Ord sym, Ord var, Pretty var, Pretty sym) 
-  => [Rule (Term var sym)] 
-  -> (Cost, Trees var (Sym sym))
-compress rules = comp $ lift $ build $ rules 
+type CC sym var 
+    = (Ord sym, Ord var, Pretty var, Pretty sym) 
+type Compressor sym var 
+    =  [Rule (Term var sym)] 
+    -> (Cost, Trees var (Sym sym))
 
+-- | no compression
+nocompress :: CC sym var => Compressor sym var
 nocompress rules = 
     let t = lift $ build rules
-    in  ( cost t, t )
+    in  ( cost All t, t )
+
+data Evaluate = Weak_Only | All deriving ( Show )
+
+-- | compression, using a brute-force search
+compress :: CC sym var => Compressor sym var
+compress = comp All . lift . build 
+
+-- | compression (brute force)
+-- with ignoring cost of relative rules
+bicompress :: CC sym var => Compressor sym var
+bicompress rules = 
+    let ( co, ts ) = 
+            comp Weak_Only $ lift $ build rules
+    in  ( co, compress_strict_tops ts )
+
 
 -- * cost for evaluating substitutions
-cost_terms us = sum $ do
+cost_terms eval us = sum $ do
     u <- us 
+    guard $ case eval of
+        Weak_Only -> not $ strict u
+        All -> True
     t <- [ lhs u, rhs u ]
     Node f args <- subterms t
     arg <- args
@@ -38,23 +60,40 @@ cost_digrams ds = sum $ do
     return $ fromIntegral $ child_arity d
 
 -- | the main cost function
-cost trees = 
-      cost_terms (roots trees) 
+cost eval trees = 
+      cost_terms eval (roots trees) 
     + cost_digrams (extras trees)
 
+all_digrams = digrams True
+top_digrams = digrams False
+
 digrams :: (Ord var, Ord sym) 
-        => Trees var sym -> S.Set (Digram sym)
-digrams trees = S.fromList $ do
+        => Bool -> Trees var sym -> S.Set (Digram sym)
+digrams everywhere trees = S.fromList $ do
     u <- roots trees
+    guard $ case everywhere of
+        True -> True
+        False -> strict u
     t <- [ lhs u, rhs u ]
-    Node f fargs <- subterms t
+    Node f fargs <- 
+        if everywhere then subterms t else [t]
     (i, a) <- zip [1..] fargs
     Node g gargs <- return $ fargs !! (i-1)
     return $ Digram 
        { parent = f, parent_arity = length fargs
        , position = i, child = g
        , child_arity = length gargs }
-        
+
+-- * special handling for strict (DP) rules:
+-- compress them from the top,
+-- not computing any cost.
+
+compress_strict_tops trees = 
+    case S.toList $ top_digrams trees of
+        [] -> trees
+        dig : _ -> compress_strict_tops 
+            $ apply_all dig trees
+
 -- * replacement 
 
 -- | brute force compression: 
@@ -63,25 +102,29 @@ digrams trees = S.fromList $ do
 -- chose one digram that achieves minimal cost,
 -- stop if the cost is not reduced.
 
-comp trees = 
-    let handle (co,trees) =
-            let outs = step (co,trees)
+comp eval trees = 
+    let cofun = cost eval
+        handle (co,trees) =
+            let outs = step cofun (co,trees)
             in case outs of
                 (co', trees') : _ | co' < co -> 
                     handle (co', trees')
                 _ -> (co, trees)
-    in  handle (cost trees, trees)
+    in  handle (cofun trees, trees)
+
+type Cofun var sym = Trees var sym -> Cost
 
 step :: ( Ord sym, Ord var
               , Pretty var, Pretty sym )
-           => (Cost, Trees var (Sym sym))
+           => Cofun var (Sym sym)
+           -> (Cost, Trees var (Sym sym))
            -> [(Cost, Trees var (Sym sym)) ]
-step (co, trees) = 
+step cofun (co, trees) = 
     sortBy (compare `on` fst )
-           $ for (step_all trees) $ \ d -> (cost d, d)
+           $ for (step_all trees) $ \ d -> (cofun d, d)
 
 step_all trees = do
-    dig <- S.toList $ digrams trees
+    dig <- S.toList $ digrams True trees
     return $ apply_all dig trees 
 
 -- | apply at all non-overlapping positions,

@@ -26,7 +26,7 @@ import qualified Data.Set as S
 import Control.Monad ( forM, void, foldM )
 import Control.Monad.Identity
 import Text.PrettyPrint.HughesPJ (render, vcat, hsep, ( <+>), text )
-
+import System.IO
 
 
 handle :: (Show s, Ord v, Pretty v, Pretty s, Ord s
@@ -82,8 +82,14 @@ handle_dp encoded direct opts sys = do
           ( case compression opts of
               None -> CS.nocompress
               Simple -> CS.compress 
+              Simple_Weak_Only -> CS.bicompress 
               Paper -> CP.compress
           ) $ rules sys
+
+    when ( compression opts /= None ) $ do
+        hPutStrLn stderr $ render $ vcat 
+            [ "compressed system"
+            , pretty trees ]
 
     out <- Satchmo.SAT.Mini.solve $ do
         let ldict = L.linear mdict

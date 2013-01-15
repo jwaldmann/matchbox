@@ -2,7 +2,9 @@ module MB.Options where
 
 import System.Console.GetOpt
 
-data Compression = None | Simple | Paper
+data Compression = None 
+                 | Simple | Simple_Weak_Only
+                 | Paper
    deriving (Eq, Ord, Show)
 
 data Options =
@@ -29,9 +31,11 @@ options =
     , Option [ 'b' ] [ "bits" ]
        ( ReqArg ( \ s opts -> opts { bits = read s }) "Int" ) "bit width"
     , Option [ 'k' ] [ "compression-simple" ]
-       ( NoArg ( \ opts -> opts { compression = Simple }) ) "compress"
+       ( NoArg ( \ opts -> opts { compression = Simple }) ) "compress (simple)"
+    , Option [ 'i' ] [ "compression-weak" ]
+       ( NoArg ( \ opts -> opts { compression = Simple_Weak_Only }) ) "compress (simple, for weak rules only)"
     , Option [ 'c' ] [ "compression-paper" ]
-       ( NoArg ( \ opts -> opts { compression = Paper }) ) "compress"
+       ( NoArg ( \ opts -> opts { compression = Paper }) ) "compress (algorithm as in paper)"
     , Option [ 'p' ] [ "dp" ]
        ( NoArg ( \ opts -> opts { dp = True })) "dependency pairs transformation"   
     , Option [     ] [ "parallel" ]
