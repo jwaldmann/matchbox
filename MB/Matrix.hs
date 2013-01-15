@@ -50,7 +50,7 @@ handle encoded direct opts sys = do
     out <- Satchmo.SAT.Mini.solve $ do
         let ldict = L.linear mdict
             mdict = M.matrix idict
-            idict = encoded (dim opts)
+            idict = encoded (bits opts)
         funmap <- system ldict (dim opts) trees
         return $ mdecode ldict $ originals_only funmap
 
@@ -88,7 +88,7 @@ handle_dp encoded direct opts sys = do
     out <- Satchmo.SAT.Mini.solve $ do
         let ldict = L.linear mdict
             mdict = M.matrix idict
-            idict = encoded (dim opts) 
+            idict = encoded (bits opts) 
         funmap <- system_dp ldict (dim opts) trees
         return $ mdecode ldict $ originals_only funmap
 
