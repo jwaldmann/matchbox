@@ -82,7 +82,7 @@ handle_dp encoded direct opts sys = do
           ( case compression opts of
               None -> CS.nocompress
               Simple -> CS.compress 
-              Simple_Weak_Only -> CS.bicompress 
+              Simple_Weak_Only -> CS.compress_weak_only
               Paper -> CP.compress
           ) $ rules sys
 

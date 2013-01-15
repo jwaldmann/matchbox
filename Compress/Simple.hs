@@ -2,7 +2,7 @@
 {-# language NoMonomorphismRestriction #-}
 
 module Compress.Simple 
-  (compress, bicompress, nocompress)
+  (compress, compress_weak_only, nocompress)
 where
 
 import Compress.Common
@@ -35,8 +35,8 @@ compress = comp All . lift . build
 
 -- | compression (brute force)
 -- with ignoring cost of relative rules
-bicompress :: CC sym var => Compressor sym var
-bicompress rules = 
+compress_weak_only :: CC sym var => Compressor sym var
+compress_weak_only rules = 
     let ( co, ts ) = 
             comp Weak_Only $ lift $ build rules
     in  ( co, compress_strict_tops ts )
