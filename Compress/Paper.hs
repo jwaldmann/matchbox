@@ -21,7 +21,11 @@ compress rules = (Cost $ costs trees, trees)
         go (Node s ts) = Node (increaseSym s) $ map go ts
         go (Var v    ) = Var v
 
-        increaseSym (Dig d) = Dig $ d { position = position d + 1 }
+        increaseSym (Dig d) = Dig $ d 
+		{ parent    = increaseSym $ parent d 
+	        , position  = position d + 1 
+	        , child     = increaseSym $ child d
+		}
         increaseSym s       = s
 
 nocompress :: (Ord sym, Ord var, Pretty var, Pretty sym) 

@@ -25,6 +25,7 @@ import System.Console.GetOpt
 import Control.Monad ( void, forM )
 import Control.Concurrent.Async
 import Control.Concurrent.STM
+import Control.Concurrent.STM.TVar (modifyTVar)
 import Data.Maybe (isJust)
 import Prelude hiding ( iterate )
 
