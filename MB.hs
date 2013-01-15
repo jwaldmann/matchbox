@@ -60,8 +60,8 @@ main = do
                True  -> 
                    remove 
                      (MB.Matrix.handle_dp 
-                     I.binary_fixed I.direct
-                     -- A.unary_fixed A.direct
+                     -- I.binary_fixed I.direct
+                     A.unary_fixed A.direct
                      )
                      opts $ TPDB.DP.dp sys
            print $ vcat
