@@ -64,6 +64,7 @@ handle encoded direct opts sys = do
                     [ "verification error"
                     , "input system: " <+> pretty sys
                     , "interpretation: " <+> pretty f
+                    , "message:" <+> vcat (map text $ lines  err)
                     ]
         Nothing -> return Nothing
 
@@ -108,6 +109,7 @@ handle_dp encoded direct opts sys = do
                     [ "verification error"
                     , "input system: " <+> pretty sys
                     , "interpretation: " <+> pretty f
+                    , "message:" <+> vcat (map text $ lines  err)
                     ]
         Nothing -> return Nothing
     
@@ -116,9 +118,30 @@ handle_dp encoded direct opts sys = do
 -- returns the system with the rules that are not strictly decreasing.
 remaining dict dim funmap sys = do
     uss <- forM ( rules sys ) $ \ u -> do
-        s <- rule_dp dict dim funmap u
+        s <- traced_rule_dp dict dim funmap u 
         return ( u, s )
     return $ sys { rules = map fst $ filter (not . snd) uss }
+
+traced doc con = case con of
+    Right x -> return x
+    Left msg -> 
+        Left $ show $ vcat [ doc , text msg ]
+
+traced_rule_dp dict dim funmap u = do
+    let vs = S.union (vars $ lhs u) (vars $ rhs u)
+        varmap = M.fromList $ zip (S.toList vs) [0..]
+    l <- term dict dim funmap varmap $ lhs u
+    r <- term dict dim funmap varmap $ rhs u
+    w <- L.weakly_greater dict l r
+    traced ( vcat [ "rule:" <+> pretty u
+                  , "left:" <+> pretty l
+                  , "right: " <+> pretty r
+                  ]
+           ) $ L.assert dict [w] 
+    case relation u of
+        Strict -> L.strictly_greater dict l r
+        Weak   -> L.bconstant dict False
+
 
 mdecode dict f = do
     pairs <- forM ( M.toList f) $ \ (k,v) -> do
@@ -208,7 +231,8 @@ rule dict dim funmap u = do
     L.assert dict [w]
     L.strictly_greater dict l r
 
--- | asserts weak decrease and returns strict decrease (for strict rules)
+-- | asserts weak decrease and 
+-- returns strict decrease (for strict rules)
 rule_dp dict dim funmap u = do
     let vs = S.union (vars $ lhs u) (vars $ rhs u)
         varmap = M.fromList $ zip (S.toList vs) [0..]
