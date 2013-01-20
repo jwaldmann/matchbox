@@ -8,7 +8,7 @@ Maintainer:       Johannes Waldmann, Eric Noeth, Alexander Bau
 
 Executable mb
   Main-Is:          MB.hs
-  Ghc-options:        -W -fno-warn-incomplete-patterns -O2
+  Ghc-options:        -W -f-O2 no-warn-incomplete-patterns -threaded -rtsopts
   Build-Depends:      base >= 4.2 && < 5.0
                     , containers == 0.5.*
                     , pretty == 1.1.*

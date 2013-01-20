@@ -91,7 +91,9 @@ main = do
                False -> 
                    remove 
                      (MB.Matrix.handle  
-                     I.binary_fixed_plain I.direct  )
+                     -- I.binary_fixed_plain I.direct  
+                     I.binary_fixed I.direct  
+                     )
                      opts $            sys
                True  -> 
                    remove 
