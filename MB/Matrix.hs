@@ -209,17 +209,20 @@ original_function_symbols trees =
 digger dict m (C.Dig d) = do
             let p = m M.! C.parent d 
                 pos = C.position d - 1
-                (pre,post) = splitAt pos $ L.lin p
+                (pre, this : post) = 
+                      splitAt pos $ L.lin p
                 c = m M.! C.child d 
             h <- L.substitute dict
                 ( L.Linear {L.abs = L.abs p
-                   , L.lin = [L.lin p !! pos ]
+                   , L.lin = [ this ]
                    } ) [ c ]
             let fg = L.Linear { L.abs = L.abs h
                      , L.lin = pre ++ L.lin h ++ post
                      , L.dim = (L.to p, L.from c)
                      }
-            return $ M.insert (C.Dig d) fg m
+            return $ M.insertWith 
+                   (error "cannot happen")
+                   (C.Dig d) fg m
 
 -- | asserts weak decrease and returns strict decrease
 rule dict dim funmap u = do
