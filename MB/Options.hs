@@ -14,6 +14,7 @@ data Options =
              , dp :: Bool
              , mirror :: Bool
              , parallel :: Bool
+             , printStatistics :: Bool
              }
     deriving Show
 
@@ -23,6 +24,7 @@ options0 = Options
          , dp = False 
          , mirror = False
          , parallel = False
+         , printStatistics = False
          }
 
 options = 
@@ -42,4 +44,6 @@ options =
        ( NoArg ( \ opts -> opts { parallel = True })) "start threads for different dimensions in parallel"
     , Option [ 'm' ] [ "mirror" ]
        ( NoArg ( \ opts -> opts { mirror = True })) "if input is SRS, then mirror lhs and rhs"   
+    , Option [ 's' ] [ "printStatistics" ]
+       ( NoArg ( \ opts -> opts { printStatistics = True })) "print some statistics"   
     ]
