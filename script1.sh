@@ -32,7 +32,7 @@ do
 	echo $file >> $logfile_nocompress
 	echo $file >> $sterr_nocompress
 	
-	timeout 60 $pathMB $file $options_for_all  2>> $sterr_nocompress >> $logfile_nocompress
+	timeout 2 $pathMB $file $options_for_all  >> $logfile_nocompress &>> $sterr_nocompress
 	if [ $? -ne 0 ]; then
 		echo "TIMEOUT" >> $logfile_nocompress
 	else
@@ -40,7 +40,7 @@ do
 	fi
 	echo $file >> $logfile_compress
 	echo $file >> $sterr_compress
-	timeout 60 $pathMB $file $options_for_all -c 2>> $sterr_compress >> $logfile_compress 
+	timeout 60 $pathMB $file $options_for_all -c >> $logfile_compress &>> $sterr_compress  
 	if [ $? -ne 0 ]; then
 		echo "TIMEOUT" >> $logfile_compress
 	else
@@ -48,7 +48,7 @@ do
 	fi
 	echo $file >> $logfile_dp
 	echo $file >> $sterr_dp
-	timeout 60 $pathMB $file $options_for_all -c --dp 2>> $sterr_dp >> $logfile_dp 
+	timeout 60 $pathMB $file $options_for_all -c --dp  >> $logfile_dp &>> $sterr_dp 
 	if [ $? -ne 0 ]; then
 		echo "TIMEOUT" >> $logfile_dp
 	else
