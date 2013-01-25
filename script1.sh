@@ -2,9 +2,9 @@
 
 pathMB="dist/build/mb/mb"
 #pathMB="/home/eric/NewRepair/trunk/TRS/code/dist/build/mb/mb"
-#pathFiles="/home/eric/NewRepair/trunk/TRS/files/SRS_Relative/ICFP_2010_relative"
+pathFiles="/home/eric/NewRepair/trunk/TRS/files/SRS_Relative/ICFP_2010_relative"
 
-pathFiles="data/TRS_Standard/"
+#pathFiles="data/TRS_Standard/"
 
 logfile_nocompress=all_no.log
 logfile_dp=all_dp.log
@@ -28,26 +28,27 @@ touch $sterr_compress
 
 find $pathFiles -name '*.xml' | while read file;
 do
-	echo $file 
+	echo $file
 	echo $file >> $logfile_nocompress
 	echo $file >> $sterr_nocompress
-	timeout 60 $pathMB $file $options_for_all >> $logfile_nocompress 2> $sterr_nocompress
+	
+	timeout 60 $pathMB $file $options_for_all >> $logfile_nocompress 2>> $sterr_nocompress
 	if [ $? -ne 0 ]; then
 		echo "TIMEOUT" >> $logfile_nocompress
 	else
 		echo "SUCCESS" >> $logfile_nocompress
 	fi
-	echo $file >> $logfile_compress 
+	echo $file >> $logfile_compress
 	echo $file >> $sterr_compress
-	timeout 60 $pathMB $file $options_for_all -c >> $logfile_compress 2> $sterr_compress
+	timeout 60 $pathMB $file $options_for_all -c >> $logfile_compress 2>> $sterr_compress
 	if [ $? -ne 0 ]; then
 		echo "TIMEOUT" >> $logfile_compress
 	else
 		echo "SUCCESS" >> $logfile_compress
 	fi
-	echo $file >> $logfile_dp  
-	echo $file >> $sterr_dp 
-	timeout 60 $pathMB $file $options_for_all -c --dp >> $logfile_dp 2> $sterr_dp
+	echo $file >> $logfile_dp
+	echo $file >> $sterr_dp
+	timeout 60 $pathMB $file $options_for_all -c --dp >> $logfile_dp 2>> $sterr_dp
 	if [ $? -ne 0 ]; then
 		echo "TIMEOUT" >> $logfile_dp
 	else
