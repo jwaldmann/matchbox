@@ -1,29 +1,39 @@
+{-# language OverloadedStrings #-}
+{-# language NoMonomorphismRestriction #-}
+
 module MB.Strategy where
 
+import Control.Concurrent.Combine.Computer
+import Control.Concurrent.Combine.Lifter
+import qualified Control.Concurrent.Combine.Action as A
+
 import TPDB.Data
-
+import TPDB.Plain.Write
+import TPDB.Pretty
 import Text.PrettyPrint.HughesPJ
+import Data.String
 
-type Remover v s t = TRS v s 
-                 -> IO ( Maybe ( Doc, Maybe (TRS v t) ) )
+type Prover v s = Computer (RS v s) Doc
 
+no_strict_rules :: (Pretty v, PrettyTerm s) 
+    => Prover v s
+no_strict_rules = \ sys -> 
+    if null $ strict_rules sys
+    then return $ vcat
+             [ "system:" <+> pretty sys
+             , "has no strict rules => is terminating"
+             ]
+    else fail "has strict rules"
 
-
-
-andthen f g sys0 = do
-    x <- f sys0
-    case x of
-        Nothing -> return Nothing
-        Just (p, m) -> case m of
-            Nothing -> return $ Just ( p, m )
-            Just sys1 -> do
-                y <- g sys1
-                case y of
-                    Nothing -> return Nothing
-                    Just (q, m) -> return $ Just ( p $$ q, m )
-
-orelse f g sys0 = do
-    x <- f sys0
-    case x of
-        Nothing -> g sys0
-        Just (p,m) -> return $ Just (p,m)
+remover :: ( PrettyTerm s, Pretty v, Pretty b )
+        => Doc
+        -> ( RS v s -> IO (Maybe (b, RS v t)))
+        -> Lifter (RS v s) (RS v t) Doc 
+remover msg h = \ sys -> do
+    (m, sys') <- A.io $ h sys
+    return $ \ k -> do
+        out <- k sys'
+        return $ vcat [ "system:" <+> pretty sys
+                  , msg <+> pretty m
+                  , nest 2 out
+                  ]

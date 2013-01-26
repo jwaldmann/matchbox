@@ -1,7 +1,8 @@
 {-# OPTIONS -fallow-overlapping-instances #-}
 
--- | simplex solver for linear weights
--- can only be applied for non-duplicating systems (not checked here!)
+-- | simplex solver for linear weights.
+-- can only be applied 
+-- for non-duplicating systems (not checked here!)
 
 module MB.Additive where
 

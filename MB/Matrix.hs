@@ -5,6 +5,7 @@ module MB.Matrix where
 import MB.Options
 import MB.Pretty
 
+
 import TPDB.Data
 import TPDB.Pretty
 import qualified TPDB.DP
@@ -27,7 +28,6 @@ import Control.Monad ( forM, void, foldM )
 import Control.Monad.Identity
 import Text.PrettyPrint.HughesPJ (render, vcat, hsep, ( <+>), text )
 import System.IO
-
 
 handle :: (Show s, Ord v, Pretty v, Pretty s, Ord s
           , S.Semiring val, Pretty val)

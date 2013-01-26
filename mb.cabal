@@ -17,8 +17,7 @@ Executable mb
                     , satchmo-smt == 0.3.*
                     , mtl == 2.*
                     , array
-                    , stm == 2.4.*
-                    , async == 2.0.*
+                    , transformer-combinators
 
 Executable statistik
   Main-Is:          Statistik.hs
