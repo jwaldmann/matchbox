@@ -1,0 +1,33 @@
+Matchbox - (Certified) Termination/Complexity 
+of String and Term Rewriting
+
+Simplified version for testing TRS compression
+
+(c) Johannes Waldmann, Alexander Bau, Eric Nöth
+
+for more information, including source code: 
+http://dfa.imn.htwk-leipzig.de/matchbox/
+
+Matchbox is free software, according to the terms
+of the GNU Public License.
+
+Matchbox is provided as ist, without any warranty.
+
+*******************************************************
+
+Methods used:
+* reversal (for SRS)
+* Dependency Pairs transformation
+* removal of rules by
+   * Standard matrix interpretations
+   * Arctic matrix interpretations 
+
+*****************************************************
+
+third-party tools:
+
+* minisat   http://minisat.se/ 
+  via minisat-{c,haskell}-bindings 
+
+* many Haskell libraries (see cabal file)
+
