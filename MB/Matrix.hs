@@ -130,8 +130,9 @@ traced doc con = case con of
 traced_rule_dp dict dim funmap u = do
     let vs = S.union (vars $ lhs u) (vars $ rhs u)
         varmap = M.fromList $ zip (S.toList vs) [0..]
-    l <- term dict dim funmap varmap $ lhs u
-    r <- term dict dim funmap varmap $ rhs u
+    l0 <- term dict dim funmap varmap $ lhs u
+    r0 <- term dict dim funmap varmap $ rhs u
+    let [l,r] = patch dim [l0,r0]
     w <- L.weakly_greater dict l r
     traced ( vcat [ "rule:" <+> pretty u
                   , "left:" <+> pretty l
@@ -228,8 +229,9 @@ digger dict m (C.Dig d) = do
 rule dict dim funmap u = do
     let vs = S.union (vars $ lhs u) (vars $ rhs u)
         varmap = M.fromList $ zip (S.toList vs) [0..]
-    l <- term dict dim funmap varmap $ lhs u
-    r <- term dict dim funmap varmap $ rhs u
+    l0 <- term dict dim funmap varmap $ lhs u
+    r0 <- term dict dim funmap varmap $ rhs u
+    let [l,r] = patch dim [l0,r0]
     w <- L.weakly_greater dict l r
     L.assert dict [w]
     L.strictly_greater dict l r
@@ -239,8 +241,9 @@ rule dict dim funmap u = do
 rule_dp dict dim funmap u = do
     let vs = S.union (vars $ lhs u) (vars $ rhs u)
         varmap = M.fromList $ zip (S.toList vs) [0..]
-    l <- term dict dim funmap varmap $ lhs u
-    r <- term dict dim funmap varmap $ rhs u
+    l0 <- term dict dim funmap varmap $ lhs u
+    r0 <- term dict dim funmap varmap $ rhs u
+    let [l,r] = patch dim [l0,r0]
     w <- L.weakly_greater dict l r
     L.assert dict [w] 
     case relation u of
@@ -252,7 +255,17 @@ term dict dim funmap varmap t = case t of
         $ projection dim (M.size varmap) (varmap M.! v)
     Node f args -> do
         gs <- forM args $ term dict dim funmap varmap 
-        L.substitute dict (funmap M.! f) gs
+        L.substitute dict (funmap M.! f) $ patch dim gs
+
+patch dim [] = []
+patch dim gs = do
+    let m = maximum $ map length $ map L.lin gs
+    g <- gs
+    return $ g { L.lin = case L.lin g of
+            [] -> replicate m $ M.Zero (dim,dim)
+            _  -> L.lin g
+        }
+    
 
 -- TODO: move this to Satchmo.SMT.Linear
 projection dim n i = 
