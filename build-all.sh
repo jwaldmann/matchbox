@@ -1,0 +1,30 @@
+#!/bin/bash
+
+# get prerequisites (not from hackage, but current versions from github):
+
+for arch in minisat minisat-c-bindings
+do
+    git clone  https://github.com/niklasso/$arch.git
+    pushd $arch
+    make config
+    make
+    sudo make install
+    popd
+done
+
+git clone  https://github.com/niklasso/minisat-haskell-bindings.git
+pushd minisat-haskell-bindings
+cabal install --extra-lib-dirs=/usr/local/lib --extra-include-dirs=/usr/local/include
+popd
+
+for arch in satchmo smt-lib satchmo-smt haskell-tpdb transformer-combinators
+do
+    git clone  https://github.com/jwaldmann/$arch.git
+    pushd $arch
+    cabal install --force-reinstalls
+    popd
+done
+
+# this uses mb.cabal:
+
+cabal clean && cabal configure && cabal build
