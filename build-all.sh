@@ -2,6 +2,10 @@
 
 # get prerequisites (not from hackage, but current versions from github):
 
+rm -rf build ; mkdir build
+
+pushd build
+
 for arch in minisat minisat-c-bindings
 do
     git clone  https://github.com/niklasso/$arch.git
@@ -24,6 +28,8 @@ do
     cabal install --force-reinstalls
     popd
 done
+
+popd
 
 # this uses mb.cabal:
 
