@@ -1,7 +1,6 @@
 -- | simplified Matchbox Termination Prover
 
 {-# language OverloadedStrings #-}
-{-# language LambdaCase #-}
 {-# language NoMonomorphismRestriction #-}
 
 import MB.Options hiding ( parallel, dp )
@@ -95,7 +94,7 @@ main = do
                    False -> direct opts
                    True  -> dp opts
 
-           A.run ( strategy sys ) >>= \ case 
+           A.run ( strategy sys ) >>= \ x -> case x of
                Nothing -> print $ text "MAYBE"
                Just out -> print $ vcat
                  [ "YES" , out ]
