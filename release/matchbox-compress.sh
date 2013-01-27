@@ -3,6 +3,8 @@
 bits=6
 dim=6
 
+export LD_LIBRARY_PATH=.
+
 ./matchbox-compress.bin \
     --dim=$dim --bits=$bits \
     --parallel --dp --compression-weak \

@@ -2,7 +2,7 @@
 
 # get prerequisites (not from hackage, but current versions from github):
 
-rm -rf build ; mkdir build
+sudo rm -rf build ; mkdir build
 
 pushd build
 
@@ -19,6 +19,7 @@ done
 git clone  https://github.com/niklasso/minisat-haskell-bindings.git
 pushd minisat-haskell-bindings
 cabal install --extra-lib-dirs=/usr/local/lib --extra-include-dirs=/usr/local/include
+
 popd
 
 for arch in satchmo smt-lib satchmo-smt haskell-tpdb transformer-combinators

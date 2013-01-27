@@ -26,10 +26,10 @@ cp -v $source.bin $dir/$target.bin
 strip $dir/$target.bin
 
 cp -v release/README $dir
-cp -v -P release/libminisat*.so.* $dir
-cp -v release/runme $dir
+cp -v -P release/lib*.so.* $dir
+cp -v release/$target.sh $dir/runme
 
-chmod -v +x $dir/*.sh $dir/runme
+chmod -v +x $dir/runme
 
 rm -f $dir.zip
 
