@@ -7,19 +7,29 @@ import Text.XML.HaXml.XmlContent.Parser (toContents)
 import           TPDB.Data (TRS,Identifier,rules)
 import           TPDB.Pretty (pretty)
 import           TPDB.Input (get_trs)
-import           Compress.Paper (compress)
+import           Compress.Paper (Compression(..),compress)
 import           Compress.Paper.Costs (Costs (costs))
 
 main :: IO ()
 main = do
-  paths    <- getArgs
+  (compression,paths) <- do
+    args <- getArgs
+    case args of
+      "-s":paths -> return (Simple,paths)
+      "-i":paths -> return (Iterative,paths)
+      "-c":paths -> return (Comparison,paths)
+      _          -> error "syntax: {-s,-i,-c} [PATH]*"
+
+  putStrLn $ show compression
   putStrLn $ show paths
 
-  forM_ paths $ \path -> get_trs path >>= handleTrs
+  case compression of
+    Comparison -> forM_ paths $ \path -> get_trs path >>= compareCompression
+    _          -> forM_ paths $ \path -> get_trs path >>= handleTrs compression
 
-handleTrs :: TRS Identifier Identifier -> IO ()
-handleTrs trs =
-  let compressed = snd $ compress $ rules trs
+handleTrs :: Compression -> TRS Identifier Identifier -> IO ()
+handleTrs compression trs =
+  let compressed = snd $ compress compression $ rules trs
   in do
     {-
     putStrLn $ "Input: " ++ (show ( costs problem) )++" Output: " ++ (show (costs compressed))
@@ -39,5 +49,8 @@ handleTrs trs =
     putStrLn ""
     -}
   
-  
-
+compareCompression :: TRS Identifier Identifier -> IO ()
+compareCompression trs = putStrLn $ show $ compressed1 == compressed2
+  where 
+    compressed1 = snd $ compress Simple    $ rules trs
+    compressed2 = snd $ compress Iterative $ rules trs

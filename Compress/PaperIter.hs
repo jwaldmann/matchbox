@@ -1,25 +1,19 @@
-module Compress.Paper
-  (Compression (..), compress, nocompress)
+module Compress.PaperIter
+  (compress, nocompress)
 where
 
-import           TPDB.Data
-import           TPDB.Pretty
-import           Compress.Common
-import qualified Compress.Paper.TreeRePair as P
-import qualified Compress.PaperIter.TreeRePair as PI
-import           Compress.Paper.Costs (costs)
+import TPDB.Data
+import TPDB.Pretty
+import Compress.Common
+import Compress.PaperIter.TreeRePair (treeRePair)
+import Compress.Paper.Costs (costs)
 
-data Compression = Simple | Iterative | Comparison deriving Show
-
-compress :: (Ord sym, Ord var, Pretty var, Pretty sym, Show sym, Show var {-delete this-}) 
-         => Compression -> [Rule (Term var sym)] -> (Cost, Trees var (Sym sym))
-compress compression rules = (Cost $ costs trees, trees)
+compress :: (Ord sym, Ord var, Pretty var, Pretty sym
+                ,Show sym,Show var)  -- delete this
+         => [Rule (Term var sym)] -> (Cost, Trees var (Sym sym))
+compress rules = (Cost $ costs trees, trees)
   where 
     trees = increaseDigramPositions $ treeRePair $ lift $ build rules
-
-    treeRePair = case compression of
-                    Simple    ->  P.treeRePair
-                    Iterative -> PI.treeRePair
 
     increaseDigramPositions ts = ts { roots  = map (fmap go)   $ roots  ts 
                                     , extras = map increaseSym $ extras ts

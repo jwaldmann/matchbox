@@ -24,6 +24,9 @@ instance Pretty sym => Pretty (Digram sym) where
 instance Pretty sym => Show (Digram sym) where
     show = render . pretty
 
+isOverlappable :: (Eq sym) => Digram sym -> Bool
+isOverlappable dig = parent dig == child dig
+
 -- |Type for storing a set (list) of rules (rule is pair of trees)
 data Trees var sym = 
      Trees { roots  :: [ Rule ( Term var sym ) ]
@@ -43,7 +46,7 @@ instance ( Pretty var, Pretty sym, Show sym )
 
 -- |Returns all terms of all trees
 terms :: Trees var sym -> [Term var sym]
-terms = concatMap (\rule -> [lhs rule, rhs rule]) . roots
+terms = fromRules . roots
 
 -- |Cost type
 data Cost = Cost { m_times_m :: Int } deriving (Eq, Ord, Show)
@@ -70,10 +73,14 @@ instance Pretty o => Pretty (Sym o) where
 instance Functor Rule where
   fmap f u = u { lhs = f $ lhs u, rhs = f $ rhs u }
 
+-- Returns left/right-hand sides of a list of rules
+fromRules :: [Rule a] -> [a]
+fromRules = concatMap (\rule -> [lhs rule, rhs rule])
+
 -- |Lifts trees' functions symbols to @Sym@
 lift :: (Ord var, Ord o) => Trees var o -> Trees var (Sym o)
 lift trees = 
-    Trees { roots = map (fmap (fmap Orig)) $ roots trees 
+    Trees { roots  = map (fmap (fmap Orig)) $ roots trees 
           , extras = [] 
           }
 

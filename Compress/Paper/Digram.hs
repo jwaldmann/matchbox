@@ -18,6 +18,10 @@ digrams (Node i is) = toplevelDigrams `S.union` sublevelDigrams
                                 $ zip [0..] is
     sublevelDigrams           = S.unions $ map digrams is
     
+-- |Gets the set of all digrams from a list of terms
+allDigrams :: (Ord sym) => [Term var sym] -> S.Set (Digram sym)
+allDigrams = S.unions . map digrams 
+
 -- |Gets all non-overlapping occurences of a digram in a term, s.t. the result 
 -- includes the topest occurence. The resulting positions are ordered by their length. 
 nonOverlappingOccurences :: (Eq sym) 

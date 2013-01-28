@@ -31,10 +31,6 @@ bestDigram digramSavings =
     maxDigram = maximumBy (\a b -> compare (saving a) (saving b)) 
               $ S.toList digramSavings
 
--- |Gets the set of all digrams from a list of terms
-allDigrams :: (Ord sym) => [Term var sym] -> S.Set (Digram sym)
-allDigrams = S.unions . map digrams 
-
 -- |@digramSavings ds ts f@ computes the savings of digrams @ds@ which occurs 
 -- in @ts@ using the weighting function @f@
 digramSavings :: (Ord sym) 
