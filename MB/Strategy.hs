@@ -25,6 +25,13 @@ no_strict_rules = \ sys ->
              ]
     else fail "has strict rules"
 
+transformer fore back = \ sys -> do
+    case fore sys of
+        Nothing -> fail "fore"
+        Just sys' -> return $ \ later -> do
+            out <- later sys'
+            return $ back sys out
+
 remover :: ( PrettyTerm s, Pretty v, Pretty b )
         => Doc
         -> ( RS v s -> IO (Maybe (b, RS v t)))

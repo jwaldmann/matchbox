@@ -31,10 +31,14 @@ import Control.Monad ( void, forM )
 import Data.Maybe (isJust, fromMaybe)
 import Prelude hiding ( iterate )
 
-transform_dp sys = 
-    return $ TPDB.DP.dp sys
-transform_mirror sys = 
-    A.io $ return $ TPDB.Mirror.mirror sys
+transform_dp = transformer
+      ( \ sys -> return $ TPDB.DP.dp sys ) 
+      ( \ sys proof -> vcat [ "DP transform"
+                            , nest 4 proof ] )
+transform_mirror = transformer
+      ( \ sys -> TPDB.Mirror.mirror sys )
+      ( \ sys proof -> vcat [ "Mirror transform"
+                            , nest 4 proof ] )
 
 simplex = remover "additive" 
     $ return . MB.Additive.find 
@@ -69,7 +73,7 @@ simplexed cont
 direct opts = simplexed ( cmatrix opts ) 
 
 dp opts = 
-      C.andthen transform_dp 
+      C.apply transform_dp 
     $ simplexed ( cmatrix_dp opts )
 
 
@@ -88,7 +92,7 @@ main = do
            let strategy = 
                  ( case O.mirror opts of
                      False -> id
-                     True -> C.andthen transform_mirror
+                     True -> C.apply transform_mirror
                  )
                  $ case O.dp opts of
                    False -> direct opts
