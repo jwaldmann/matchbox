@@ -5,7 +5,8 @@
 # to the termcomp execution platform
 
 source=MB.hs
-target=matchbox-compress
+exe=MB.exe
+target=matchbox-nocompress
 
 # name of the binary in the release package 
 # will be $target.bin
@@ -13,7 +14,7 @@ target=matchbox-compress
 
 ghc --make  \
     -O2 -funbox-strict-fields -rtsopts -threaded \
-    $source -o $source.bin
+    $source -o $exe
 
 # the release will be place in this directory
 dir=$target-$(date -I)
@@ -22,8 +23,8 @@ echo $dir
 rm -rf $dir 
 mkdir -p $dir
 
-cp -v $source.bin $dir/$target.bin
-strip $dir/$target.bin
+cp -v $exe $dir/$exe
+strip $dir/$exe
 
 cp -v release/README $dir
 cp -v -P release/lib*.so.* $dir
