@@ -22,9 +22,9 @@ import qualified Data.Set as S
 import Data.Map ( Map )
 import qualified Data.Map as M
 
-import Control.Monad (guard)
+import Control.Monad (guard, when)
 import Text.PrettyPrint.HughesPJ
-import TPDB.Pretty (pretty)
+import TPDB.Pretty (pretty, Pretty (..))
 import Data.List ( sort )
 
 is_linear sys = and $ do
@@ -37,20 +37,21 @@ is_linear sys = and $ do
 -- | need to convert from doubles to integers,
 -- since GLPK simplex solver insists on doubles.
 
-toint fm = 
+eps = 1e-5 -- urgh
+
+toint opt fm = 
     let values = sort $ M.elems fm
         diffs = sort $ zipWith (-) (tail values) values
-        eps = 10 ^^ negate 5
         delta = case filter (> eps) diffs of
             [] -> error $ unlines
                 [ "MB.Additive: no (large) diff?"
                 , show values
                 ]
             d : _ -> d
-    in M.map ( \ v ->  round $ v / delta ) fm
+    in  M.map ( \ v ->  round $ v / delta ) fm
         
-mkinter sig fm = M.fromList $ do
-    ( c, w ) <- M.toList $ toint fm
+mkinter opt sig fm = M.fromList $ do
+    ( c, w ) <- M.toList $ toint opt fm
     return ( c, L.Linear { L.dim = (1,1)
                          , L.abs = M.Matrix { M.dim = (1,1), M.contents = [[w]] }
                          , L.lin = replicate ( sig M.! c ) 
@@ -80,17 +81,24 @@ find sys = do
         goal = Maximize $ do 
             idx <- [ 1 .. length sig ]      
             return $ M.findWithDefault 0 ( varOf M.! idx ) total
-    Optimal (_, values) <- return $
+    Optimal (opt, values) <- return $
         simplex goal (Sparse $ global : monotonic)  []
+    guard $ opt > eps    
 
-    let int = mkinter arities 
-                 $ M.fromList 
+    let double_int = M.fromList 
                  $ for ( zip [1..] values )
                  $ \ (i,v) -> (varOf M.! i, v)
-
+        int = mkinter opt arities double_int
     let dict = L.linear $ M.matrix I.direct
-    case MB.Matrix.remaining dict 1 int sys of
+    case MB.Matrix.remaining False dict 1 int sys of
         Right sys' -> do
+             when ( length (rules sys) 
+                    == length (rules sys')) $ do 
+                 error $ render $ vcat
+                    [ "MB.additive: not removing any rule?"
+                    , "input system: " <+> pretty sys
+                    ,  "interpretation: " <+> pretty double_int
+                    ]
              return ( int, sys' )
 	Left err ->  error $  render $ vcat
                     [ "MB.additive: verification error"
@@ -99,3 +107,5 @@ find sys = do
                     , "message:" <+> vcat (map text $ lines  err)
                     ]
 
+instance Pretty Double where 
+    pretty = text . show

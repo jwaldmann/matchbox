@@ -18,6 +18,7 @@ Executable mb
                     , mtl == 2.*
                     , array
                     , transformer-combinators
+		    , hmatrix-glpk
 
 Executable statistik
   Main-Is:          Statistik.hs

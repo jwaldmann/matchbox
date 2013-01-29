@@ -19,7 +19,7 @@ import qualified Satchmo.SMT.Arctic  as A
 import qualified TPDB.DP
 import qualified TPDB.Mirror
 import TPDB.Input ( get_trs )
-import TPDB.Pretty ( pretty )
+import TPDB.Pretty ( pretty, Pretty )
 import Text.PrettyPrint.HughesPJ
 import TPDB.Data
 
@@ -40,10 +40,11 @@ transform_mirror = transformer
       ( \ sys proof -> vcat [ "Mirror transform"
                             , nest 4 proof ] )
 
+simplex :: (Pretty v, Pretty s, Ord s, Ord v)
+        => C.Lifter (TRS v s) (TRS v s) Doc
 simplex = remover "additive" 
     $ \ sys -> do
          let out = MB.Additive.find sys 
-         -- hPutStrLn stderr $ render $ pretty out
          return out
 
 matrix_natural_full opts = 

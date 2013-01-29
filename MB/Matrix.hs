@@ -60,7 +60,7 @@ handle encoded direct opts sys = do
         Just f -> do
             eprint $ pretty f
             let dict = L.linear $ M.matrix direct
-            case remaining dict (dim opts) f sys of
+            case remaining False dict (dim opts) f sys of
                 Right sys' -> return $ Just ( f, sys' )
                 Left err -> error $ render $ vcat
                     [ "verification error"
@@ -106,7 +106,7 @@ handle_dp encoded direct opts sys = do
         Just f -> do
             eprint $ pretty f
             let dict = L.linear $ M.matrix direct 
-            case remaining dict (dim opts) f sys of
+            case remaining True dict (dim opts) f sys of
                 Right sys' -> return $ Just ( f, sys' )
                 Left err -> error $ render $ vcat
                     [ "verification error"
@@ -119,9 +119,9 @@ handle_dp encoded direct opts sys = do
 
 -- | check that all rules are weakly decreasing.
 -- returns the system with the rules that are not strictly decreasing.
-remaining dict dim funmap sys = do
+remaining top dict dim funmap sys = do
     uss <- forM ( rules sys ) $ \ u -> do
-        s <- traced_rule_dp dict dim funmap u 
+        s <- traced_rule top dict dim funmap u 
         return ( u, s )
     return $ sys { rules = map fst $ filter (not . snd) uss }
 
@@ -130,7 +130,7 @@ traced doc con = case con of
     Left msg -> 
         Left $ show $ vcat [ doc , text msg ]
 
-traced_rule_dp dict dim funmap u = do
+traced_rule top dict dim funmap u = do
     let vs = S.union (vars $ lhs u) (vars $ rhs u)
         varmap = M.fromList $ zip (S.toList vs) [0..]
     l <- term dict dim funmap varmap $ lhs u
@@ -143,7 +143,7 @@ traced_rule_dp dict dim funmap u = do
            ) $ L.assert dict [w] 
     case relation u of
         Strict -> L.strictly_greater dict l r
-        Weak   -> L.bconstant dict False
+        Weak   -> L.bconstant dict $ not top
 
 
 mdecode dict f = do
