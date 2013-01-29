@@ -70,11 +70,20 @@ simplexed cont
     $ C.apply ( C.orelse simplex cont )
     $ simplexed cont
 
-direct opts = simplexed ( cmatrix opts ) 
+repeated cont
+    = C.orelse no_strict_rules 
+    $ C.apply cont
+    $ repeated cont
+
+
+direct opts = -- simplexed 
+       repeated
+       $ cmatrix opts 
 
 dp opts = 
       C.apply transform_dp 
-    $ simplexed ( cmatrix_dp opts )
+    $ repeated -- $ simplexed 
+    $ cmatrix_dp opts 
 
 
 
