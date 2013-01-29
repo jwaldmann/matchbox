@@ -41,7 +41,10 @@ transform_mirror = transformer
                             , nest 4 proof ] )
 
 simplex = remover "additive" 
-    $ return . MB.Additive.find 
+    $ \ sys -> do
+         let out = MB.Additive.find sys 
+         -- hPutStrLn stderr $ render $ pretty out
+         return out
 
 matrix_natural_full opts = 
       remover "matrix_natural_full"
@@ -76,13 +79,14 @@ repeated cont
     $ repeated cont
 
 
-direct opts = -- simplexed 
-       repeated
+direct opts =  simplexed 
+       -- repeated
        $ cmatrix opts 
 
 dp opts = 
       C.apply transform_dp 
-    $ repeated -- $ simplexed 
+    -- $ repeated 
+    $ simplexed 
     $ cmatrix_dp opts 
 
 
