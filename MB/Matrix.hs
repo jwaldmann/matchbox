@@ -12,7 +12,8 @@ import qualified TPDB.DP
 
 import qualified Compress.Common as C
 import qualified Compress.Simple as CS
-import qualified Compress.Simple as CP
+import qualified Compress.Paper as CP
+import qualified Compress.PaperIter as CPI
 
 import qualified Satchmo.SMT.Exotic.Semiring as S
 import qualified Satchmo.SMT.Dictionary as D
@@ -29,7 +30,7 @@ import Control.Monad.Identity
 import Text.PrettyPrint.HughesPJ (render, vcat, hsep, ( <+>), text )
 import System.IO
 
-handle :: (Show s, Ord v, Pretty v, Pretty s, Ord s
+handle :: (Show s, Ord v, Show v, Pretty v, Pretty s, Ord s
           , S.Semiring val, Pretty val)
        => (Int -> D.Dictionary Satchmo.SAT.Mini.SAT num val B.Boolean )
        -> D.Dictionary (Either String) val val Bool
@@ -44,7 +45,8 @@ handle encoded direct opts sys = do
           ( case compression opts of
               None -> CS.nocompress
               Simple -> CS.compress 
-              Paper -> CP.compress
+              Paper -> CP.compress CP.Simple
+              PaperIter -> CPI.compress
           ) $ rules sys
 
     out <- Satchmo.SAT.Mini.solve $ do
@@ -68,7 +70,7 @@ handle encoded direct opts sys = do
                     ]
         Nothing -> return Nothing
 
-handle_dp :: (Show s, Ord v, Pretty v, Pretty s, Ord s
+handle_dp :: (Show s, Ord v, Show v, Pretty v, Pretty s, Ord s
           , Pretty val, S.Semiring val)
        => (Int -> D.Dictionary Satchmo.SAT.Mini.SAT num val B.Boolean )
        -> D.Dictionary (Either String) val val Bool
@@ -84,7 +86,8 @@ handle_dp encoded direct opts sys = do
               None -> CS.nocompress
               Simple -> CS.compress 
               Simple_Weak_Only -> CS.compress_weak_only
-              Paper -> CP.compress
+              Paper -> CP.compress CP.Simple
+              PaperIter -> CPI.compress
           ) $ rules sys
 
     when ( compression opts /= None ) $ do

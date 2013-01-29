@@ -4,7 +4,7 @@ import System.Console.GetOpt
 
 data Compression = None 
                  | Simple | Simple_Weak_Only
-                 | Paper
+                 | Paper  | PaperIter
    deriving (Eq, Ord, Show)
 
 data Options =
@@ -38,6 +38,8 @@ options =
        ( NoArg ( \ opts -> opts { compression = Simple_Weak_Only }) ) "compress (simple, for weak rules only)"
     , Option [ 'c' ] [ "compression-paper" ]
        ( NoArg ( \ opts -> opts { compression = Paper }) ) "compress (algorithm as in paper)"
+    , Option [ 'C' ] [ "compression-paper (iterative)" ]
+       ( NoArg ( \ opts -> opts { compression = PaperIter }) ) "compress (algorithm as in paper, iterative version)"
     , Option [ 'p' ] [ "dp" ]
        ( NoArg ( \ opts -> opts { dp = True })) "dependency pairs transformation"   
     , Option [     ] [ "parallel" ]
