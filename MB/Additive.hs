@@ -6,6 +6,8 @@
 
 module MB.Additive where
 
+import Debug.Trace
+
 import qualified MB.Matrix 
 
 import Numeric.LinearProgramming
@@ -37,18 +39,31 @@ is_linear sys = and $ do
 -- | need to convert from doubles to integers,
 -- since GLPK simplex solver insists on doubles.
 
-eps = 1e-5 -- urgh
+eps = 1e-6 -- urgh
+
+geeceedee x y = 
+          if abs y < eps then x
+          else let d = truncate (x/y) :: Int
+                   r = x - fromIntegral d * y
+               in  geeceedee y r
+
+geeceedees xs = foldr geeceedee 1 xs
+
 
 toint opt fm = 
-    let values = sort $ M.elems fm
-        diffs = sort $ zipWith (-) (tail values) values
-        delta = case filter (> eps) diffs of
-            [] -> error $ unlines
-                [ "MB.Additive: no (large) diff?"
-                , show values
-                ]
-            d : _ -> d
-    in  M.map ( \ v ->  round $ v / delta ) fm
+    let delta = geeceedees 
+              $ filter (> eps) $ M.elems fm
+        fm1 = M.map ( / delta ) fm
+        fm2 = M.map round fm1
+    in  
+{-
+    trace ( unlines [ show $ pretty fm
+                        , show $ pretty fm1
+                        , show delta
+                        , show $ pretty fm2 
+                        ] )
+-}
+                        fm2
         
 mkinter opt sig fm = M.fromList $ do
     ( c, w ) <- M.toList $ toint opt fm
@@ -81,8 +96,11 @@ find sys = do
         goal = Maximize $ do 
             idx <- [ 1 .. length sig ]      
             return $ M.findWithDefault 0 ( varOf M.! idx ) total
-    Optimal (opt, values) <- return $
-        simplex goal (Sparse $ global : monotonic)  []
+
+    let result = 
+          simplex goal (Sparse $ global : monotonic) []
+
+    Optimal (opt, values) <- return result
     guard $ opt > eps    
 
     let double_int = M.fromList 
