@@ -41,10 +41,11 @@ transform_mirror = transformer
                             , nest 4 proof ] )
 
 simplex :: (Pretty v, Pretty s, Ord s, Ord v)
-        => C.Lifter (TRS v s) (TRS v s) Doc
-simplex = remover "additive" 
+        => Bool -- ^ prove top termination?
+        -> C.Lifter (TRS v s) (TRS v s) Doc
+simplex top = remover "additive" 
     $ \ sys -> do
-         let out = MB.Additive.find sys 
+         let out = MB.Additive.find top sys 
          return out
 
 matrix_natural_full opts = 
@@ -69,10 +70,10 @@ cmatrix_dp opts =
           return $ matrix_arctic_dp
                  ( opts { dim = d } ) 
 
-simplexed cont 
+simplexed top cont 
     = C.orelse no_strict_rules 
-    $ C.apply ( C.orelse simplex cont )
-    $ simplexed cont
+    $ C.apply ( C.orelse (simplex top) cont )
+    $ simplexed top cont
 
 repeated cont
     = C.orelse no_strict_rules 
@@ -80,14 +81,14 @@ repeated cont
     $ repeated cont
 
 
-direct opts =  simplexed 
+direct opts =  simplexed False 
        -- repeated
        $ cmatrix opts 
 
 dp opts = 
       C.apply transform_dp 
     -- $ repeated 
-    $ simplexed 
+    $ simplexed True
     $ cmatrix_dp opts 
 
 

@@ -73,7 +73,12 @@ mkinter opt sig fm = M.fromList $ do
                                  $ M.Unit { M.dim = (1,1) } 
                          } )
 
-find sys = do
+
+-- | top = True: prove relative top termination
+-- (it is not allowed to remove weak rules).
+-- top = False: prover relative termination
+-- (it is allowed to remove weak rules).
+find top sys = do
     guard $ is_linear sys
     let arities = M.fromList $ do
             u <- rules sys ; t <- [ lhs u, rhs u ]
@@ -85,17 +90,24 @@ find sys = do
     let count t = M.fromListWith (+) $ do 
             Node f args <- subterms t ; return ( f, 1 )
         for = flip map
-        differences = for ( rules sys ) $ \ u -> 
+        differences us = for us $ \ u -> 
                  M.filter ( /= 0)
                $ M.unionWith (+) (count $ lhs u)
                $ M.map negate (count $ rhs u)
-        total = foldr (M.unionWith (+)) M.empty differences
+        strict_diffs = differences 
+               $ filter strict $ rules sys
+        weak_diffs = differences 
+               $ filter ( not . strict ) $ rules sys
+        all_diffs = weak_diffs ++ strict_diffs
+        total = foldr (M.unionWith (+)) M.empty 
+              $ if top then strict_diffs else all_diffs
         global = ( for sig $ \ s -> 1 # idxOf M.! s ) :==: 1 
-        monotonic = for differences $ \ d -> 
+        monotonic = for all_diffs $ \ d -> 
                 ( for (M.toList d) $ \ (var,coeff) -> coeff # idxOf M.! var ) :=>: 0
         goal = Maximize $ do 
             idx <- [ 1 .. length sig ]      
-            return $ M.findWithDefault 0 ( varOf M.! idx ) total
+            return $ M.findWithDefault 0 
+                   ( varOf M.! idx ) total
 
     let result = 
           simplex goal (Sparse $ global : monotonic) []
@@ -108,7 +120,7 @@ find sys = do
                  $ \ (i,v) -> (varOf M.! i, v)
         int = mkinter opt arities double_int
     let dict = L.linear $ M.matrix I.direct
-    case MB.Matrix.remaining False dict 1 int sys of
+    case MB.Matrix.remaining top dict 1 int sys of
         Right sys' -> do
              when ( length (rules sys) 
                     == length (rules sys')) $ do 
