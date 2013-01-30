@@ -20,8 +20,10 @@ main = do
       "-c":paths -> return (Comparison,paths)
       _          -> error "syntax: {-s,-i,-c} [PATH]*"
 
-  putStrLn $ show compression
-  putStrLn $ show paths
+ -- putStrLn $ show compression
+--  putStrLn $ show paths
+  putStr $ show paths
+  putStr "    "
 
   case compression of
     Comparison -> forM_ paths $ \path -> get_trs path >>= compareCompression
@@ -31,10 +33,11 @@ handleTrs :: Compression -> TRS Identifier Identifier -> IO ()
 handleTrs compression trs =
   let compressed = snd $ compress compression $ rules trs
   in do
+    
+    putStrLn $ (show ( costs problem) )++"    " ++ (show (costs compressed))
     {-
-    putStrLn $ "Input: " ++ (show ( costs problem) )++" Output: " ++ (show (costs compressed))
     putStrLn ""   
-    -}
+      
     putStrLn "## Problem #####################"
     putStrLn $ "Costs: " ++ (show $ costs trs)
     putStrLn $ show $ pretty trs
@@ -43,7 +46,7 @@ handleTrs compression trs =
     putStrLn $ "Costs: " ++ (show $ costs compressed)
     putStrLn $ show $ pretty compressed
     putStrLn ""
-    {-
+    
     putStrLn "## Compressed (XML) ############"
     putStrLn $ show $ verbatim $ toContents compressed
     putStrLn ""
