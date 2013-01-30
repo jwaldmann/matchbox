@@ -34,7 +34,7 @@ handleTrs compression trs =
   let compressed = snd $ compress compression $ rules trs
   in do
     
-    putStrLn $ (show ( costs problem) )++"    " ++ (show (costs compressed))
+    putStrLn $ (show ( costs trs) )++"    " ++ (show (costs compressed))
     {-
     putStrLn ""   
       
