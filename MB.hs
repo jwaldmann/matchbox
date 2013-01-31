@@ -12,6 +12,10 @@ import qualified Control.Concurrent.Combine.Action as A
 
 import qualified MB.Additive
 
+import qualified Compress.DP 
+import qualified Compress.Common as CC
+import qualified Compress.PaperIter as CPI
+
 import qualified MB.Matrix 
 import qualified Satchmo.SMT.Integer as I
 import qualified Satchmo.SMT.Arctic  as A
@@ -35,6 +39,18 @@ transform_dp = transformer
       ( \ sys -> return $ TPDB.DP.dp sys ) 
       ( \ sys proof -> vcat [ "DP transform"
                             , nest 4 proof ] )
+
+transform_dp_compress = transformer
+      ( \ sys -> do
+           let (_, csys) = CPI.compress $ rules sys
+               sys' = RS { rules = CC.roots csys 
+                         , separate = separate sys 
+                         }
+           return $ Compress.DP.dp $ sys'
+      ) 
+      ( \ sys proof -> vcat [ "DP transform on compressed system"
+                            , nest 4 proof ] )
+
 transform_mirror = transformer
       ( \ sys -> TPDB.Mirror.mirror sys )
       ( \ sys proof -> vcat [ "Mirror transform"
@@ -82,15 +98,21 @@ repeated cont
 
 
 direct opts =  simplexed False 
-       -- repeated
        $ cmatrix opts 
 
-dp opts = 
-      C.apply transform_dp 
-    -- $ repeated 
-    $ simplexed True
-    $ cmatrix_dp opts 
+dp opts = case O.compression opts of
+       Hack_DP -> hack_dp opts 
+       _ -> plain_dp opts
 
+plain_dp opts = 
+      C.apply transform_dp
+    $ simplexed True
+    $ cmatrix_dp opts
+
+hack_dp opts = 
+      C.apply transform_dp_compress
+    $ simplexed True
+    $ cmatrix_dp opts
 
 
 main = do

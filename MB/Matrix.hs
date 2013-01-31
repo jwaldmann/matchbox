@@ -88,6 +88,25 @@ handle_dp encoded direct opts sys = do
               Paper -> CP.compress CP.Simple
               PaperIter -> CP.compress CP.Iterative
           ) $ rules sys
+    handle_dp_continue encoded direct opts sys trees
+
+-- | FIXME: wir kommen hier mit (Marked (Sym Identifier)) an,
+-- aber gebraucht wird (Sym (Marked Identifier)).
+-- Sollte man besser schon in Compress.DP rumdrehen.
+handle_hack_dp encoded direct opts sys = do
+    handle_dp_continue encoded direct opts sys 
+        undefined -- $ C.Trees { C.roots = rules sys }
+
+handle_dp_continue :: (Show s, Ord v, Show v, Pretty v, Pretty s, Ord s
+          , Pretty val, S.Semiring val)
+       => (Int -> D.Dictionary Satchmo.SAT.Mini.SAT num val B.Boolean )
+       -> D.Dictionary (Either String) val val Bool
+       -> Options -> TRS v (TPDB.DP.Marked s) 
+       -> C.Trees v (C.Sym (TPDB.DP.Marked s)) 
+       -> IO ( Maybe ( M.Map (TPDB.DP.Marked s) (L.Linear (M.Matrix val))
+                     , TRS v (TPDB.DP.Marked s)))
+
+handle_dp_continue encoded direct opts sys trees = do
 
     when ( compression opts /= None ) $ do
         hPutStrLn stderr $ render $ vcat 

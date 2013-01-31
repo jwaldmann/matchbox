@@ -77,8 +77,8 @@ digrams everywhere trees = S.fromList $ do
     t <- [ lhs u, rhs u ]
     Node f fargs <- 
         if everywhere then subterms t else [t]
-    (i, a) <- zip [1..] fargs
-    Node g gargs <- return $ fargs !! (i-1)
+    (i, a) <- zip [0 .. ] fargs
+    Node g gargs <- return $ fargs !! i
     return $ Digram 
        { parent = f, parent_arity = length fargs
        , position = i, child = g
@@ -140,7 +140,7 @@ match dig t = do
     Node f fargs <- return t
     guard $ f == parent dig
     let ( pre, this  : post ) = 
-           splitAt (position dig - 1) fargs
+           splitAt (position dig) fargs
     Node g gargs <- return this
     guard $ g == child dig
     return ( pre, gargs, post )

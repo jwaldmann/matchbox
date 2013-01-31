@@ -5,6 +5,7 @@ import System.Console.GetOpt
 data Compression = None 
                  | Simple | Simple_Weak_Only
                  | Paper  | PaperIter
+                 | Hack_DP
    deriving (Eq, Ord, Show)
 
 data Options =
@@ -32,6 +33,9 @@ options =
        ( ReqArg ( \ s opts -> opts { dim = read s }) "Int" ) "vector dimension"
     , Option [ 'b' ] [ "bits" ]
        ( ReqArg ( \ s opts -> opts { bits = read s }) "Int" ) "bit width"
+    , Option [ 'h' ] [ "hack-dp-compress" ]
+       ( NoArg ( \ opts -> opts { compression = Hack_DP, dp = True }) ) 
+               "DP transform on compressed system"
     , Option [ 'k' ] [ "compression-simple" ]
        ( NoArg ( \ opts -> opts { compression = Simple }) ) "compress (simple)"
     , Option [ 'i' ] [ "compression-weak" ]

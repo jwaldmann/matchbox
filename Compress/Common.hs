@@ -6,13 +6,13 @@ import TPDB.Pretty
 import TPDB.Plain.Write ()
 import Text.PrettyPrint.HughesPJ
 
--- |Digram type
+-- | Digram type
 data Digram sym = Digram
-     { parent       :: sym
-     , parent_arity :: Int
-     , position     :: Int
-     , child        :: sym
-     , child_arity  :: Int
+     { parent       :: ! sym
+     , parent_arity :: ! Int
+     , position     :: ! Int
+     , child        :: ! sym
+     , child_arity  :: ! Int
      } deriving ( Eq, Ord )
 
 instance Pretty sym => Pretty (Digram sym) where
@@ -27,7 +27,7 @@ instance Pretty sym => Show (Digram sym) where
 isOverlappable :: (Eq sym) => Digram sym -> Bool
 isOverlappable dig = parent dig == child dig
 
--- |Type for storing a set (list) of rules (rule is pair of trees)
+-- | Type for storing a set (list) of rules (rule is pair of trees)
 data Trees var sym = 
      Trees { roots  :: [ Rule ( Term var sym ) ]
            , extras :: [ sym ]
@@ -44,11 +44,11 @@ instance ( Pretty var, Pretty sym, Show sym )
        => Show (Trees var sym) where
     show = render . pretty
 
--- |Returns all terms of all trees
+-- | Returns all terms of all trees
 terms :: Trees var sym -> [Term var sym]
 terms = fromRules . roots
 
--- |Cost type
+-- | Cost type
 data Cost = Cost { m_times_m :: Int } deriving (Eq, Ord, Show)
 
 instance Pretty Cost where pretty = text . show
@@ -60,7 +60,7 @@ instance Num Cost where
     abs _         = error "Can not apply 'abs' to costs"
     signum _      = error "Can not apply 'signum' to costs"
 
--- |Symbol type
+-- | Symbol type
 data Sym o = Orig o | Dig (Digram (Sym o))  
     deriving (Eq, Ord, Show)
 
@@ -73,18 +73,18 @@ instance Pretty o => Pretty (Sym o) where
 instance Functor Rule where
   fmap f u = u { lhs = f $ lhs u, rhs = f $ rhs u }
 
--- Returns left/right-hand sides of a list of rules
+-- | Returns left/right-hand sides of a list of rules
 fromRules :: [Rule a] -> [a]
 fromRules = concatMap (\rule -> [lhs rule, rhs rule])
 
--- |Lifts trees' functions symbols to @Sym@
+-- | Lifts trees' functions symbols to @Sym@
 lift :: (Ord var, Ord o) => Trees var o -> Trees var (Sym o)
 lift trees = 
     Trees { roots  = map (fmap (fmap Orig)) $ roots trees 
           , extras = [] 
           }
 
--- |Constructing trees from terms
+-- | Constructing trees from terms
 build :: (Ord v, Ord s) => [ Rule (Term v s) ] -> Trees v s 
 build ts = Trees { roots = ts, extras = [] }
 
