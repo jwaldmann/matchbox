@@ -229,7 +229,7 @@ original_function_symbols trees =
 
 digger dict m (C.Dig d) = do
             let p = m M.! C.parent d 
-                pos = C.position d - 1
+                pos = C.position d - CS.position_index_start
                 (pre, this : post) = 
                       splitAt pos $ L.lin p
                 c = m M.! C.child d 

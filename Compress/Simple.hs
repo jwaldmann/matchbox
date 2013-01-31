@@ -2,7 +2,9 @@
 {-# language NoMonomorphismRestriction #-}
 
 module Compress.Simple 
-  (compress, compress_weak_only, nocompress)
+  (compress, compress_weak_only, nocompress
+	, position_index_start
+	)
 where
 
 import Compress.Common
@@ -14,6 +16,8 @@ import qualified Data.Map as M
 import Control.Monad ( guard, forM )
 import Data.List ( inits, tails, sortBy, minimumBy )
 import Data.Function ( on )
+
+position_index_start = 1
 
 type CC sym var 
     = (Ord sym, Ord var, Pretty var, Pretty sym) 
@@ -77,8 +81,8 @@ digrams everywhere trees = S.fromList $ do
     t <- [ lhs u, rhs u ]
     Node f fargs <- 
         if everywhere then subterms t else [t]
-    (i, a) <- zip [0 .. ] fargs
-    Node g gargs <- return $ fargs !! i
+    (i, a) <- zip [ position_index_start .. ] fargs
+    Node g gargs <- return $ fargs !! (i - position_index_start)
     return $ Digram 
        { parent = f, parent_arity = length fargs
        , position = i, child = g
@@ -140,7 +144,7 @@ match dig t = do
     Node f fargs <- return t
     guard $ f == parent dig
     let ( pre, this  : post ) = 
-           splitAt (position dig) fargs
+           splitAt (position dig - position_index_start) fargs
     Node g gargs <- return this
     guard $ g == child dig
     return ( pre, gargs, post )
