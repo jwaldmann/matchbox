@@ -14,10 +14,6 @@ import           Compress.Common (Trees(Trees),Digram)
 import qualified Compress.Common as C
 import           Compress.Paper.Costs (Costs(costs))
 
-
-import Debug.Trace
-import TPDB.Pretty
-
 -- * Terms
 
 data TermS s var sym = VarS var
@@ -163,17 +159,13 @@ deleteOccurence :: (Ord sym) => TermSRef s var sym
                              -> Digram sym 
                              -> TreesS s var sym 
                              -> ST s (TreesS s var sym)
-deleteOccurence occ dig treesS = do
-  newDigramData <- assert (occ `elem` occurences oldDigramData)
-                 $ digramData dig $ delete occ $ occurences oldDigramData
-  
-  return $ if null $ occurences newDigramData
-           then treesS { digrams = M.delete dig               $ digrams treesS }
-           else treesS { digrams = M.insert dig newDigramData $ digrams treesS }
-  where
-    oldDigramData = case M.lookup dig $ digrams treesS of
-                    Just d -> d
-                    _      -> error "Compress.PaperIter.Common.deleteOccurence"
+deleteOccurence occ dig treesS = case M.lookup dig $ digrams treesS of
+  Nothing -> return treesS
+  Just old -> do
+    new  <- digramData dig $ delete occ $ occurences old
+    return $ if null $ occurences new
+             then treesS { digrams = M.delete dig     $ digrams treesS }
+             else treesS { digrams = M.insert dig new $ digrams treesS }
 
 zipRoots :: Trees var sym -> TreesS s var sym 
          -> [(Term var sym, TermSRef s var sym)]

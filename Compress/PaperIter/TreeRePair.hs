@@ -3,7 +3,7 @@ where
 
 import           Control.Monad (liftM,foldM,forM_)
 import           Control.Monad.ST
-import           Data.List (delete,nub)
+import           Data.List (delete)
 import qualified Data.Set as S
 import qualified Data.Map as M
 import           Data.Maybe (catMaybes)
@@ -44,9 +44,9 @@ initialize trees = do
 
 step :: (Ord sym, Pretty sym, Pretty var, Show sym, Show var {- delete this -}) 
      => TreesS s var (Sym sym) -> ST s (TreesS s var (Sym sym))
-step treesS = {-traceShow (M.toList $ digrams treesS) $ do
+step treesS = traceShow (M.toList $ digrams treesS) $ do
   trees <- toTrees treesS
-  traceShow (trees) $ -}
+  traceShow (trees) $ 
     if M.null (digrams treesS) || saving digramData <= 0 
        then return treesS
        else traceShow digram (replaceByDigram treesS' digram digramData >>= step)
@@ -61,10 +61,10 @@ replaceByDigram :: (Ord sym
                 -> ST s (TreesS s var (Sym sym))
 replaceByDigram treesS digram digramData = do
   -- 1. Retrive all digram occurences that should be deleted
-  occsToDelete <- liftM (nub . concat) $ mapM deleteOverlappingDigrams occs
+  occsToDelete <- liftM concat $ mapM deleteOverlappingDigrams occs
 
   -- 2. Delete them
-  treesS'  <- deleteOccurences occsToDelete treesS 
+  treesS' <- deleteOccurences occsToDelete treesS 
 
   -- 3. Replace @digram@ at all its occurences
   mapM_ replaceAtOccurence occs
@@ -82,6 +82,13 @@ replaceByDigram treesS digram digramData = do
                     }
   where
     occs = occurences digramData
+
+    -- |Deletes all occurences of overlapping digrams
+    deleteOverlappingDigrams ref = 
+      liftM concat $ mapM (\f -> f ref) [ deleteOverlappingParentDigram       
+                                        , deleteOverlappingNeighbourDigrams   
+                                        , deleteOverlappingChildrenDigrams   
+                                        ]
 
     -- |Replaces @digram@ at @ref@
     replaceAtOccurence ref = do
@@ -119,14 +126,6 @@ replaceByDigram treesS digram digramData = do
       newDigrams      <- liftM (map $ \d -> (d,ref)) $ getAllDigrams ref
       return $ filter (not . C.isOverlappable . fst)
              $ (maybe [] return newParentDigram) ++ newDigrams
-
-    -- |Deletes all occurences of overlapping digrams
-    deleteOverlappingDigrams ref = 
-      liftM concat $ mapM (\f -> f ref) [ deleteOverlappingParentDigram       
-                                        , deleteOverlappingNeighbourDigrams   
-                                        , deleteOverlappingChildrenDigrams   
-                                        ]
-
 
     -- |Deletes the occurences of all digrams that overlap the parent of the currently
     -- replaced digram @digram@ with their child.

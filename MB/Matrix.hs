@@ -13,7 +13,6 @@ import qualified TPDB.DP
 import qualified Compress.Common as C
 import qualified Compress.Simple as CS
 import qualified Compress.Paper as CP
-import qualified Compress.PaperIter as CPI
 
 import qualified Satchmo.SMT.Exotic.Semiring as S
 import qualified Satchmo.SMT.Dictionary as D
@@ -46,7 +45,7 @@ handle encoded direct opts sys = do
               None -> CS.nocompress
               Simple -> CS.compress 
               Paper -> CP.compress CP.Simple
-              PaperIter -> CPI.compress
+              PaperIter -> CP.compress CP.Iterative
           ) $ rules sys
 
     out <- Satchmo.SAT.Mini.solve $ do
@@ -87,7 +86,7 @@ handle_dp encoded direct opts sys = do
               Simple -> CS.compress 
               Simple_Weak_Only -> CS.compress_weak_only
               Paper -> CP.compress CP.Simple
-              PaperIter -> CPI.compress
+              PaperIter -> CP.compress CP.Iterative
           ) $ rules sys
 
     when ( compression opts /= None ) $ do
