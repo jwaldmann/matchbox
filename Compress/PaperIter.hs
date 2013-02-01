@@ -1,3 +1,4 @@
+{-# LANGUAGE FlexibleContexts #-}
 module Compress.PaperIter
   (compress, nocompress)
 where
@@ -6,9 +7,9 @@ import TPDB.Data
 import TPDB.Pretty
 import Compress.Common
 import Compress.PaperIter.TreeRePair (treeRePair)
-import Compress.Paper.Costs (costs)
+import Compress.Paper.Costs (Costs(costs))
 
-compress :: (Ord sym, Ord var, Pretty var, Pretty sym
+compress :: (Ord sym, Ord var, Pretty var, Pretty sym, Costs (Trees var (Sym sym))
                 ,Show sym,Show var)  -- delete this
          => [Rule (Term var sym)] -> (Cost, Trees var (Sym sym))
 compress rules = (Cost $ costs trees, trees)
@@ -29,7 +30,7 @@ compress rules = (Cost $ costs trees, trees)
                 }
         increaseSym s       = s
 
-nocompress :: (Ord sym, Ord var, Pretty var, Pretty sym) 
+nocompress :: (Ord sym, Ord var, Pretty var, Pretty sym, Costs (Trees var (Sym sym)))
            => [Rule (Term var sym)] -> (Cost, Trees var (Sym sym))
 nocompress rules = (Cost $ costs trees, trees)
   where 

@@ -33,5 +33,9 @@ instance (Ord var, Eq sym) => Costs (Problem var sym) where
 instance Costs (Digram a) where
   costs = child_arity
 
-instance (Ord var, Eq sym) => Costs (Trees var sym) where
-  costs = sum . map costs . roots
+instance Costs (Sym sym) where
+  costs (Dig d) = costs d
+
+instance (Ord var, Eq sym, Costs sym) => Costs (Trees var sym) where
+  costs trees = (sum $ map costs $ roots trees)
+              + (sum $ map costs $ extras trees) 

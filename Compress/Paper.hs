@@ -1,3 +1,4 @@
+{-# LANGUAGE FlexibleContexts #-}
 module Compress.Paper
   (Compression (..), compress, nocompress)
 where
@@ -7,11 +8,12 @@ import           TPDB.Pretty
 import           Compress.Common
 import qualified Compress.Paper.TreeRePair as P
 import qualified Compress.PaperIter.TreeRePair as PI
-import           Compress.Paper.Costs (costs)
+import           Compress.Paper.Costs (Costs(costs))
 
 data Compression = Simple | Iterative | Comparison deriving Show
 
-compress :: (Ord sym, Ord var, Pretty var, Pretty sym, Show sym, Show var {-delete this-}) 
+compress :: (Ord sym, Ord var, Pretty var, Pretty sym, Costs (Trees var (Sym sym))
+            , Show sym, Show var {-delete this-}) 
          => Compression -> [Rule (Term var sym)] -> (Cost, Trees var (Sym sym))
 compress compression rules = (Cost $ costs trees, trees)
   where 
@@ -35,7 +37,7 @@ compress compression rules = (Cost $ costs trees, trees)
                 }
         increaseSym s       = s
 
-nocompress :: (Ord sym, Ord var, Pretty var, Pretty sym) 
+nocompress :: (Ord sym, Ord var, Pretty var, Pretty sym, Costs (Trees var (Sym sym))) 
            => [Rule (Term var sym)] -> (Cost, Trees var (Sym sym))
 nocompress rules = (Cost $ costs trees, trees)
   where 
