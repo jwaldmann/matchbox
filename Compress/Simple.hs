@@ -16,11 +16,12 @@ import qualified Data.Map as M
 import Control.Monad ( guard, forM )
 import Data.List ( inits, tails, sortBy, minimumBy )
 import Data.Function ( on )
+import Data.Hashable
 
 position_index_start = 1
 
 type CC sym var 
-    = (Ord sym, Ord var, Pretty var, Pretty sym) 
+    = (Ord sym, Hashable sym, Ord var, Pretty var, Pretty sym) 
 type Compressor sym var 
     =  [Rule (Term var sym)] 
     -> (Cost, Trees var (Sym sym))
@@ -71,7 +72,7 @@ cost eval trees =
 all_digrams = digrams True
 top_digrams = digrams False
 
-digrams :: (Ord var, Ord sym) 
+digrams :: CC sym var
         => Bool -> Trees var sym -> S.Set (Digram sym)
 digrams everywhere trees = S.fromList $ do
     u <- roots trees
@@ -83,7 +84,7 @@ digrams everywhere trees = S.fromList $ do
         if everywhere then subterms t else [t]
     (i, a) <- zip [ position_index_start .. ] fargs
     Node g gargs <- return $ fargs !! (i - position_index_start)
-    return $ Digram 
+    return $ hashed $ Digram 
        { parent = f, parent_arity = length fargs
        , position = i, child = g
        , child_arity = length gargs }
@@ -118,7 +119,7 @@ comp eval trees =
 
 type Cofun var sym = Trees var sym -> Cost
 
-step :: ( Ord sym, Ord var
+step :: ( Ord sym, Hashable sym, Ord var
               , Pretty var, Pretty sym )
            => Cofun var (Sym sym)
            -> (Cost, Trees var (Sym sym))
