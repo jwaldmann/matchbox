@@ -8,18 +8,14 @@ import qualified Data.Set as S
 import qualified Data.Map as M
 import           Data.Maybe (catMaybes)
 import           Data.STRef
-import           TPDB.Pretty (Pretty)
 import           Compress.Common (Trees,Sym(Dig),position)
 import qualified Compress.Common as C
 import           Compress.PaperIter.Common
 import           Compress.Paper.Digram (allDigrams,nonOverlappingOccurences)
-import           Debug.Trace (traceShow)
-
-import Data.Hashable
+import           Data.Hashable
 
 -- |Runs tree re-pair algorithm 
-treeRePair :: (Ord var, Ord sym, Hashable sym
-              , Pretty sym, Pretty var, Show sym, Show var {- delete this -}) 
+treeRePair :: (Ord var, Ord sym, Hashable sym)
            => Trees var (Sym sym) -> Trees var (Sym sym)
 treeRePair trees = runST $ initialize trees >>= step >>= toTrees
 
@@ -44,20 +40,17 @@ initialize trees = do
       where
         occurencesInTerm = nonOverlappingOccurences digram term
 
-step :: (Ord sym, Hashable sym, Pretty sym, Pretty var, Show sym, Show var {- delete this -}) 
+step :: (Ord sym, Hashable sym)
      => TreesS s var (Sym sym) -> ST s (TreesS s var (Sym sym))
-step treesS = traceShow (M.toList $ digrams treesS) $ do
-  trees <- toTrees treesS
-  traceShow (trees) $ 
-    if M.null (digrams treesS) || saving digramData <= 0 
-       then return treesS
-       else traceShow digram (replaceByDigram treesS' digram digramData >>= step)
+step treesS =  
+  if M.null (digrams treesS) || saving digramData <= 0 
+     then return treesS
+     else replaceByDigram treesS' digram digramData >>= step
   where 
     ((digram, digramData), digrams') = bestDigram $ digrams treesS
     treesS'                          = treesS { digrams = digrams' }
 
-replaceByDigram :: (Ord sym, Hashable sym
-                    , Pretty sym, Pretty var, Show sym, Show var {- delete this -}) 
+replaceByDigram :: (Ord sym, Hashable sym)
                 => TreesS s var (Sym sym) -> C.Digram (Sym sym) 
                 -> DigramData s var (Sym sym) 
                 -> ST s (TreesS s var (Sym sym))

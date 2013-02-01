@@ -5,30 +5,27 @@ where
 
 import Control.Monad.State
 import TPDB.Data
-import TPDB.Pretty (Pretty)
 import Compress.Common
 import Compress.Paper.Selection (select)
 import Compress.Paper.Digram (nonOverlappingOccurences)
-import Debug.Trace (traceShow)
 import Data.Hashable
 
 newtype TreeRePair var sym a = TreeRePair { run :: State (Trees var sym) a }
   deriving (Monad, Functor, MonadState (Trees var sym))
 
 -- |Runs tree re-pair algorithm 
-treeRePair :: (Ord var, Ord sym, Hashable sym, Pretty sym) 
+treeRePair :: (Ord var, Ord sym, Hashable sym) 
            => Trees var (Sym sym) -> Trees var (Sym sym)
 treeRePair = execState $ run $ treeRePairStep
 
 -- |Runs tree re-pair algorithm on the TRS of the @TreeRePair@ monad until
 -- no more proper digrams are found.
-treeRePairStep :: (Ord var, Ord sym, Hashable sym, Pretty sym) => TreeRePair var (Sym sym) ()
+treeRePairStep :: (Ord var, Ord sym, Hashable sym) => TreeRePair var (Sym sym) ()
 treeRePairStep = do
   trees <- get
   case select trees of
     Nothing     -> return ()
-    Just digram -> traceShow digram 
-                 $ replaceInTrees digram >> treeRePairStep
+    Just digram -> replaceInTrees digram >> treeRePairStep
 
 -- |@replaceInTrees d s@ replaces all occurences of digram @d@ 
 -- in trees of the @TreeRePair@ monad

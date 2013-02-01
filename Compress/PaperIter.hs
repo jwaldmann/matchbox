@@ -4,14 +4,12 @@ module Compress.PaperIter
 where
 
 import TPDB.Data
-import TPDB.Pretty
 import Compress.Common
 import Compress.PaperIter.TreeRePair (treeRePair)
 import Compress.Paper.Costs (Costs(costs))
 import Data.Hashable
 
-compress :: (Ord sym, Hashable sym, Ord var, Pretty var, Pretty sym, Costs (Trees var (Sym sym))
-                ,Show sym,Show var)  -- delete this
+compress :: (Ord sym, Hashable sym, Ord var, Costs (Trees var (Sym sym)))
          => [Rule (Term var sym)] -> (Cost, Trees var (Sym sym))
 compress rules = (Cost $ costs trees, trees)
   where 
@@ -31,7 +29,7 @@ compress rules = (Cost $ costs trees, trees)
                 }
         increaseSym s       = s
 
-nocompress :: (Ord sym, Ord var, Pretty var, Pretty sym, Costs (Trees var (Sym sym)))
+nocompress :: (Ord sym, Ord var, Costs (Trees var (Sym sym)))
            => [Rule (Term var sym)] -> (Cost, Trees var (Sym sym))
 nocompress rules = (Cost $ costs trees, trees)
   where 
