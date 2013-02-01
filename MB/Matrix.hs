@@ -11,9 +11,9 @@ import TPDB.Data
 import TPDB.Pretty
 import qualified TPDB.DP
 
-import qualified Compress.Common as C
-import qualified Compress.Simple as CS
-import qualified Compress.Paper as CP
+import qualified Compress.Common as CC
+-- import qualified Compress.Simple as CS
+-- import qualified Compress.Paper as CP
 
 import qualified Satchmo.SMT.Exotic.Semiring as S
 import qualified Satchmo.SMT.Dictionary as D
@@ -32,38 +32,37 @@ import System.IO
 
 import Data.Hashable
 
+-- | note: we are assuming that we get a compressed system.
+-- the choice of the compressor should be done outside this module.
+-- so we only import Compress.Common (and none of the implementations).
+-- We do return an interpretation for the _original_ signature
+-- (because that is needed for independent verification)
+-- and the remaining rules in the _compressed_ signature
+-- (because we might want to avoid re-compression).
 
 handle :: (Show s, Hashable s, Ord v, Show v, Pretty v, Pretty s, Ord s
           , S.Semiring val, Pretty val)
        => (Int -> D.Dictionary Satchmo.SAT.Mini.SAT num val B.Boolean )
        -> D.Dictionary (Either String) val val Bool
-       -> Options -> TRS v s 
+       -> Options -> TRS v (CC.Sym s)
        -> IO ( Maybe ( M.Map s (L.Linear (M.Matrix val))
-                     , TRS v s))
+                     , TRS v (CC.Sym s)))
 handle encoded direct opts sys = do
     eprint $ pretty sys
     eprint $ show opts
-
-    let (co, trees) = 
-          ( case compression opts of
-              None -> CS.nocompress
-              Simple -> CS.compress 
-              Paper -> CP.compress CP.Simple
-              PaperIter -> CP.compress CP.Iterative
-          ) $ rules sys
 
     out <- Satchmo.SAT.Mini.solve $ do
         let ldict = L.linear mdict
             mdict = M.matrix idict
             idict = encoded (bits opts)
-        funmap <- system ldict (dim opts) trees
+        funmap <- system ldict (dim opts) sys
         return $ mdecode ldict $ originals_only funmap
 
     case out of
         Just f -> do
             eprint $ pretty f
             let dict = L.linear $ M.matrix direct
-            case remaining False dict (dim opts) f sys of
+            case remaining_compressed False dict (dim opts) f sys of
                 Right sys' -> return $ Just ( f, sys' )
                 Left err -> error $ render $ vcat
                     [ "verification error"
@@ -77,58 +76,25 @@ handle_dp :: (Show s, Hashable s, Ord v, Show v, Pretty v, Pretty s, Ord s
           , Pretty val, S.Semiring val)
        => (Int -> D.Dictionary Satchmo.SAT.Mini.SAT num val B.Boolean )
        -> D.Dictionary (Either String) val val Bool
-       -> Options -> TRS v (TPDB.DP.Marked s) 
+       -> Options -> TRS v (CC.Sym (TPDB.DP.Marked s))
        -> IO ( Maybe ( M.Map (TPDB.DP.Marked s) (L.Linear (M.Matrix val))
-                     , TRS v (TPDB.DP.Marked s)))
+                     , TRS v (CC.Sym (TPDB.DP.Marked s))))
 handle_dp encoded direct opts sys = do
     eprint $ pretty sys
     eprint $ show opts
-
-    let (co, trees) = 
-          ( case compression opts of
-              None -> CS.nocompress
-              Simple -> CS.compress 
-              Simple_Weak_Only -> CS.compress_weak_only
-              Paper -> CP.compress CP.Simple
-              PaperIter -> CP.compress CP.Iterative
-          ) $ rules sys
-    handle_dp_continue encoded direct opts sys trees
-
--- | FIXME: wir kommen hier mit (Marked (Sym Identifier)) an,
--- aber gebraucht wird (Sym (Marked Identifier)).
--- Sollte man besser schon in Compress.DP rumdrehen.
-handle_hack_dp encoded direct opts sys = do
-    handle_dp_continue encoded direct opts sys 
-        undefined -- $ C.Trees { C.roots = rules sys }
-
-handle_dp_continue :: (Show s, Ord v, Show v, Pretty v, Pretty s, Ord s
-          , Pretty val, S.Semiring val)
-       => (Int -> D.Dictionary Satchmo.SAT.Mini.SAT num val B.Boolean )
-       -> D.Dictionary (Either String) val val Bool
-       -> Options -> TRS v (TPDB.DP.Marked s) 
-       -> C.Trees v (C.Sym (TPDB.DP.Marked s)) 
-       -> IO ( Maybe ( M.Map (TPDB.DP.Marked s) (L.Linear (M.Matrix val))
-                     , TRS v (TPDB.DP.Marked s)))
-
-handle_dp_continue encoded direct opts sys trees = do
-
-    when ( compression opts /= None ) $ do
-        hPutStrLn stderr $ render $ vcat 
-            [ "compressed system"
-            , pretty trees ]
 
     out <- Satchmo.SAT.Mini.solve $ do
         let ldict = L.linear mdict
             mdict = M.matrix idict
             idict = encoded (bits opts) 
-        funmap <- system_dp ldict (dim opts) trees
+        funmap <- system_dp ldict (dim opts) sys
         return $ mdecode ldict $ originals_only funmap
 
     case out of
         Just f -> do
             eprint $ pretty f
             let dict = L.linear $ M.matrix direct 
-            case remaining True dict (dim opts) f sys of
+            case remaining_compressed True dict (dim opts) f sys of
                 Right sys' -> return $ Just ( f, sys' )
                 Left err -> error $ render $ vcat
                     [ "verification error"
@@ -141,6 +107,12 @@ handle_dp_continue encoded direct opts sys trees = do
 
 -- | check that all rules are weakly decreasing.
 -- returns the system with the rules that are not strictly decreasing.
+remaining_compressed top dict dim funmap sys = do
+    uss <- forM ( rules sys ) $ \ u -> do
+        s <- traced_rule top dict dim funmap $ fmap CC.expand_all u 
+        return ( u, s )
+    return $ sys { rules = map fst $ filter (not . snd) uss }
+
 remaining top dict dim funmap sys = do
     uss <- forM ( rules sys ) $ \ u -> do
         s <- traced_rule top dict dim funmap u 
@@ -175,79 +147,66 @@ mdecode dict f = do
     return $ M.fromList pairs 
 
 originals_only funmap = M.fromList $ do
-    ( C.Orig o, f ) <- M.toList funmap
+    ( CC.Orig o, f ) <- M.toList funmap
     return ( o, f )
 
 -- | assert that at least one rule can be removed.
 -- returns interpretation of function symbols.
-system dict dim trees = do
-    let ofs = original_function_symbols trees
-    opairs <- forM (S.toList ofs) $ \ (f,ar) -> do
+system dict dim sys = do
+    let (originals, digrams) = CC.deep_signature  sys
+    opairs <- forM originals $ \ (f,ar) -> do
         l <- L.make dict ar (dim , dim)
         s <- L.positive dict l
         L.assert dict [s]
         return (f, l)
-    funmap <- foldM (digger dict) ( M.fromList opairs )
-           $ reverse $ C.extras trees
-    flags <- forM (C.roots trees) 
+    funmap <- foldM (digger dict) (M.fromList opairs) digrams
+    flags <- forM (rules sys) 
              $ rule dict dim funmap
     L.assert dict flags 
     return funmap
 
 -- | assert that at least one rule can be removed.
 -- returns interpretation of function symbols.
-system_dp dict dim trees = do
-    let ofs = original_function_symbols trees
-    opairs <- forM (S.toList ofs) $ \ (f,ar) -> do
+system_dp dict dim sys = do
+    let (originals, digrams) = CC.deep_signature  sys
+    opairs <- forM originals $ \ (f,ar) -> do
         let topdim = case f of
-                C.Orig (TPDB.DP.Marked   {}) -> 1
-                C.Orig (TPDB.DP.Original {}) -> dim
+                CC.Orig (TPDB.DP.Marked   {}) -> 1
+                CC.Orig (TPDB.DP.Original {}) -> dim
         l <- L.make dict ar (topdim , dim)
         -- FIXME: this is a hack:
         when ( L.domain dict == D.Arctic ) $ do
             s <- L.positive dict l -- wrong name
             B.assert [s]
         return (f, l)
-    funmap <- foldM (digger dict) ( M.fromList opairs )
-           $ reverse $ C.extras trees
-    flags <- forM (C.roots trees) 
+    funmap <- foldM (digger dict) ( M.fromList opairs ) digrams
+    flags <- forM (rules sys) 
              $ rule_dp dict dim funmap
     L.assert dict flags 
     return funmap
 
-original_function_symbols trees = 
-    let remaining_ofs = S.fromList $ do 
-           u <- C.roots trees ; t <- [ lhs u, rhs u ]
-           Node (f @ C.Orig{}) xs <- subterms t 
-           return (f, length xs)
-        ofs_in_digrams ds = do
-           C.Dig d <- ds
-           (f,a) <- [ (C.parent d, C.parent_arity d)
-                    , (C.child  d, C.child_arity  d)
-                    ]
-           case f of
-                C.Orig {} -> [ (f,a) ]
-                C.Dig {}  -> ofs_in_digrams [f]
-    in  S.union remaining_ofs 
-        $ S.fromList $ ofs_in_digrams $ C.extras trees
 
-digger dict m (C.Dig d) = do
-            let p = m M.! C.parent d 
-                pos = C.position d - CS.position_index_start
-                (pre, this : post) = 
-                      splitAt pos $ L.lin p
-                c = m M.! C.child d 
-            h <- L.substitute dict
-                ( L.Linear {L.abs = L.abs p
-                   , L.lin = [ this ]
-                   } ) [ c ]
-            let fg = L.Linear { L.abs = L.abs h
-                     , L.lin = pre ++ L.lin h ++ post
-                     , L.dim = (L.to p, L.from c)
-                     }
-            return $ M.insertWith 
-                   (error "cannot happen")
-                   (C.Dig d) fg m
+digger dict m (CC.Dig d, _) = do
+    let get s x = M.findWithDefault ( error
+                $ unlines [ unwords [ "missing", s, "of", show d ] 
+                        , show $ M.keys m
+                        ] ) x m
+        p = get "parent"  (CC.parent d) 
+        pos = CC.position d - CC.position_index_start
+        (pre, this : post) = 
+              splitAt pos $ L.lin p
+        c = get "child"   (CC.child d) 
+    h <- L.substitute dict
+        ( L.Linear {L.abs = L.abs p
+           , L.lin = [ this ]
+           } ) [ c ]
+    let fg = L.Linear { L.abs = L.abs h
+             , L.lin = pre ++ L.lin h ++ post
+             , L.dim = (L.to p, L.from c)
+             }
+    return $ M.insertWith 
+           (error "cannot happen")
+           (CC.Dig d) fg m
 
 -- | asserts weak decrease and returns strict decrease
 rule dict dim funmap u = do

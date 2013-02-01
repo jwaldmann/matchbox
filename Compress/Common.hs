@@ -13,6 +13,9 @@ import qualified Data.Set as S
 import Data.Hashable 
 import GHC.Generics
 
+import Control.Monad.RWS
+import Data.List ( partition )
+
 -- | Digram type
 data Digram sym = Digram
      { _digram_hash :: Int 
@@ -27,6 +30,9 @@ data Digram sym = Digram
      , child        :: ! sym
      , child_arity  :: ! Int
      } deriving ( Eq, Ord )
+
+-- | the leftmost child has this index:
+position_index_start = 1
 
 essence d = ( parent d, position d, child d )
 
@@ -54,6 +60,7 @@ instance Pretty sym => Pretty (Digram sym) where
              -- just for debugging the hashing:
              -- , text "#", pretty (_digram_hash d)
              ]
+
 
 instance Pretty sym => Show (Digram sym) where
     show = render . pretty
@@ -103,16 +110,69 @@ instance Hashable o => Hashable (Sym o) where
         Orig o -> hashWithSalt s $ hashWithSalt (0::Int) o
         Dig  d -> hashWithSalt s $ hashWithSalt (1::Int) d
 
--- see remark on Functor Digram
--- instance Functor Sym where fmap = smap
 smap f s = case s of
         Orig o -> Orig $ f o
         Dig  d -> Dig $ dmap (smap f) d
+
+-- see remark on Functor Digram
+-- instance Functor Sym where fmap = smap
 
 instance Pretty o => Pretty (Sym o) where 
     pretty s = case s of
         Orig o  -> pretty o
         Dig dig -> pretty dig
+
+-- | expand all digrams, completely
+expand_all :: Term v (Sym o) -> Term v o
+expand_all t = case expand_top t of
+    Node (Orig o) args -> 
+        Node o $ map expand_all args
+    Var v -> Var v
+
+expand_all_trs :: TRS v (Sym o) -> TRS v o
+expand_all_trs sys = RS
+    { rules = map (fmap expand_all) $ rules sys 
+    , separate = separate sys
+    }
+    
+-- | expand digrams until the top symbol
+-- is an original symbol.
+expand_top :: Term v (Sym t) -> Term v (Sym t)
+expand_top t = case t of
+    Node (Dig d) args -> 
+        let ( pre, midpost ) = 
+                splitAt (position d - position_index_start) args
+            ( mid, post) = splitAt (child_arity d) midpost
+        in  expand_top 
+            $ Node (parent d)
+            $ pre ++ [ Node (child d) mid ] ++ post
+    _ -> t
+
+-- | list of all function symbols (including nested digrams)
+-- with arity
+-- in dependency order (members of nested digrams occur first),
+all_symbols :: ( Ord s )
+            => [ Term v (Sym s) ] 
+            -> [ (Sym s, Int) ]
+all_symbols ts = 
+    let symbol f a = do
+            done <- get
+            when ( S.notMember f done ) $ do
+                 put $ S.insert f done
+                 case f of
+                     Orig o -> return ()
+                     Dig d  -> do
+                          symbol (parent d) (parent_arity d)
+                          symbol (child  d) (child_arity  d)
+                 tell [(f,a)]
+        term t = forM_ ( subterms t ) $ \ t -> case t of 
+                Var {} -> return ()
+                Node f args -> do symbol f (length args) ; forM_ args term
+    in  snd $ evalRWS ( forM_ ts term ) () S.empty 
+
+deep_signature sys 
+    = partition  ( \ s -> case s of (Orig {}, _) -> True ; _ -> False )
+    $ all_symbols $ fromRules $ rules sys
 
 -- * Utilities
 

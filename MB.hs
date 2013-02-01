@@ -14,6 +14,7 @@ import qualified MB.Additive
 
 import qualified Compress.DP 
 import qualified Compress.Common as CC
+import qualified Compress.Simple as CS
 import qualified Compress.PaperIter as CPI
 
 import qualified MB.Matrix 
@@ -35,26 +36,33 @@ import Control.Monad ( void, forM )
 import Data.Maybe (isJust, fromMaybe)
 import Prelude hiding ( iterate )
 import Data.Hashable
+import Debug.Trace
 
 transform_dp = transformer
-      ( \ sys -> return $ TPDB.DP.dp sys ) 
+      ( \ sys -> do
+          return $ Compress.DP.dp sys ) 
       ( \ sys proof -> vcat [ "DP transform"
                             , nest 4 proof ] )
-
-comp :: ( Show v, Pretty v, Ord v
-        , Show s, Pretty s, Ord s, Hashable s
-        )
-     => TRS v s 
-     -> TRS v (CC.Sym s)
-comp sys = let (_, csys) = CPI.compress $ rules sys
-           in  RS { rules = CC.roots csys 
-                         , separate = separate sys 
-                         }
 
 transform_mirror = transformer
       ( \ sys -> TPDB.Mirror.mirror sys )
       ( \ sys proof -> vcat [ "Mirror transform"
                             , nest 4 proof ] )
+
+compressor :: (Hashable s, Pretty s, Ord s, Show s, Ord v, Pretty v, Show v)
+           => Compression
+           -> C.Lifter (TRS v s) (TRS v (CC.Sym s)) Doc
+compressor c = transformer 
+    ( \ sys -> let (cost, rs) = ( case c of
+                       O.None -> CS.nocompress 
+                       O.Simple -> CS.compress 
+                       O.PaperIter -> CPI.compress 
+                     ) $ rules sys
+               in  return $ RS { rules = CC.roots rs
+                               , separate = separate sys }
+    )
+    ( \ sys proof -> vcat [ "compressor:" <+> text (show c)
+                          , nest 4 $ proof ] )
 
 simplex :: (Pretty v, Pretty s, Ord s, Ord v)
         => Bool -- ^ prove top termination?
@@ -64,6 +72,16 @@ simplex top = remover "additive"
          let out = MB.Additive.find top sys 
          return out
 
+simplex_compress :: (Pretty v, Pretty s, Ord s, Ord v)
+        => Bool -- ^ prove top termination?
+        -> C.Lifter (TRS v (CC.Sym s)) (TRS v (CC.Sym s)) Doc
+simplex_compress top = remover "additive" 
+    $ \ sys -> do
+         let out = MB.Additive.find_compress top sys 
+         return out
+
+
+
 matrix_natural_full opts = 
       remover "matrix_natural_full"
     $ MB.Matrix.handle I.binary_fixed I.direct opts
@@ -72,18 +90,7 @@ matrix_arctic_dp opts =
       remover "matrix_arctic_dp"
     $ MB.Matrix.handle_dp A.unary_fixed A.direct opts
                  
-matrix_arctic_hack_dp opts = 
-    remover "matrix_arctic_hack_dp" $ \ sys -> 
-    let t = CC.Trees
-          { CC.roots = rules $ Compress.DP.dp 
-                     $ comp sys
-          , CC.extras = []
-          }
-    in  MB.Matrix.handle_dp_continue
-        A.unary_fixed A.direct opts 
-           undefined -- (TPDB.DP.dp sys ) 
-           undefined -- t
-                 
+
 cmatrix opts = 
     ( if O.parallel opts
       then C.parallel else C.sequential ) $ do
@@ -98,42 +105,25 @@ cmatrix_dp opts =
           return $ matrix_arctic_dp
                  ( opts { dim = d } ) 
 
-cmatrix_hack_dp opts = 
-    ( if O.parallel opts
-      then C.parallel else C.sequential ) $ do
-          d <- [ 1 .. dim opts ]
-          return $ matrix_arctic_hack_dp
-                 ( opts { dim = d } ) 
 
 simplexed top cont 
     = C.orelse no_strict_rules 
     $ C.apply ( C.orelse (simplex top) cont )
     $ simplexed top cont
 
-repeated cont
+simplexed_compress top cont 
     = C.orelse no_strict_rules 
-    $ C.apply cont
-    $ repeated cont
-
+    $ C.apply ( C.orelse (simplex_compress top) cont )
+    $ simplexed_compress top cont
 
 direct opts =  simplexed False 
        $ cmatrix opts 
 
-dp opts = case O.compression opts of
-       Hack_DP -> hack_dp opts 
-       _ -> plain_dp opts
-
-plain_dp opts = 
-      C.apply transform_dp
-    $ simplexed True
+dp opts = 
+      C.apply (compressor $  O.compression opts )
+    $ C.apply transform_dp
+    $ simplexed_compress True
     $ cmatrix_dp opts
-
-hack_dp opts = undefined
-{-
-      C.apply transform_dp_compress
-    $ simplexed True
-    $ cmatrix_hack_dp opts
--}
 
 main = do
    hSetBuffering stdout LineBuffering
@@ -149,10 +139,10 @@ main = do
            let strategy = 
                  ( case O.mirror opts of
                      False -> id
-                     True -> C.apply transform_mirror
+                     True -> C.apply transform_mirror 
                  )
                  $ case O.dp opts of
-                   False -> direct opts
+                   -- False -> direct opts
                    True  -> dp opts
 
            A.run ( strategy sys ) >>= \ x -> case x of

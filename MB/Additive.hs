@@ -9,6 +9,7 @@ module MB.Additive where
 import Debug.Trace
 
 import qualified MB.Matrix 
+import Compress.Common
 
 import Numeric.LinearProgramming
 
@@ -78,7 +79,27 @@ mkinter opt sig fm = M.fromList $ do
 -- (it is not allowed to remove weak rules).
 -- top = False: prover relative termination
 -- (it is allowed to remove weak rules).
-find top sys = do
+
+find :: ( Pretty s, Ord s , Pretty v, Ord v)
+     => Bool 
+     -> TRS v s 
+     -> Maybe (Map s (L.Linear (M.Matrix Integer)), TRS v s)
+find top sys = finder top sys plain_continuation
+
+find_compress :: ( Pretty s, Ord s , Pretty v, Ord v)
+     => Bool 
+     -> TRS v (Sym s) 
+     -> Maybe (Map s (L.Linear (M.Matrix Integer)), TRS v (Sym s))
+find_compress top sys = 
+
+    let esys = (expand_all_trs sys) 
+    in
+        trace (unlines ["finder.sys" ++ show (pretty sys)
+                       , "finder.esys" ++ show (pretty esys) ]) 
+        $ finder top esys $ compress_continuation sys
+
+finder top sys k = do
+
     guard $ is_linear sys
     let arities = M.fromList $ do
             u <- rules sys ; t <- [ lhs u, rhs u ]
@@ -120,7 +141,11 @@ find top sys = do
                  $ \ (i,v) -> (varOf M.! i, v)
         int = mkinter opt arities double_int
     let dict = L.linear $ M.matrix I.direct
-    case MB.Matrix.remaining top dict 1 int sys of
+
+    k top dict 1 int double_int sys
+
+plain_continuation top dict dim int double_int sys = 
+    case MB.Matrix.remaining top dict dim int sys of
         Right sys' -> do
              when ( length (rules sys) 
                     == length (rules sys')) $ do 
@@ -131,6 +156,24 @@ find top sys = do
                     ]
              return ( int, sys' )
 	Left err ->  error $  render $ vcat
+                    [ "MB.additive: verification error"
+                    , "input system: " <+> pretty sys
+                    , "interpretation: " <+> pretty int
+                    , "message:" <+> vcat (map text $ lines  err)
+                    ]
+
+compress_continuation sys top dict dim int double_int expsys = 
+    case MB.Matrix.remaining_compressed top dict dim int sys of
+          Right sys' -> do
+             when ( length (rules sys) 
+                    == length (rules sys')) $ do 
+                 error $ render $ vcat
+                    [ "MB.additive: not removing any rule?"
+                    , "input system: " <+> pretty sys
+                    ,  "interpretation: " <+> pretty double_int
+                    ]
+             return ( int, sys' )
+	  Left err ->  error $  render $ vcat
                     [ "MB.additive: verification error"
                     , "input system: " <+> pretty sys
                     , "interpretation: " <+> pretty int

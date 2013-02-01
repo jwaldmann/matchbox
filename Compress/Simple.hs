@@ -3,7 +3,6 @@
 
 module Compress.Simple 
   (compress, compress_weak_only, nocompress
-	, position_index_start
 	)
 where
 
@@ -17,8 +16,6 @@ import Control.Monad ( guard, forM )
 import Data.List ( inits, tails, sortBy, minimumBy )
 import Data.Function ( on )
 import Data.Hashable
-
-position_index_start = 1
 
 type CC sym var 
     = (Ord sym, Hashable sym, Ord var, Pretty var, Pretty sym) 
