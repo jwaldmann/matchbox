@@ -16,6 +16,7 @@ import qualified Compress.DP
 import qualified Compress.Common as CC
 import qualified Compress.Simple as CS
 import qualified Compress.PaperIter as CPI
+import qualified Compress.Paper as CP
 
 import qualified MB.Matrix 
 import qualified Satchmo.SMT.Integer as I
@@ -49,6 +50,15 @@ transform_mirror = transformer
       ( \ sys proof -> vcat [ "Mirror transform"
                             , nest 4 proof ] )
 
+transformer_neutral = transformer
+     ( \ sys -> return sys )
+     ( \ sys proof -> proof )
+
+compressor_fromtop = transformer
+    ( \ sys ->  return $ Compress.DP.fromtop sys )
+    ( \ sys proof -> vcat [ "compressor: fromtop"
+                          , nest 4 proof ] )
+
 compressor :: (Hashable s, Pretty s, Ord s, Show s, Ord v, Pretty v, Show v)
            => Compression
            -> C.Lifter (TRS v s) (TRS v (CC.Sym s)) Doc
@@ -56,7 +66,8 @@ compressor c = transformer
     ( \ sys -> let (cost, rs) = ( case c of
                        O.None -> CS.nocompress 
                        O.Simple -> CS.compress 
-                       O.PaperIter -> CPI.compress 
+                       O.Paper -> CP.compress CP.Simple
+                       O.PaperIter -> CP.compress CP.Iterative
                      ) $ rules sys
                in  return $ RS { rules = CC.roots rs
                                , separate = separate sys }
@@ -106,22 +117,22 @@ cmatrix_dp opts =
                  ( opts { dim = d } ) 
 
 
-simplexed top cont 
-    = C.orelse no_strict_rules 
-    $ C.apply ( C.orelse (simplex top) cont )
-    $ simplexed top cont
-
 simplexed_compress top cont 
     = C.orelse no_strict_rules 
     $ C.apply ( C.orelse (simplex_compress top) cont )
     $ simplexed_compress top cont
 
-direct opts =  simplexed False 
-       $ cmatrix opts 
+direct opts =  
+      C.apply (compressor $  O.compression opts )
+    $ simplexed_compress False 
+    $ cmatrix opts 
 
 dp opts = 
       C.apply (compressor $  O.compression opts )
     $ C.apply transform_dp
+    $ C.apply (case O.fromtop opts of
+         True  -> compressor_fromtop
+         False -> transformer_neutral )
     $ simplexed_compress True
     $ cmatrix_dp opts
 
@@ -136,16 +147,15 @@ main = do
 
            sys <- get_trs path
 
-           let strategy = 
-                 ( case O.mirror opts of
+           let m =case O.mirror opts of
                      False -> id
                      True -> C.apply transform_mirror 
-                 )
-                 $ case O.dp opts of
-                   -- False -> direct opts
-                   True  -> dp opts
 
-           A.run ( strategy sys ) >>= \ x -> case x of
+           x <- case O.dp opts of
+                   False -> A.run ( m ( direct opts ) sys )
+                   True  -> A.run ( m ( dp     opts ) sys )
+
+           case x of
                Nothing -> print $ text "MAYBE"
                Just out -> print $ vcat
                  [ "YES" , out ]

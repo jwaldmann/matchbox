@@ -1,6 +1,7 @@
 module Compress.DP where
 
 import Compress.Common
+import qualified Compress.Simple as CS
 
 import TPDB.Data hiding ( subterms, positions )
 import qualified TPDB.Data
@@ -13,10 +14,21 @@ import TPDB.Pretty
 import qualified Data.Set as S
 import Control.Monad ( guard )
 import Data.Hashable
+import Data.List
 
 z001 :: TRS Identifier Identifier
 Right z001 = TPDB.Plain.Read.trs 
     "(VAR x)(RULES a(a(b(b(x))))->b(b(b(a(a(a(x)))))))"
+
+-- | compress strict rules from the top.
+-- this should be applied after @dp@ (below)
+fromtop :: (Hashable s, Ord s, Pretty s, Pretty v, Ord v)
+   => TRS v (Sym s)
+   -> TRS v (Sym s)
+fromtop sys = 
+    let (top, deep) = partition strict $ rules sys
+        ctop = roots $ CS.compress_tops $ build top
+    in  sys { rules = ctop ++ deep }
 
 -- | compute DP transform for compressed system,
 -- not expanding all digrams.

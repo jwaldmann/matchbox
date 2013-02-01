@@ -91,12 +91,8 @@ find_compress :: ( Pretty s, Ord s , Pretty v, Ord v)
      -> TRS v (Sym s) 
      -> Maybe (Map s (L.Linear (M.Matrix Integer)), TRS v (Sym s))
 find_compress top sys = 
-
     let esys = (expand_all_trs sys) 
-    in
-        trace (unlines ["finder.sys" ++ show (pretty sys)
-                       , "finder.esys" ++ show (pretty esys) ]) 
-        $ finder top esys $ compress_continuation sys
+    in  finder top esys $ compress_continuation sys
 
 finder top sys k = do
 

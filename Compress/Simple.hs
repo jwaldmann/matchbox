@@ -2,9 +2,10 @@
 {-# language NoMonomorphismRestriction #-}
 
 module Compress.Simple 
-  (compress, compress_weak_only, nocompress
-	)
-where
+( compress
+, nocompress
+, compress_tops
+) where
 
 import Compress.Common
 import TPDB.Data
@@ -34,15 +35,6 @@ data Evaluate = Weak_Only | All deriving ( Show )
 -- | compression, using a brute-force search
 compress :: CC sym var => Compressor sym var
 compress = comp All . lift . build 
-
--- | compression (brute force)
--- with ignoring cost of relative rules
-compress_weak_only :: CC sym var => Compressor sym var
-compress_weak_only rules = 
-    let ( co, ts ) = 
-            comp Weak_Only $ lift $ build rules
-    in  ( co, compress_strict_tops ts )
-
 
 -- * cost for evaluating substitutions
 cost_terms eval us = sum $ do
@@ -90,11 +82,11 @@ digrams everywhere trees = S.fromList $ do
 -- compress them from the top,
 -- not computing any cost.
 
-compress_strict_tops trees = 
+compress_tops trees = 
     case S.toList $ top_digrams trees of
         [] -> trees
-        dig : _ -> compress_strict_tops 
-            $ apply_all dig trees
+        dig : _ -> compress_tops 
+            $ apply_all True dig trees
 
 -- * replacement 
 
@@ -127,12 +119,13 @@ step cofun (co, trees) =
 
 step_all trees = do
     dig <- S.toList $ digrams True trees
-    return $ apply_all dig trees 
+    return $ apply_all False dig trees 
 
 -- | apply at all non-overlapping positions,
 -- start searching for positions from the root (?)
-apply_all dig trees = 
-    Trees { roots = map (replace_rule dig) 
+-- if only_top is True, then this must be fast,
+apply_all only_top dig trees = 
+    Trees { roots = map (replace_rule only_top dig) 
                   $ roots trees
           , extras = Dig dig 
                    : extras trees
@@ -147,14 +140,16 @@ match dig t = do
     guard $ g == child dig
     return ( pre, gargs, post )
 
-replace_rule dig u = 
-    u { lhs = replace_all dig $ lhs u
-      , rhs = replace_all dig $ rhs u
+replace_rule only_top dig u = 
+    u { lhs = replace_all only_top dig $ lhs u
+      , rhs = replace_all only_top dig $ rhs u
       }
 
-replace_all dig t0 = case t0 of
+replace_all only_top dig t0 = case t0 of
     Node f args0 -> 
-        let args = map (replace_all dig) args0
+        let args = case only_top of
+                True  -> args0
+                False -> map (replace_all only_top dig) args0
             t = Node f args
         in  case match dig t of
                 Nothing -> t
