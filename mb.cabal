@@ -12,7 +12,7 @@ Executable mb
   Build-Depends:      base >= 4.2 && < 5.0
                     , containers == 0.5.*
                     , pretty == 1.1.*
-                    , tpdb >= 0.6.3
+                    , tpdb >= 0.6.4
                     , hashable
                     , satchmo == 2.6.*
                     , satchmo-smt == 0.3.*
@@ -27,7 +27,8 @@ Executable statistik
   Build-Depends:      base >= 4.2 && < 5.0
                     , containers == 0.5.*
                     , directory == 1.*
-                    , tpdb == 0.6.*
+                    , tpdb >= 0.6.4
+                    , hashable
 
 Executable paper
   Main-Is:          Compress/Paper/Main.hs
@@ -35,5 +36,6 @@ Executable paper
   Build-Depends:      base >= 4.2 && < 5.0
                     , containers == 0.5.*
                     , pretty == 1.1.*
-                    , tpdb == 0.6.*
+                    , tpdb >= 0.6.4
+                    , hashable
                     , mtl == 2.*
