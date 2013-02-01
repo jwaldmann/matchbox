@@ -43,14 +43,14 @@ digramSavings digrams terms f = S.map toDigramSaving digrams
     toDigramSaving digram = 
       let positions = nonOverlappingDigramPositions digram terms
       in
-        DigramSaving digram $ savingsOfDigram digram positions terms f
+        DigramSaving digram $ digramSaving digram positions terms f
 
--- |@savingsOfDigram d ps ts f@ computes the saving of digram @d@ which occurs at 
+-- |@digramSaving d ps ts f@ computes the saving of digram @d@ which occurs at 
 -- positions @ps@ in @ts@ using the weighting function @f@
-savingsOfDigram :: (Eq sym)
+digramSaving :: (Eq sym)
                 => Digram sym -> [DigramPosition] -> [Term var sym] 
                 -> DigramWeight var sym -> Int
-savingsOfDigram digram positions terms f = 
+digramSaving digram positions terms f = 
   (sum $ map weightOfDigramAtPos positions) - (costs digram)
   where 
     weightOfDigramAtPos p =  
