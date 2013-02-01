@@ -10,9 +10,11 @@ import qualified Compress.Paper.TreeRePair as P
 import qualified Compress.PaperIter.TreeRePair as PI
 import           Compress.Paper.Costs (Costs(costs))
 
+import Data.Hashable
+
 data Compression = Simple | Iterative | Comparison deriving Show
 
-compress :: (Ord sym, Ord var, Pretty var, Pretty sym, Costs (Trees var (Sym sym))
+compress :: (Ord sym, Hashable sym, Ord var, Pretty var, Pretty sym, Costs (Trees var (Sym sym))
             , Show sym, Show var {-delete this-}) 
          => Compression -> [Rule (Term var sym)] -> (Cost, Trees var (Sym sym))
 compress compression rules = (Cost $ costs trees, trees)

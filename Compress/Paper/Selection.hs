@@ -10,6 +10,8 @@ import           Compress.Paper.Digram
 import           Compress.Paper.Weight
 import           Compress.Paper.Costs
 
+import Data.Hashable
+
 data DigramPosition = DigramPosition { termIndex      :: Int
                                      , positionInTerm :: Position
                                      } deriving Show
@@ -18,7 +20,7 @@ data DigramSaving sym = DigramSaving { digram :: Digram sym
                                      , saving :: Int } deriving (Show, Eq, Ord)
                                  
 -- |Returns the digram with the highest saving, if there is such one
-select :: (Ord var, Ord sym) => Trees var sym -> Maybe (Digram sym)
+select :: (Ord var, Hashable sym, Ord sym) => Trees var sym -> Maybe (Digram sym)
 select trees = bestDigram 
              $ digramSavings (allDigrams trees) (terms trees) numVarsInChild
 
@@ -33,7 +35,7 @@ bestDigram digramSavings =
 
 -- |@digramSavings ds ts f@ computes the savings of digrams @ds@ which occurs 
 -- in @ts@ using the weighting function @f@
-digramSavings :: (Ord sym) 
+digramSavings :: (Ord sym, Hashable sym) 
               => S.Set (Digram sym) -> [Term var sym] -> DigramWeight var sym 
               -> S.Set (DigramSaving sym)
 digramSavings digrams terms f = S.map toDigramSaving digrams
@@ -55,7 +57,7 @@ savingsOfDigram digram positions terms f =
       f digram (positionInTerm p) $ terms !! (termIndex p)
 
 -- |Finds a set of nonoverlapping positions of a digram in a list of terms
-nonOverlappingDigramPositions :: (Eq sym)
+nonOverlappingDigramPositions :: (Eq sym, Hashable sym)
                               => Digram sym -> [Term var sym] -> [DigramPosition] 
 nonOverlappingDigramPositions digram = concatMap findPos . zip [0..]
   where

@@ -34,22 +34,22 @@ import Control.Monad ( void, forM )
 
 import Data.Maybe (isJust, fromMaybe)
 import Prelude hiding ( iterate )
+import Data.Hashable
 
 transform_dp = transformer
       ( \ sys -> return $ TPDB.DP.dp sys ) 
       ( \ sys proof -> vcat [ "DP transform"
                             , nest 4 proof ] )
 
-transform_dp_compress = transformer
-      ( \ sys -> do
-           let (_, csys) = CPI.compress $ rules sys
-               sys' = RS { rules = CC.roots csys 
+comp :: ( Show v, Pretty v, Ord v
+        , Show s, Pretty s, Ord s, Hashable s
+        )
+     => TRS v s 
+     -> TRS v (CC.Sym s)
+comp sys = let (_, csys) = CPI.compress $ rules sys
+           in  RS { rules = CC.roots csys 
                          , separate = separate sys 
                          }
-           return $ Compress.DP.dp $ sys'
-      ) 
-      ( \ sys proof -> vcat [ "DP transform on compressed system"
-                            , nest 4 proof ] )
 
 transform_mirror = transformer
       ( \ sys -> TPDB.Mirror.mirror sys )
@@ -72,6 +72,18 @@ matrix_arctic_dp opts =
       remover "matrix_arctic_dp"
     $ MB.Matrix.handle_dp A.unary_fixed A.direct opts
                  
+matrix_arctic_hack_dp opts = 
+    remover "matrix_arctic_hack_dp" $ \ sys -> 
+    let t = CC.Trees
+          { CC.roots = rules $ Compress.DP.dp 
+                     $ comp sys
+          , CC.extras = []
+          }
+    in  MB.Matrix.handle_dp_continue
+        A.unary_fixed A.direct opts 
+           undefined -- (TPDB.DP.dp sys ) 
+           undefined -- t
+                 
 cmatrix opts = 
     ( if O.parallel opts
       then C.parallel else C.sequential ) $ do
@@ -84,6 +96,13 @@ cmatrix_dp opts =
       then C.parallel else C.sequential ) $ do
           d <- [ 1 .. dim opts ]
           return $ matrix_arctic_dp
+                 ( opts { dim = d } ) 
+
+cmatrix_hack_dp opts = 
+    ( if O.parallel opts
+      then C.parallel else C.sequential ) $ do
+          d <- [ 1 .. dim opts ]
+          return $ matrix_arctic_hack_dp
                  ( opts { dim = d } ) 
 
 simplexed top cont 
@@ -109,11 +128,12 @@ plain_dp opts =
     $ simplexed True
     $ cmatrix_dp opts
 
-hack_dp opts = 
+hack_dp opts = undefined
+{-
       C.apply transform_dp_compress
     $ simplexed True
-    $ cmatrix_dp opts
-
+    $ cmatrix_hack_dp opts
+-}
 
 main = do
    hSetBuffering stdout LineBuffering

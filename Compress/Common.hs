@@ -1,3 +1,5 @@
+{-# language DeriveGeneric #-}
+
 module Compress.Common
 where
 
@@ -6,14 +8,37 @@ import TPDB.Pretty
 import TPDB.Plain.Write ()
 import Text.PrettyPrint.HughesPJ
 
+import Data.Hashable 
+import GHC.Generics
+
 -- | Digram type
 data Digram sym = Digram
-     { parent       :: ! sym
+     { _digram_hash :: Int 
+   -- ^ NOTE: this value comes first
+   -- in order to speed up the derived Eq and Ord
+   -- instances. For this to work properly,
+   -- @hashed@ must be applied to each Digram
+   -- after construction
+     , parent       :: ! sym
      , parent_arity :: ! Int
      , position     :: ! Int
      , child        :: ! sym
      , child_arity  :: ! Int
      } deriving ( Eq, Ord )
+
+essence d = ( parent d, position d, child d )
+
+hashed :: Hashable s => Digram s -> Digram s
+hashed d = d 
+    { _digram_hash = Data.Hashable.hash $ essence d }
+
+instance Hashable sym => Hashable (Digram sym) where
+    hashWithSalt s d = hash (s, _digram_hash d)
+
+instance Functor Digram where
+    fmap f d = d { parent = f $ parent d
+                 , child  = f $ child  d
+                 }
 
 instance Pretty sym => Pretty (Digram sym) where
     pretty d = brackets $ hcat [ pretty (parent d)
@@ -62,7 +87,15 @@ instance Num Cost where
 
 -- | Symbol type
 data Sym o = Orig o | Dig (Digram (Sym o))  
-    deriving (Eq, Ord, Show)
+    deriving (Eq, Ord, Show, Generic)
+
+instance Hashable o => Hashable (Sym o)
+
+
+instance Functor Sym where
+    fmap f s = case s of
+        Orig o -> Orig $ f o
+        Dig  d -> Dig $ fmap (fmap f) d
 
 instance Pretty o => Pretty (Sym o) where 
     pretty s = case s of
@@ -70,8 +103,10 @@ instance Pretty o => Pretty (Sym o) where
         Dig dig -> pretty dig
 
 -- * Utilities
+
 instance Functor Rule where
   fmap f u = u { lhs = f $ lhs u, rhs = f $ rhs u }
+
 
 -- | Returns left/right-hand sides of a list of rules
 fromRules :: [Rule a] -> [a]

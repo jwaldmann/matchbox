@@ -1,21 +1,35 @@
 module Compress.DP where
 
 import Compress.Common
+import Compress.Simple (position_index_start)
 
 import TPDB.Data hiding ( subterms, positions )
 import qualified TPDB.Data
 import TPDB.DP ( Marked (..))
 
+import TPDB.Plain.Read ( trs )
+import TPDB.Plain.Write ()
+import TPDB.Pretty
+
 import qualified Data.Set as S
 import Control.Monad ( guard )
 
+z001 :: TRS Identifier Identifier
+Right z001 = TPDB.Plain.Read.trs 
+    "(VAR x)(RULES a(a(b(b(x))))->b(b(b(a(a(a(x)))))))"
+
 -- | cf. corresponding code in TPDB.DP
+dp :: Ord s
+   => TRS v (Sym s) 
+   -> TRS v (Sym (Marked s))
 dp s =
-   let marked (Node f args) = 
-          Node (Marked f) $ map (fmap Original) args
+   let copy_deep = fmap (fmap Original)
+       mark_top (Node (Orig f) args) 
+          = Node (Orig (Marked f)) 
+          $ map copy_deep args
        os = map ( \ u -> Rule { relation = Weak
-                               , lhs = fmap Original $ lhs u  
-                               , rhs = fmap Original $ rhs u  
+                       , lhs = copy_deep $ lhs u  
+                       , rhs = copy_deep $ rhs u  
                                } )
            $ rules s
        defined = S.fromList $ do 
@@ -24,10 +38,11 @@ dp s =
                 return f
        us = do 
             u <- rules s
-            let l = marked $ lhs u
-            r @ (Node f args) <- subterms $ rhs u
+            let l = mark_top $ lhs u
+            r @ (Node f args) <-
+                  map expand_top $ subterms $ rhs u
             guard $ S.member f defined
-            return $ u { lhs = l, rhs = marked r }
+            return $ u { lhs = l, rhs = mark_top r }
    in RS { rules = us ++ os, separate = separate s } 
 
           
@@ -47,9 +62,11 @@ positions t = ( [], t ) : case expand_top t of
 
 -- | expand digrams until the top symbol
 -- is an original symbol.
+expand_top :: Term v (Sym t) -> Term v (Sym t)
 expand_top t = case t of
     Node (Dig d) args -> 
-        let ( pre, midpost ) = splitAt (position d) args
+        let ( pre, midpost ) = 
+                splitAt (position d - position_index_start) args
             ( mid, post) = splitAt (child_arity d) midpost
         in  expand_top 
             $ Node (parent d)

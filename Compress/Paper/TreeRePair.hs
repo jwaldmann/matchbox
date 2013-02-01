@@ -10,18 +10,19 @@ import Compress.Common
 import Compress.Paper.Selection (select)
 import Compress.Paper.Digram (nonOverlappingOccurences)
 import Debug.Trace (traceShow)
+import Data.Hashable
 
 newtype TreeRePair var sym a = TreeRePair { run :: State (Trees var sym) a }
   deriving (Monad, Functor, MonadState (Trees var sym))
 
 -- |Runs tree re-pair algorithm 
-treeRePair :: (Ord var, Ord sym, Pretty sym) 
+treeRePair :: (Ord var, Ord sym, Hashable sym, Pretty sym) 
            => Trees var (Sym sym) -> Trees var (Sym sym)
 treeRePair = execState $ run $ treeRePairStep
 
 -- |Runs tree re-pair algorithm on the TRS of the @TreeRePair@ monad until
 -- no more proper digrams are found.
-treeRePairStep :: (Ord var, Ord sym, Pretty sym) => TreeRePair var (Sym sym) ()
+treeRePairStep :: (Ord var, Ord sym, Hashable sym, Pretty sym) => TreeRePair var (Sym sym) ()
 treeRePairStep = do
   trees <- get
   case select trees of
@@ -31,14 +32,14 @@ treeRePairStep = do
 
 -- |@replaceInTrees d s@ replaces all occurences of digram @d@ 
 -- in trees of the @TreeRePair@ monad
-replaceInTrees :: (Eq sym) => Digram (Sym sym) -> TreeRePair var (Sym sym) ()
+replaceInTrees :: (Eq sym, Hashable sym) => Digram (Sym sym) -> TreeRePair var (Sym sym) ()
 replaceInTrees digram = 
   modify $ \trees -> trees { roots  = map (fmap $ replaceInTerm digram) $ roots trees 
                            , extras = Dig digram : (extras trees)
                            }
 
 -- |@replaceInTerm d s t@ replaces all occurences of digram @d@ in term @t@.
-replaceInTerm :: (Eq sym) 
+replaceInTerm :: (Eq sym, Hashable sym) 
               => Digram (Sym sym) -> Term var (Sym sym) -> Term var (Sym sym)
 replaceInTerm digram term = foldl replaceAtPosition term
                           $ reverse 

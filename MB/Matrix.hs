@@ -1,4 +1,5 @@
 {-# language OverloadedStrings #-}
+{-# language DeriveGeneric #-}
 
 module MB.Matrix where
 
@@ -29,7 +30,10 @@ import Control.Monad.Identity
 import Text.PrettyPrint.HughesPJ (render, vcat, hsep, ( <+>), text )
 import System.IO
 
-handle :: (Show s, Ord v, Show v, Pretty v, Pretty s, Ord s
+import Data.Hashable
+
+
+handle :: (Show s, Hashable s, Ord v, Show v, Pretty v, Pretty s, Ord s
           , S.Semiring val, Pretty val)
        => (Int -> D.Dictionary Satchmo.SAT.Mini.SAT num val B.Boolean )
        -> D.Dictionary (Either String) val val Bool
@@ -69,7 +73,7 @@ handle encoded direct opts sys = do
                     ]
         Nothing -> return Nothing
 
-handle_dp :: (Show s, Ord v, Show v, Pretty v, Pretty s, Ord s
+handle_dp :: (Show s, Hashable s, Ord v, Show v, Pretty v, Pretty s, Ord s
           , Pretty val, S.Semiring val)
        => (Int -> D.Dictionary Satchmo.SAT.Mini.SAT num val B.Boolean )
        -> D.Dictionary (Either String) val val Bool

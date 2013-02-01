@@ -15,13 +15,15 @@ import           Compress.PaperIter.Common
 import           Compress.Paper.Digram (allDigrams,nonOverlappingOccurences)
 import           Debug.Trace (traceShow)
 
+import Data.Hashable
+
 -- |Runs tree re-pair algorithm 
-treeRePair :: (Ord var, Ord sym
+treeRePair :: (Ord var, Ord sym, Hashable sym
               , Pretty sym, Pretty var, Show sym, Show var {- delete this -}) 
            => Trees var (Sym sym) -> Trees var (Sym sym)
 treeRePair trees = runST $ initialize trees >>= step >>= toTrees
 
-initialize :: (Ord var, Ord sym) 
+initialize :: (Ord var, Ord sym, Hashable sym) 
            => Trees var (Sym sym) -> ST s (TreesS s var (Sym sym))
 initialize trees = do
   treesS <- fromTrees trees
@@ -42,7 +44,7 @@ initialize trees = do
       where
         occurencesInTerm = nonOverlappingOccurences digram term
 
-step :: (Ord sym, Pretty sym, Pretty var, Show sym, Show var {- delete this -}) 
+step :: (Ord sym, Hashable sym, Pretty sym, Pretty var, Show sym, Show var {- delete this -}) 
      => TreesS s var (Sym sym) -> ST s (TreesS s var (Sym sym))
 step treesS = traceShow (M.toList $ digrams treesS) $ do
   trees <- toTrees treesS
@@ -54,7 +56,7 @@ step treesS = traceShow (M.toList $ digrams treesS) $ do
     ((digram, digramData), digrams') = bestDigram $ digrams treesS
     treesS'                          = treesS { digrams = digrams' }
 
-replaceByDigram :: (Ord sym
+replaceByDigram :: (Ord sym, Hashable sym
                     , Pretty sym, Pretty var, Show sym, Show var {- delete this -}) 
                 => TreesS s var (Sym sym) -> C.Digram (Sym sym) 
                 -> DigramData s var (Sym sym) 
@@ -186,9 +188,13 @@ replaceByDigram treesS digram digramData = do
         Nothing   -> return Nothing
         Just pRef -> do
           p <- readSTRef pRef
-          return $ Just ( C.Digram (symbol p) (arity p) (indexOfParent f)
-                                   (symbol f) (arity f)
-                        , pRef )
+          return $ Just ( C.hashed $ C.Digram 
+              { C.parent = (symbol p) 
+              , C.parent_arity = (arity p) 
+              , C.position = (indexOfParent f)
+              , C.child = (symbol f) 
+              , C.child_arity = (arity f)
+              }                        , pRef )
 
     -- |Returns the digram with @ref@ as parent and its @i@-th subterm as child.
     -- Returns nothing if
@@ -205,7 +211,13 @@ replaceByDigram treesS digram digramData = do
             g <- peekS ref [i] >>= readSTRef
             return $ case g of
               VarS  {} -> Nothing
-              NodeS {} -> Just $ C.Digram (symbol f) (arity f) i (symbol g) (arity g)
+              NodeS {} -> Just $ C.hashed $ C.Digram 
+                { C.parent = (symbol f) 
+                , C.parent_arity = (arity f) 
+                , C.position = i 
+                , C.child = (symbol g) 
+                , C.child_arity = (arity g)
+                }
 
     -- |Returns all digrams with @ref@ as parent
     getAllDigrams ref = do

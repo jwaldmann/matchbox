@@ -8,8 +8,9 @@ import TPDB.Pretty
 import Compress.Common
 import Compress.PaperIter.TreeRePair (treeRePair)
 import Compress.Paper.Costs (Costs(costs))
+import Data.Hashable
 
-compress :: (Ord sym, Ord var, Pretty var, Pretty sym, Costs (Trees var (Sym sym))
+compress :: (Ord sym, Hashable sym, Ord var, Pretty var, Pretty sym, Costs (Trees var (Sym sym))
                 ,Show sym,Show var)  -- delete this
          => [Rule (Term var sym)] -> (Cost, Trees var (Sym sym))
 compress rules = (Cost $ costs trees, trees)
