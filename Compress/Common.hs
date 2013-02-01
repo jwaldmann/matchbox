@@ -8,6 +8,8 @@ import TPDB.Pretty
 import TPDB.Plain.Write ()
 import Text.PrettyPrint.HughesPJ
 
+import qualified Data.Set as S
+
 import Data.Hashable 
 import GHC.Generics
 
@@ -30,21 +32,28 @@ essence d = ( parent d, position d, child d )
 
 hashed :: Hashable s => Digram s -> Digram s
 hashed d = d 
-    { _digram_hash = Data.Hashable.hash $ essence d }
+    { _digram_hash = Data.Hashable.hash $! essence d }
 
 instance Hashable sym => Hashable (Digram sym) where
     hashWithSalt s d = hash (s, _digram_hash d)
 
-instance Functor Digram where
-    fmap f d = d { parent = f $ parent d
+dmap f d = hashed
+             $ d { parent = f $ parent d
                  , child  = f $ child  d
                  }
+
+-- | URGH: we must call "hashable" here, but we can't
+-- (because of the "Hashable" constraint)
+-- instance Functor Digram where fmap = dmap
 
 instance Pretty sym => Pretty (Digram sym) where
     pretty d = brackets $ hcat [ pretty (parent d)
              , text "/", pretty (position d)
              , text "/", pretty (child d)
-             , text ".", pretty (child_arity d) ]
+             , text ".", pretty (child_arity d) 
+             -- just for debugging the hashing:
+             -- , text "#", pretty (_digram_hash d)
+             ]
 
 instance Pretty sym => Show (Digram sym) where
     show = render . pretty
@@ -89,13 +98,16 @@ instance Num Cost where
 data Sym o = Orig o | Dig (Digram (Sym o))  
     deriving (Eq, Ord, Show, Generic)
 
-instance Hashable o => Hashable (Sym o)
+instance Hashable o => Hashable (Sym o) where
+    hashWithSalt s c = case c of
+        Orig o -> hashWithSalt s $ hashWithSalt (0::Int) o
+        Dig  d -> hashWithSalt s $ hashWithSalt (1::Int) d
 
-
-instance Functor Sym where
-    fmap f s = case s of
+-- see remark on Functor Digram
+-- instance Functor Sym where fmap = smap
+smap f s = case s of
         Orig o -> Orig $ f o
-        Dig  d -> Dig $ fmap (fmap f) d
+        Dig  d -> Dig $ dmap (smap f) d
 
 instance Pretty o => Pretty (Sym o) where 
     pretty s = case s of

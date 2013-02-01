@@ -13,17 +13,18 @@ import TPDB.Pretty
 
 import qualified Data.Set as S
 import Control.Monad ( guard )
+import Data.Hashable
 
 z001 :: TRS Identifier Identifier
 Right z001 = TPDB.Plain.Read.trs 
     "(VAR x)(RULES a(a(b(b(x))))->b(b(b(a(a(a(x)))))))"
 
 -- | cf. corresponding code in TPDB.DP
-dp :: Ord s
+dp :: (Hashable s, Ord s)
    => TRS v (Sym s) 
    -> TRS v (Sym (Marked s))
 dp s =
-   let copy_deep = fmap (fmap Original)
+   let copy_deep = fmap (smap Original)
        mark_top (Node (Orig f) args) 
           = Node (Orig (Marked f)) 
           $ map copy_deep args
