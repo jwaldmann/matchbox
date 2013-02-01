@@ -18,9 +18,9 @@ data DigramSaving sym = DigramSaving { digram :: Digram sym
                                      , saving :: Int } deriving (Show, Eq, Ord)
                                  
 -- |Returns the digram with the highest saving, if there is such one
-select :: (Ord var, Ord sym) => [Term var sym] -> Maybe (Digram sym)
-select terms = bestDigram 
-             $ digramSavings (allDigrams terms) terms numVarsInChild
+select :: (Ord var, Ord sym) => Trees var sym -> Maybe (Digram sym)
+select trees = bestDigram 
+             $ digramSavings (allDigrams trees) (terms trees) numVarsInChild
 
 bestDigram :: (Ord sym) => S.Set (DigramSaving sym) -> Maybe (Digram sym)
 bestDigram digramSavings =

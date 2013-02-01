@@ -23,8 +23,8 @@ treeRePair = execState $ run $ treeRePairStep
 -- no more proper digrams are found.
 treeRePairStep :: (Ord var, Ord sym, Pretty sym) => TreeRePair var (Sym sym) ()
 treeRePairStep = do
-  terms <- gets terms
-  case select terms of
+  trees <- get
+  case select trees of
     Nothing     -> return ()
     Just digram -> traceShow digram 
                  $ replaceInTrees digram >> treeRePairStep

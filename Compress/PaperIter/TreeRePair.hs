@@ -9,7 +9,7 @@ import qualified Data.Map as M
 import           Data.Maybe (catMaybes)
 import           Data.STRef
 import           TPDB.Pretty (Pretty)
-import           Compress.Common (Trees,Sym(Dig),terms,position)
+import           Compress.Common (Trees,Sym(Dig),position)
 import qualified Compress.Common as C
 import           Compress.PaperIter.Common
 import           Compress.Paper.Digram (allDigrams,nonOverlappingOccurences)
@@ -30,7 +30,7 @@ initialize trees = do
 
   where 
     mkDigramMap treesS = do
-      datas <- mapM (mkDigramData treesS) $ S.toList $ allDigrams $ terms trees
+      datas <- mapM (mkDigramData treesS) $ S.toList $ allDigrams trees
       return $ M.fromList datas
 
     mkDigramData treesS digram = do 
