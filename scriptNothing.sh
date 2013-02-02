@@ -3,7 +3,7 @@
 pathMB="dist/build/mb/mb"
 pathFiles="data/filesPaper"
 
-options="--bits=3 --dp --parallel"
+options="--bits=3 --parallel"
 
 logfile_compress=all_nothing.log
 our_log=small_nothing.log
