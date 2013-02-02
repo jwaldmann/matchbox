@@ -1,4 +1,4 @@
-{-# language DeriveGeneric #-}
+{-# language NoMonomorphismRestriction #-}
 
 module Compress.Common
 where
@@ -11,7 +11,6 @@ import Text.PrettyPrint.HughesPJ
 import qualified Data.Set as S
 
 import Data.Hashable 
-import GHC.Generics
 
 import Control.Monad.RWS.Strict
 import Data.List ( partition )
@@ -103,7 +102,7 @@ instance Num Cost where
 
 -- | Symbol type
 data Sym o = Orig o | Dig (Digram (Sym o))  
-    deriving (Eq, Ord, Show, Generic)
+    deriving (Eq, Ord, Show)
 
 instance Hashable o => Hashable (Sym o) where
     hashWithSalt s c = case c of
@@ -151,10 +150,12 @@ expand_top t = case t of
 -- | list of all function symbols (including nested digrams)
 -- with arity
 -- in dependency order (members of nested digrams occur first),
-all_symbols :: ( Ord s )
+all_symbols = all_symbols_1
+
+all_symbols_0 :: ( Ord s )
             => [ Term v (Sym s) ] 
             -> [ (Sym s, Int) ]
-all_symbols ts = 
+all_symbols_0 ts = 
     let symbol f a = do
             done <- get
             when ( S.notMember f done ) $ do
@@ -169,6 +170,25 @@ all_symbols ts =
                 Var {} -> return ()
                 Node f args -> do symbol f (length args) ; forM_ args term
     in  snd $ evalRWS ( forM_ ts term ) () S.empty 
+
+all_symbols_1 ts =
+    -- this is rewritten to be (++) free
+    let sym (s,a) out = (s,a) : case s of
+             Orig o -> out
+             Dig  d -> sym (parent d, parent_arity d) 
+                     $ sym (child  d, child_arity d)  out
+        terms ts out = case ts of
+            [] -> out
+            t : ts -> term t $ terms ts out
+        term t out = case t of
+            Node s args -> sym (s, length args) $ terms args out
+            Var {} -> out
+        uniq known xs = case xs of
+           [] -> []
+           x : xs -> if S.member x known
+                     then uniq known xs
+                     else x : uniq (S.insert x known) xs
+    in  reverse $ uniq S.empty $ terms ts []
 
 deep_signature sys 
     = partition  ( \ s -> case s of (Orig {}, _) -> True ; _ -> False )
