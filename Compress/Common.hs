@@ -171,12 +171,14 @@ all_symbols_0 ts =
                 Node f args -> do symbol f (length args) ; forM_ args term
     in  snd $ evalRWS ( forM_ ts term ) () S.empty 
 
+-- this is rewritten to be (++) free
 all_symbols_1 ts =
-    -- this is rewritten to be (++) free
-    let sym (s,a) out = (s,a) : case s of
-             Orig o -> out
+    let -- note: output these in dependency order (nested symbols first)
+        sym (s,a) out = case s of
+             Orig o -> (s,a) : out
              Dig  d -> sym (parent d, parent_arity d) 
-                     $ sym (child  d, child_arity d)  out
+                     $ sym (child  d, child_arity d)  
+                     $ (s,a) : out
         terms ts out = case ts of
             [] -> out
             t : ts -> term t $ terms ts out
@@ -188,7 +190,7 @@ all_symbols_1 ts =
            x : xs -> if S.member x known
                      then uniq known xs
                      else x : uniq (S.insert x known) xs
-    in  reverse $ uniq S.empty $ terms ts []
+    in  uniq S.empty $ terms ts []
 
 deep_signature sys 
     = partition  ( \ s -> case s of (Orig {}, _) -> True ; _ -> False )
