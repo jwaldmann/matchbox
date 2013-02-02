@@ -18,6 +18,8 @@ import Data.List ( inits, tails, sortBy, minimumBy )
 import Data.Function ( on )
 import Data.Hashable
 
+import Debug.Trace
+
 type CC sym var 
     = (Ord sym, Hashable sym, Ord var, Pretty var, Pretty sym) 
 type Compressor sym var 
@@ -59,15 +61,15 @@ cost eval trees =
     + cost_digrams (extras trees)
 
 all_digrams = digrams True
-top_digrams = digrams False
+top_digrams = digrams_as_list False
 
 digrams :: CC sym var
         => Bool -> Trees var sym -> S.Set (Digram sym)
-digrams everywhere trees = S.fromList $ do
+digrams everywhere trees = 
+    S.fromList $ digrams_as_list everywhere trees
+
+digrams_as_list everywhere trees = do
     u <- roots trees
-    guard $ case everywhere of
-        True -> True
-        False -> strict u
     t <- [ lhs u, rhs u ]
     Node f fargs <- 
         if everywhere then subterms t else [t]
@@ -83,11 +85,30 @@ digrams everywhere trees = S.fromList $ do
 -- compress them from the top,
 -- not computing any cost.
 
-compress_tops trees = 
-    case S.toList $ top_digrams trees of
+compress_tops = compress_tops_1
+
+notrace s x = x
+
+compress_tops_0 trees = 
+    case top_digrams trees of
         [] -> trees
         dig : _ -> compress_tops 
+            $ notrace (unlines [ "dig: " ++ show dig 
+                             , "parent/child" ++ show (parent_arity dig, child_arity dig)
+                             ] )
             $ apply_all True dig trees
+
+compress_tops_1 trees = 
+    let h us = case us of
+            [] -> []
+            u : vs -> case top_digrams ( Trees { roots = [u] } ) of
+                [] -> u : h vs
+                dig : _ -> h 
+                    $ notrace (unlines [ "dig: " ++ show dig 
+                            , "parent/child" ++ show (parent_arity dig, child_arity dig)
+                             ] )
+                    $ roots $ apply_all True dig (Trees { roots = us } )
+   in   Trees { roots = h $ roots trees }
 
 -- * replacement 
 
