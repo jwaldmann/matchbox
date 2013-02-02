@@ -6,6 +6,7 @@ module MB.Matrix where
 import MB.Options
 import MB.Pretty
 
+import qualified MB.Count
 
 import TPDB.Data
 import TPDB.Pretty
@@ -51,6 +52,10 @@ handle encoded direct opts sys = do
     eprint $ pretty sys
     eprint $ show opts
 
+    let count = MB.Count.run $ do
+            system MB.Count.linear (dim opts) sys
+    print count
+
     out <- Satchmo.SAT.Mini.solve $ do
         let ldict = L.linear mdict
             mdict = M.matrix idict
@@ -82,6 +87,10 @@ handle_dp :: (Show s, Hashable s, Ord v, Show v, Pretty v, Pretty s, Ord s
 handle_dp encoded direct opts sys = do
     eprint $ pretty sys
     eprint $ show opts
+
+    let count = MB.Count.run $ do
+            system_dp MB.Count.linear (dim opts) sys
+    print count
 
     out <- Satchmo.SAT.Mini.solve $ do
         let ldict = L.linear mdict
@@ -177,7 +186,7 @@ system_dp dict dim sys = do
         -- FIXME: this is a hack:
         when ( L.domain dict == D.Arctic ) $ do
             s <- L.positive dict l -- wrong name
-            B.assert [s]
+            L.assert dict [s]
         return (f, l)
     funmap <- foldM (digger dict) ( M.fromList opairs ) digrams
     flags <- forM (rules sys) 
