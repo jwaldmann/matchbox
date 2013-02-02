@@ -29,6 +29,8 @@ import TPDB.Pretty ( pretty, Pretty )
 import Text.PrettyPrint.HughesPJ
 import TPDB.Data
 
+import qualified MB.Proof as P
+
 import System.Environment
 import System.IO
 import System.Console.GetOpt
@@ -42,13 +44,19 @@ import Debug.Trace
 transform_dp = transformer
       ( \ sys -> do
           return $ Compress.DP.dp sys ) 
-      ( \ sys proof -> vcat [ "DP transform"
-                            , nest 4 proof ] )
+      ( \ sys proof -> 
+          P.Proof { P.input = CC.expand_all_trs sys
+                  , P.claim = P.Top_Termination
+                  , P.reason = P.DP_Transform proof 
+                  } )
 
 transform_mirror = transformer
       ( \ sys -> TPDB.Mirror.mirror sys )
-      ( \ sys proof -> vcat [ "Mirror transform"
-                            , nest 4 proof ] )
+      ( \ sys proof ->
+          P.Proof { P.input = sys
+                  , P.claim = P.Termination
+                  , P.reason = P.Mirror_Transform proof 
+                  } )
 
 transformer_neutral = transformer
      ( \ sys -> return sys )
@@ -56,12 +64,18 @@ transformer_neutral = transformer
 
 compressor_fromtop = transformer
     ( \ sys ->  return $ Compress.DP.fromtop sys )
-    ( \ sys proof -> vcat [ "compressor: fromtop"
-                          , nest 4 proof ] )
+    ( \ sys proof -> P.Proof
+         { P.input = CC.expand_all_trs sys
+         , P.claim = P.Top_Termination
+         , P.reason = 
+              P.Equivalent "compress_fromtop" proof
+         } )
 
-compressor :: (Hashable s, Pretty s, Ord s, Show s, Ord v, Pretty v, Show v)
+compressor :: ( Hashable s, Pretty s, Ord s, Show s
+              , Ord v, Pretty v, Show v)
            => Compression
-           -> C.Lifter (TRS v s) (TRS v (CC.Sym s)) Doc
+           -> C.Lifter (TRS v s) (TRS v (CC.Sym s)) 
+               (P.Proof v s)
 compressor c = transformer 
     ( \ sys -> let (cost, rs) = ( case c of
                        O.None -> CS.nocompress 
@@ -72,32 +86,39 @@ compressor c = transformer
                in  return $ RS { rules = CC.roots rs
                                , separate = separate sys }
     )
-    ( \ sys proof -> vcat [ "compressor:" <+> text (show c)
-                          , nest 4 $ proof ] )
+    ( \ sys proof -> P.Proof
+         { P.input = sys
+         , P.claim = P.Termination
+         , P.reason = 
+              P.Equivalent (text $ show c) proof
+         } )
 
 simplex :: (Pretty v, Pretty s, Ord s, Ord v)
         => Bool -- ^ prove top termination?
-        -> C.Lifter (TRS v s) (TRS v s) Doc
-simplex top = remover "additive" 
+        -> C.Lifter (TRS v s) (TRS v s) (P.Proof v s)
+simplex top = remover_natural "additive" id
     $ \ sys -> do
          let out = MB.Additive.find top sys 
          return $ out 
 
+
 simplex_compress :: (Pretty v, Pretty s, Ord s, Ord v)
         => Bool -- ^ prove top termination?
-        -> C.Lifter (TRS v (CC.Sym s)) (TRS v (CC.Sym s)) Doc
-simplex_compress top = remover "additive" 
+        -> C.Lifter (TRS v (CC.Sym s)) (TRS v (CC.Sym s))
+             (P.Proof v s)
+simplex_compress top = 
+       remover_natural "additive" CC.expand_all_trs
     $ \ sys -> do
          let out = MB.Additive.find_compress top sys 
          return out
 
-
 matrix_natural_full opts = 
-      remover "matrix_natural_full"
+      remover_natural "matrix_natural_full" 
+                      CC.expand_all_trs
     $ MB.Matrix.handle I.binary_fixed I.direct opts
                  
 matrix_arctic_dp opts = 
-      remover "matrix_arctic_dp"
+      remover_arctic "matrix_arctic_dp" CC.expand_all_trs
     $ MB.Matrix.handle_dp A.unary_fixed A.direct opts
                  
 
@@ -115,9 +136,8 @@ cmatrix_dp opts =
           return $ matrix_arctic_dp
                  ( opts { dim = d } ) 
 
-
 simplexed_compress top cont 
-    = C.orelse no_strict_rules 
+    = C.orelse (no_strict_rules top CC.expand_all_trs)
     $ C.apply ( C.orelse (simplex_compress top) cont )
     $ simplexed_compress top cont
 
@@ -126,7 +146,9 @@ direct opts =
     $ simplexed_compress False 
     $ cmatrix opts 
 
-dp opts = 
+
+dp opts = undefined
+{-
       C.apply (compressor $  O.compression opts )
     $ C.apply transform_dp
     $ C.apply (case O.fromtop opts of
@@ -134,6 +156,7 @@ dp opts =
          False -> transformer_neutral )
     $ simplexed_compress True
     $ cmatrix_dp opts
+-}
 
 main = do
    hSetBuffering stdout LineBuffering
@@ -157,7 +180,7 @@ main = do
            case x of
                Nothing -> print $ text "MAYBE"
                Just out -> print $ vcat
-                 [ "YES" , out ]
+                 [ "YES" , pretty out ]
 
        (_,_,errs) -> do
            ioError $ userError $ concat errs

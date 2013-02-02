@@ -3,26 +3,28 @@
 
 module MB.Strategy where
 
+import MB.Proof
+
 import Control.Concurrent.Combine.Computer
 import Control.Concurrent.Combine.Lifter
 import qualified Control.Concurrent.Combine.Action as A
 
-import TPDB.Data
+import TPDB.Data hiding  (Termination)
 import TPDB.Plain.Write
 import TPDB.Pretty
 import Text.PrettyPrint.HughesPJ
 import Data.String
 
-type Prover v s = Computer (RS v s) Doc
+type Prover v s = Computer (TRS v s) (Proof v s)
 
-no_strict_rules :: (Pretty v, PrettyTerm s) 
-    => Prover v s
-no_strict_rules = \ sys -> 
+
+no_strict_rules top unpack = \ sys -> 
     if null $ strict_rules sys
-    then return $ vcat
-             [ "system:" <+> pretty sys
-             , "has no strict rules => is terminating"
-             ]
+    then return $ Proof 
+            { input = unpack sys
+            , claim = if top then Top_Termination
+                      else Termination
+            , reason = No_Strict_Rules }
     else fail "has strict rules"
 
 transformer fore back = \ sys -> do
@@ -32,15 +34,29 @@ transformer fore back = \ sys -> do
             out <- later sys'
             return $ back sys out
 
-remover :: ( PrettyTerm s, Pretty v, Pretty b )
+{-
+remover_natural :: ( PrettyTerm s, Pretty v, Pretty b )
         => Doc
-        -> ( RS v s -> IO (Maybe (b, RS v t)))
-        -> Lifter (RS v s) (RS v t) Doc 
-remover msg h = \ sys -> do
+        -> ( TRS v t -> TRS v s )
+        -> ( RS v s -> IO (Maybe (b, TRS v t)))
+        -> Lifter (TRS v s) (TRS v t) (Proof v s)
+-}
+remover_natural msg unpack h = \ sys -> do
     (m, sys') <- A.io $ h sys
     return $ \ k -> do
         out <- k sys'
-        return $ vcat [ "system:" <+> pretty sys
-                  , msg <+> pretty m
-                  , nest 2 out
-                  ]
+        return $ Proof 
+               { input = unpack sys
+               , claim = Termination
+               , reason = Matrix_Interpretation_Natural m out
+               }
+
+remover_arctic msg unpack h = \ sys -> do
+    (m, sys') <- A.io $ h sys
+    return $ \ k -> do
+        out <- k sys'
+        return $ Proof 
+               { input = unpack sys
+               , claim = Top_Termination
+               , reason = Matrix_Interpretation_Arctic m out
+               }
