@@ -23,8 +23,9 @@ topLevelDigrams (Node i is) = S.fromList
                             $ filter (not . isvar . snd)
                             $ zip [0..] is
   where
-    mkDigram (pos, Node j js) = hashed $
-       Digram { parent = i
+    mkDigram (pos, Node j js) = 
+       Digram { _digram_hash = hash ( i, pos, j )
+              , parent = i
               , parent_arity = (length is) 
               , position = pos 
               , child = j

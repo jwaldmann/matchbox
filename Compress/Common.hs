@@ -13,12 +13,12 @@ import qualified Data.Set as S
 import Data.Hashable 
 import GHC.Generics
 
-import Control.Monad.RWS
+import Control.Monad.RWS.Strict
 import Data.List ( partition )
 
 -- | Digram type
 data Digram sym = Digram
-     { _digram_hash :: Int 
+     { _digram_hash :: ! Int 
    -- ^ NOTE: this value comes first
    -- in order to speed up the derived Eq and Ord
    -- instances. For this to work properly,
@@ -41,7 +41,7 @@ hashed d = d
     { _digram_hash = Data.Hashable.hash $! essence d }
 
 instance Hashable sym => Hashable (Digram sym) where
-    hashWithSalt s d = hash (s, _digram_hash d)
+    hashWithSalt s d = hashWithSalt s $ _digram_hash d
 
 dmap f d = hashed
              $ d { parent = f $ parent d
@@ -158,13 +158,13 @@ all_symbols ts =
     let symbol f a = do
             done <- get
             when ( S.notMember f done ) $ do
-                 put $ S.insert f done
+                 put $! S.insert f done
                  case f of
                      Orig o -> return ()
                      Dig d  -> do
                           symbol (parent d) (parent_arity d)
                           symbol (child  d) (child_arity  d)
-                 tell [(f,a)]
+                 tell $! [(f,a)]
         term t = forM_ ( subterms t ) $ \ t -> case t of 
                 Var {} -> return ()
                 Node f args -> do symbol f (length args) ; forM_ args term

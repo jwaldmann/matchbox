@@ -81,7 +81,7 @@ simplex :: (Pretty v, Pretty s, Ord s, Ord v)
 simplex top = remover "additive" 
     $ \ sys -> do
          let out = MB.Additive.find top sys 
-         return out
+         return $ out 
 
 simplex_compress :: (Pretty v, Pretty s, Ord s, Ord v)
         => Bool -- ^ prove top termination?
@@ -90,7 +90,6 @@ simplex_compress top = remover "additive"
     $ \ sys -> do
          let out = MB.Additive.find_compress top sys 
          return out
-
 
 
 matrix_natural_full opts = 

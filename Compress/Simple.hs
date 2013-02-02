@@ -73,8 +73,9 @@ digrams everywhere trees = S.fromList $ do
         if everywhere then subterms t else [t]
     (i, a) <- zip [ position_index_start .. ] fargs
     Node g gargs <- return $ fargs !! (i - position_index_start)
-    return $ hashed $ Digram 
-       { parent = f, parent_arity = length fargs
+    return $ Digram 
+       { _digram_hash = hash ( f, i, g )
+       , parent = f, parent_arity = length fargs
        , position = i, child = g
        , child_arity = length gargs }
 

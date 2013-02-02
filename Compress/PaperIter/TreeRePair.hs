@@ -181,8 +181,9 @@ replaceByDigram treesS digram digramData = do
         Nothing   -> return Nothing
         Just pRef -> do
           p <- readSTRef pRef
-          return $ Just ( C.hashed $ C.Digram 
-              { C.parent = (symbol p) 
+          return $ Just (  C.Digram 
+              { C._digram_hash = hash ( symbol p, indexOfParent f, symbol f )
+              , C.parent = (symbol p) 
               , C.parent_arity = (arity p) 
               , C.position = (indexOfParent f)
               , C.child = (symbol f) 
@@ -204,8 +205,9 @@ replaceByDigram treesS digram digramData = do
             g <- peekS ref [i] >>= readSTRef
             return $ case g of
               VarS  {} -> Nothing
-              NodeS {} -> Just $ C.hashed $ C.Digram 
-                { C.parent = (symbol f) 
+              NodeS {} -> Just $ C.Digram 
+                { C._digram_hash = hash ( symbol f, i, symbol g )
+                , C.parent = (symbol f) 
                 , C.parent_arity = (arity f) 
                 , C.position = i 
                 , C.child = (symbol g) 
