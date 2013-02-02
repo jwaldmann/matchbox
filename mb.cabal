@@ -13,13 +13,14 @@ Executable mb
                     , containers == 0.5.*
                     , pretty == 1.1.*
                     , tpdb >= 0.6.4
-                    , hashable
                     , satchmo == 2.6.*
                     , satchmo-smt == 0.3.*
                     , mtl == 2.*
                     , array
                     , transformer-combinators
                     , hmatrix-glpk
+                    , ghc-prim
+                    , hashable                    
 
 Executable statistik
   Main-Is:          Statistik.hs
@@ -39,3 +40,5 @@ Executable paper
                     , tpdb >= 0.6.4
                     , hashable
                     , mtl == 2.*
+                    , ghc-prim
+                    , hashable

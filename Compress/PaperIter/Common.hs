@@ -53,7 +53,7 @@ onTermS f ref = readSTRef ref >>= return . f
 
 modifyTermS :: (TermS s var sym -> TermS s var sym) 
             -> TermSRef s var sym -> ST s ()
-modifyTermS = flip modifySTRef'
+modifyTermS = flip modifySTRef
 
 peekS :: TermSRef s var sym -> Position -> ST s (TermSRef s var sym)
 peekS ref position = case position of

@@ -3,10 +3,10 @@
 pathMB="dist/build/mb/mb"
 pathFiles="data/filesPaper"
 
-options="-C --bits=3 --parallel"
+options="--bits=3 -C --parallel --dp "
 
-logfile_compress=all_compress.log
-our_log=small_compress.log
+logfile_compress=all_Dp_Compress.log
+our_log=small_Dp_Compress.log
 
 touch $logfile_compress
 touch $our_log
