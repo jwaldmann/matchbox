@@ -5,9 +5,9 @@ dim=6
 
 export LD_LIBRARY_PATH=.
 
-./MB.exe \
+./MB.exe --cpf \
     --dim=$dim --bits=$bits \
-    --parallel --dp --compression-weak \
-    +RTS -N -M32G -K1G -RTS \
+    --parallel --dp-fromtop -C --mirror \
+    +RTS  -M32G -K1G -RTS \
     $1
 
