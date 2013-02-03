@@ -22,6 +22,8 @@ cabal install --extra-lib-dirs=/usr/local/lib --extra-include-dirs=/usr/local/in
 
 popd
 
+cabal install hmatrix-glpk --extra-lib-dirs=/usr/local/lib --extra-include-dirs=/usr/local/include
+
 for arch in satchmo smt-lib satchmo-smt haskell-tpdb transformer-combinators
 do
     git clone  https://github.com/jwaldmann/$arch.git
