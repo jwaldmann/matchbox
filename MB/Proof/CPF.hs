@@ -30,7 +30,8 @@ rtoc p = C.CertificationProblem
     { C.input = C.TrsInput { C.trsinput_trs = input p }
     , C.cpfVersion = "2.1"
     , C.proof = C.TrsTerminationProof $ proof $ reason p 
-    , C.origin = C.ProofOrigin $ C.Tool { C.name = "matchbox", C.version = "03-February-2013" }
+    , C.origin = C.ProofOrigin 
+               $ C.Tool { C.name = "matchbox", C.version = "03-February-2013" }
     }
 
 proof :: Reason Identifier Identifier
@@ -58,12 +59,14 @@ dpproof p = case reason p of
     No_Strict_Rules -> C.PIsEmpty
     Equivalent d p -> dpproof  p
     Matrix_Interpretation_Natural mia q -> 
-        C.RedPairProc { C.dp_orderingConstraintProof = ocp C.Naturals $ msharp mia
+        C.RedPairProc { C.dp_orderingConstraintProof 
+                      = ocp C.Naturals $ msharp mia
                       , C.red_pair_dps = C.DPS $ map rsharp $ rules $ input q
                       , C.redpairproc_dpProof = dpproof q
                       }
     Matrix_Interpretation_Arctic mia q -> 
-        C.RedPairProc { C.dp_orderingConstraintProof = ocp (C.Arctic C.Naturals) $ msharp mia
+        C.RedPairProc { C.dp_orderingConstraintProof 
+                      = ocp (C.Arctic C.Naturals) $ msharp mia
                       , C.red_pair_dps = C.DPS $ map rsharp $ rules $ input q
                       , C.redpairproc_dpProof = dpproof q
                       }
@@ -104,7 +107,7 @@ interpretation dom mi = C.Interpretation
 
 interpret dim ( s, v ) = C.Interpret
    { C.symbol = s
-   , C.arity = 1 -- what?
+   , C.arity = length $ L.lin v
    , C.value = fun dim v 
    }
                              
