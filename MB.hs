@@ -136,27 +136,28 @@ cmatrix_dp opts =
           return $ matrix_arctic_dp
                  ( opts { dim = d } ) 
 
+apply f k = \ sys -> do m <- f sys ; m k
+
 simplexed_compress top cont 
     = C.orelse (no_strict_rules top CC.expand_all_trs)
-    $ C.apply ( C.orelse (simplex_compress top) cont )
+    $ apply ( C.orelse (simplex_compress top) cont )
     $ simplexed_compress top cont
 
 direct opts =  
-      C.apply (compressor $  O.compression opts )
+      apply (compressor $  O.compression opts )
     $ simplexed_compress False 
     $ cmatrix opts 
 
 
-dp opts = undefined {-
-      C.apply (compressor $  O.compression opts )
-    $ C.apply transform_dp
-    $ C.apply (case O.fromtop opts of
+dp opts = 
+      apply (compressor $  O.compression opts )
+    $ apply transform_dp
+    $ apply (case O.fromtop opts of
          True  -> compressor_fromtop
          False -> transformer_neutral 
       )
     $ simplexed_compress True
     $ cmatrix_dp opts
--}
 
 main = do
    hSetBuffering stdout LineBuffering
@@ -171,7 +172,7 @@ main = do
 
            let m = case O.mirror opts of
                      False -> id
-                     True -> C.apply transform_mirror 
+                     True -> apply transform_mirror 
 
            let emit x = case x of
                    Nothing -> print $ text "MAYBE"
@@ -180,7 +181,7 @@ main = do
 
            case O.dp opts of
              False -> A.run ( m ( direct opts ) sys ) >>= emit
---             True  -> A.run ( m ( dp     opts ) sys ) >>= emit
+             True  -> A.run ( m ( dp     opts ) sys ) >>= emit
 
        (_,_,errs) -> do
            ioError $ userError $ concat errs
