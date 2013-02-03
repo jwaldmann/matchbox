@@ -43,10 +43,11 @@ data Reason v s = No_Strict_Rules
 -- * render as Doc
 
 instance (Pretty v, Pretty s) => Pretty (Proof v s) where
-    pretty p = vcat [ "system" <+> pretty ( input p )
-                    , "is" <+> pretty (claim p) <+> "because"
-                    , pretty (reason p)
-                    ]
+    pretty p = vcat 
+        [ "system" <+> pretty ( input p )
+        , "is" <+> pretty (claim p) <+> "because"
+        , pretty (reason p)
+        ]
 
 instance Pretty Claim where
     pretty c = case c of

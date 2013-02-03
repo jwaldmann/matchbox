@@ -5,6 +5,10 @@ module MB.Strategy where
 
 import MB.Proof
 
+import qualified Satchmo.SMT.Matrix as M
+import qualified Satchmo.SMT.Linear as L
+import qualified Satchmo.SMT.Exotic.Semiring.Arctic  as A
+
 import Control.Concurrent.Combine.Computer
 import Control.Concurrent.Combine.Lifter
 import qualified Control.Concurrent.Combine.Action as A
@@ -13,7 +17,8 @@ import TPDB.Data hiding  (Termination)
 import TPDB.Plain.Write
 import TPDB.Pretty
 import Text.PrettyPrint.HughesPJ
-import Data.String
+import qualified Data.Map as M
+
 
 type Prover v s = Computer (TRS v s) (Proof v s)
 
@@ -34,13 +39,13 @@ transformer fore back = \ sys -> do
             out <- later sys'
             return $ back sys out
 
-{-
-remover_natural :: ( PrettyTerm s, Pretty v, Pretty b )
+
+remover_natural :: (  )
         => Doc
-        -> ( TRS v t -> TRS v s )
-        -> ( RS v s -> IO (Maybe (b, TRS v t)))
-        -> Lifter (TRS v s) (TRS v t) (Proof v s)
--}
+        -> ( TRS v s -> TRS v u )
+        -> ( TRS v s -> IO (Maybe (M.Map u (L.Linear (M.Matrix Integer)), TRS v t)))
+        -> Lifter (TRS v s) (TRS v t) (Proof v u)
+
 remover_natural msg unpack h = \ sys -> do
     (m, sys') <- A.io $ h sys
     return $ \ k -> do
@@ -50,6 +55,12 @@ remover_natural msg unpack h = \ sys -> do
                , claim = Termination
                , reason = Matrix_Interpretation_Natural m out
                }
+
+remover_arctic :: ( )
+        => Doc
+        -> ( TRS v s -> TRS v u )
+        -> ( TRS v s -> IO (Maybe (M.Map u (L.Linear (M.Matrix (A.Arctic Integer))), TRS v t)))
+        -> Lifter (TRS v s) (TRS v t) (Proof v u)
 
 remover_arctic msg unpack h = \ sys -> do
     (m, sys') <- A.io $ h sys

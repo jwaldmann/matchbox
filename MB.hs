@@ -147,13 +147,13 @@ direct opts =
     $ cmatrix opts 
 
 
-dp opts = undefined
-{-
+dp opts = undefined {-
       C.apply (compressor $  O.compression opts )
     $ C.apply transform_dp
     $ C.apply (case O.fromtop opts of
          True  -> compressor_fromtop
-         False -> transformer_neutral )
+         False -> transformer_neutral 
+      )
     $ simplexed_compress True
     $ cmatrix_dp opts
 -}
@@ -169,18 +169,18 @@ main = do
 
            sys <- get_trs path
 
-           let m =case O.mirror opts of
+           let m = case O.mirror opts of
                      False -> id
                      True -> C.apply transform_mirror 
 
-           x <- case O.dp opts of
-                   False -> A.run ( m ( direct opts ) sys )
-                   True  -> A.run ( m ( dp     opts ) sys )
+           let emit x = case x of
+                   Nothing -> print $ text "MAYBE"
+                   Just out -> print $ vcat
+                        [ "YES" , pretty out ]
 
-           case x of
-               Nothing -> print $ text "MAYBE"
-               Just out -> print $ vcat
-                 [ "YES" , pretty out ]
+           case O.dp opts of
+             False -> A.run ( m ( direct opts ) sys ) >>= emit
+--             True  -> A.run ( m ( dp     opts ) sys ) >>= emit
 
        (_,_,errs) -> do
            ioError $ userError $ concat errs
