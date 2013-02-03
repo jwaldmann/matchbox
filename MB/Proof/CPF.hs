@@ -40,7 +40,7 @@ proof r = case r of
     No_Strict_Rules -> C.RIsEmpty
     Equivalent d p -> proof $ reason p
     DP_Transform p -> 
-            C.DpTrans { C.dptrans_dps = C.DPS $ map rsharp $ rules $ input  p
+            C.DpTrans { C.dptrans_dps = C.DPS $ map rsharp $ filter strict $ rules $ input  p
                         , C.markedSymbols = True
                         , C.dptrans_dpProof = dpproof p
                         }
@@ -61,13 +61,13 @@ dpproof p = case reason p of
     Matrix_Interpretation_Natural mia q -> 
         C.RedPairProc { C.dp_orderingConstraintProof 
                       = ocp C.Naturals $ msharp mia
-                      , C.red_pair_dps = C.DPS $ map rsharp $ rules $ input q
+                      , C.red_pair_dps = C.DPS $ map rsharp $ filter strict $ rules $ input q
                       , C.redpairproc_dpProof = dpproof q
                       }
     Matrix_Interpretation_Arctic mia q -> 
         C.RedPairProc { C.dp_orderingConstraintProof 
                       = ocp (C.Arctic C.Naturals) $ msharp mia
-                      , C.red_pair_dps = C.DPS $ map rsharp $ rules $ input q
+                      , C.red_pair_dps = C.DPS $ map rsharp $ filter strict $ rules $ input q
                       , C.redpairproc_dpProof = dpproof q
                       }
 
@@ -108,8 +108,20 @@ interpretation dom mi = C.Interpretation
 interpret dim ( s, v ) = C.Interpret
    { C.symbol = s
    , C.arity = length $ L.lin v
-   , C.value = fun dim v 
+   , C.value = fun dim $ blow_up dim v 
    }
+
+-- | this needs to be applied to interpretations of top symbols.
+-- in a many-sorted algebra, their result sort is A^1,
+-- but apparently CPF is one-sorted so we need A^dim.
+blow_up dim f = if L.to f == dim then f else
+    let blow m = case M.contents m of
+            [ row ] -> M.Matrix { M.dim = (dim, M.from m)
+                                , M.contents = replicate dim $ row
+                                }
+    in L.Linear { L.abs = blow $ L.abs f
+                , L.lin = map blow $ L.lin f
+                }
                              
 fun dim f = C.Polynomial $ C.Sum 
        $ C.Polynomial_Coefficient 
