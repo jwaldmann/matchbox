@@ -31,7 +31,8 @@ import Text.PrettyPrint.HughesPJ
 import TPDB.Data
 
 import qualified MB.Proof as P
-import Text.XML.HaXml.Pretty
+import Text.XML.HaXml.ByteStringPP ( document )
+import qualified Data.ByteString.Lazy.Char8 as DBS
 
 import System.Environment
 import System.IO
@@ -192,8 +193,9 @@ main = do
                    Just out -> do
                         putStrLn "YES"
                         case O.cpf opts of
-                            True -> print
-                              $ document $ P.tox $ P.rtoc out
+                            True -> DBS.putStrLn
+                              $ document 
+                              $ P.tox $ P.rtoc out
                             False -> print $ pretty out  
 
            case O.dp opts of
