@@ -21,6 +21,16 @@ instance Pretty Claim where
         Termination -> "terminating"
         Top_Termination -> "top-terminating"
 
+instance (Pretty s, Pretty e ) =>
+    Pretty (Interpretation s e) where
+       pretty i = vcat
+          [ hsep [ "matrix interpretation"
+                 , "domain", text ( show $ domain i)
+                 , "dimension", text (show $dimension i)
+                 ]
+          , pretty $ mapping i
+          ]
+
 instance (Pretty v, Pretty s) => Pretty (Reason v s) where
     pretty r = case r of
         No_Strict_Rules -> "it contains no strict rules"

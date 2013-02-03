@@ -3,10 +3,10 @@ module MB.Proof.Type where
 import TPDB.Data hiding ( Termination )
 import TPDB.DP (Marked )
 
-
-
+import Satchmo.SMT.Dictionary (Domain)
 import qualified Satchmo.SMT.Linear as L
 import qualified Satchmo.SMT.Matrix as M
+
 import qualified Satchmo.SMT.Exotic.Semiring.Arctic  as A
 
 import qualified Data.Map as M
@@ -22,15 +22,20 @@ data Proof v s = Proof
      , reason :: Reason v s
      }
 
+data Interpretation s e = Interpretation 
+        { dimension :: Int
+        , domain :: Domain
+        , mapping :: M.Map s (L.Linear (M.Matrix e)) 
+        }
+
 data Reason v s = No_Strict_Rules
      | Equivalent Doc (Proof v s)
      | DP_Transform (Proof v (Marked s ))
      | Mirror_Transform (Proof v s)
-     | Matrix_Interpretation_Natural 
-           (M.Map s (L.Linear (M.Matrix Integer)))
-           (Proof v s)
+     | Matrix_Interpretation_Natural
+         (Interpretation s Integer) (Proof v s)
      | Matrix_Interpretation_Arctic  
-           (M.Map s (L.Linear (M.Matrix (A.Arctic Integer))) )
+         (Interpretation s (A.Arctic Integer))
            (Proof v s)
 
 

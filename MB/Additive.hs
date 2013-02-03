@@ -71,7 +71,7 @@ mkinter opt sig fm = M.fromList $ do
     return ( c, L.Linear { L.dim = (1,1)
                          , L.abs = M.Matrix { M.dim = (1,1), M.contents = [[w]] }
                          , L.lin = replicate ( sig M.! c ) 
-                                 $ M.Unit { M.dim = (1,1) } 
+                                 $ M.Matrix { M.dim = (1,1), M.contents = [[1]] } 
                          } )
 
 

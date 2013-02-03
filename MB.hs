@@ -21,6 +21,7 @@ import qualified Compress.Paper as CP
 import qualified MB.Matrix 
 import qualified Satchmo.SMT.Integer as I
 import qualified Satchmo.SMT.Arctic  as A
+import Satchmo.SMT.Dictionary (Domain(..))
 
 import qualified TPDB.DP
 import qualified TPDB.Mirror
@@ -30,6 +31,7 @@ import Text.PrettyPrint.HughesPJ
 import TPDB.Data
 
 import qualified MB.Proof as P
+import Text.XML.HaXml.Pretty
 
 import System.Environment
 import System.IO
@@ -97,10 +99,13 @@ simplex :: (Pretty v, Pretty s, Ord s, Ord v)
         => Bool -- ^ prove top termination?
         -> C.Lifter (TRS v s) (TRS v s) (P.Proof v s)
 simplex top = remover_natural "additive" id
-    $ \ sys -> do
-         let out = MB.Additive.find top sys 
-         return $ out 
-
+    $ \ sys -> return $ do
+         (f,sys') <- MB.Additive.find top sys 
+         return ( P.Interpretation
+             { P.dimension = 1
+             , P.domain = Int
+             , P.mapping = f
+             } , sys' )
 
 simplex_compress :: (Pretty v, Pretty s, Ord s, Ord v)
         => Bool -- ^ prove top termination?
@@ -108,9 +113,13 @@ simplex_compress :: (Pretty v, Pretty s, Ord s, Ord v)
              (P.Proof v s)
 simplex_compress top = 
        remover_natural "additive" CC.expand_all_trs
-    $ \ sys -> do
-         let out = MB.Additive.find_compress top sys 
-         return out
+    $ \ sys -> return $ do
+         (f,sys') <- MB.Additive.find_compress top sys 
+         return ( P.Interpretation
+             { P.dimension = 1
+             , P.domain = Int
+             , P.mapping = f
+             } , sys' )
 
 matrix_natural_full opts = 
       remover_natural "matrix_natural_full" 
@@ -176,8 +185,12 @@ main = do
 
            let emit x = case x of
                    Nothing -> print $ text "MAYBE"
-                   Just out -> print $ vcat
-                        [ "YES" , pretty out ]
+                   Just out -> do
+                        putStrLn "YES"
+                        case O.cpf opts of
+                            True -> print
+                              $ document $ P.tox $ P.rtoc out
+                            False -> print $ pretty out  
 
            case O.dp opts of
              False -> A.run ( m ( direct opts ) sys ) >>= emit

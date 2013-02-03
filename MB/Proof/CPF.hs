@@ -10,6 +10,7 @@ import MB.Proof.Type
 import qualified TPDB.CPF.Proof.Type as C
 import qualified TPDB.CPF.Proof.Xml 
 
+import Satchmo.SMT.Dictionary (Domain (..))
 import qualified Satchmo.SMT.Linear as L
 import qualified Satchmo.SMT.Matrix as M
 import qualified Satchmo.SMT.Exotic.Semiring.Arctic  as A
@@ -19,6 +20,7 @@ import Text.XML.HaXml.XmlContent
 
 import Data.Array
 import Data.Typeable
+import qualified Data.List
 
 tox = TPDB.CPF.Proof.Xml.tox
 
@@ -35,6 +37,7 @@ proof :: Reason Identifier Identifier
       -> C.TrsTerminationProof
 proof r = case r of
     No_Strict_Rules -> C.RIsEmpty
+    Equivalent d p -> proof $ reason p
     DP_Transform p -> 
             C.DpTrans { C.dptrans_dps = C.DPS $ map rsharp $ rules $ input  p
                         , C.markedSymbols = True
@@ -43,13 +46,19 @@ proof r = case r of
     Mirror_Transform p -> C.StringReversal { C.trs = input  p
                                     , C.trsTerminationProof = proof $ reason p
                                     }
+    Matrix_Interpretation_Natural min q -> 
+        C.RuleRemoval { C.rr_orderingConstraintProof = ocp C.Naturals min
+                      , C.trs = input q
+                      , C.trsTerminationProof = proof $ reason q
+                      }
 
 dpproof :: Proof Identifier (Marked Identifier) 
         -> C.DpProof
 dpproof p = case reason p of
     No_Strict_Rules -> C.PIsEmpty
-    Matrix_Interpretation_Natural min q -> 
-        C.RedPairProc { C.dp_orderingConstraintProof = ocp C.Naturals $ msharp min
+    Equivalent d p -> dpproof  p
+    Matrix_Interpretation_Natural mia q -> 
+        C.RedPairProc { C.dp_orderingConstraintProof = ocp C.Naturals $ msharp mia
                       , C.red_pair_dps = C.DPS $ map rsharp $ rules $ input q
                       , C.redpairproc_dpProof = dpproof q
                       }
@@ -59,17 +68,14 @@ dpproof p = case reason p of
                       , C.redpairproc_dpProof = dpproof q
                       }
 
-deriving instance Eq  a => Eq  (C.Sharp a)
-deriving instance Ord a => Ord (C.Sharp a)
-
 
 sharp k =  case k of
             Original o -> C.Plain o
             Marked   o -> C.Sharp o
 
-msharp m = M.fromList $ do
-    ( k, v ) <- M.toList m
-    return (sharp k, v)
+msharp m = m { mapping = M.fromList $ do
+    ( k, v ) <- M.toList $ mapping m
+    return (sharp k, v) }
 
 rsharp u = u { lhs = fmap sharp $ lhs u
              , rhs = fmap sharp $ rhs u
@@ -80,40 +86,44 @@ ocp dom mi =
 
 interpretation :: (XmlContent s, C.ToExotic e)
                => C.Domain 
-    -> M.Map s (L.Linear (M.Matrix e))
+    -> Interpretation s e
     -> C.Interpretation 
 interpretation dom mi = C.Interpretation
     { C.interpretation_type = C.Matrix_Interpretation
-            { C.domain =  dom
-            , C.dimension = 42  -- FIXME
+            { C.domain = case domain mi of
+                  Int -> C.Naturals
+                  Arctic -> C.Arctic C.Naturals
+                  Tropical -> C.Tropical C.Naturals
+            , C.dimension = dimension mi
             , C.strictDimension = 1 -- FIXME
             }
-    , C.interprets = 
-          map interpret $ M.toList mi
+    , C.interprets = map (interpret $ dimension mi)
+            $ M.toList $ mapping mi
     }
 
-{-
-domain :: Domain -> C.Domain
-domain d = case d of
-    Natural -> C.Naturals
-    Arctic -> C.Arctic C.Naturals
-    Tropical -> C.Tropical C.Naturals
--}
 
-
-
-interpret  ( s, v ) = C.Interpret
+interpret dim ( s, v ) = C.Interpret
    { C.symbol = s
    , C.arity = 1 -- what?
-   , C.value = fun  v 
+   , C.value = fun dim v 
    }
                              
-fun  f = C.Polynomial $ C.Sum 
-       $ map C.Polynomial_Coefficient 
-       $ vector  ( column 0 $ L.abs f ) 
-       : map ( matrix  ) ( L.lin f )
+fun dim f = C.Polynomial $ C.Sum 
+       $ C.Polynomial_Coefficient 
+              ( absolute dim $ L.abs f ) 
+       : do (k,m) <- zip [ 1 .. ] $ L.lin f 
+            return $ C.Product 
+                   [ C.Polynomial_Coefficient $ matrix m
+                   , C.Polynomial_Variable $ show k
+                   ]
+
+absolute dim m = vector
+         $ map ( \ [e] -> e )
+         $ M.contents m
 
 matrix  m = C.Matrix $ map ( vector  ) 
+        -- CETA uses column major representation??
+        $ Data.List.transpose 
         $ M.contents m
 
 column 0 m = map head $ M.contents m

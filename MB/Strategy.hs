@@ -43,7 +43,7 @@ transformer fore back = \ sys -> do
 remover_natural :: (  )
         => Doc
         -> ( TRS v s -> TRS v u )
-        -> ( TRS v s -> IO (Maybe (M.Map u (L.Linear (M.Matrix Integer)), TRS v t)))
+        -> ( TRS v s -> IO (Maybe (Interpretation u Integer, TRS v t)))
         -> Lifter (TRS v s) (TRS v t) (Proof v u)
 
 remover_natural msg unpack h = \ sys -> do
@@ -59,7 +59,7 @@ remover_natural msg unpack h = \ sys -> do
 remover_arctic :: ( )
         => Doc
         -> ( TRS v s -> TRS v u )
-        -> ( TRS v s -> IO (Maybe (M.Map u (L.Linear (M.Matrix (A.Arctic Integer))), TRS v t)))
+        -> ( TRS v s -> IO (Maybe (Interpretation u (A.Arctic Integer), TRS v t)))
         -> Lifter (TRS v s) (TRS v t) (Proof v u)
 
 remover_arctic msg unpack h = \ sys -> do

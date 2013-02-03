@@ -12,7 +12,7 @@ Executable mb
   Build-Depends:      base >= 4.2 && < 5.0
                     , containers == 0.5.*
                     , pretty == 1.1.*
-                    , tpdb >= 0.6.4
+                    , tpdb >= 0.6.5
                     , satchmo == 2.6.*
                     , satchmo-smt == 0.3.*
                     , mtl == 2.*
@@ -28,7 +28,7 @@ Executable statistik
   Build-Depends:      base >= 4.2 && < 5.0
                     , containers == 0.5.*
                     , directory == 1.*
-                    , tpdb >= 0.6.4
+                    , tpdb >= 0.6.5
                     , hashable
 
 Executable paper
@@ -37,7 +37,7 @@ Executable paper
   Build-Depends:      base >= 4.2 && < 5.0
                     , containers == 0.5.*
                     , pretty == 1.1.*
-                    , tpdb >= 0.6.4
+                    , tpdb >= 0.6.5
                     , hashable
                     , mtl == 2.*
                     , ghc-prim

@@ -5,6 +5,7 @@ module MB.Matrix where
 
 import MB.Options
 import MB.Pretty
+import MB.Proof (Interpretation (..))
 
 import qualified MB.Count
 
@@ -46,7 +47,7 @@ handle :: (Show s, Hashable s, Ord v, Show v, Pretty v, Pretty s, Ord s
        => (Int -> D.Dictionary Satchmo.SAT.Mini.SAT num val B.Boolean )
        -> D.Dictionary (Either String) val val Bool
        -> Options -> TRS v (CC.Sym s)
-       -> IO ( Maybe ( M.Map s (L.Linear (M.Matrix val))
+       -> IO ( Maybe ( Interpretation s val
                      , TRS v (CC.Sym s)))
 handle encoded direct opts sys = do
     eprint $ pretty sys
@@ -54,7 +55,7 @@ handle encoded direct opts sys = do
 
     let count = MB.Count.run $ do
             system MB.Count.linear (dim opts) sys
-    print count
+    hPutStrLn stderr $ show count
 
     out <- Satchmo.SAT.Mini.solve $ do
         let ldict = L.linear mdict
@@ -68,7 +69,13 @@ handle encoded direct opts sys = do
             eprint $ pretty f
             let dict = L.linear $ M.matrix direct
             case remaining_compressed False dict (dim opts) f sys of
-                Right sys' -> return $ Just ( f, sys' )
+                Right sys' -> return 
+                   $ Just ( Interpretation 
+                            { dimension = dim opts
+                            , domain = D.domain direct
+                            , mapping = f
+                            }
+                          , sys' )
                 Left err -> error $ render $ vcat
                     [ "verification error"
                     , "input system: " <+> pretty sys
@@ -82,7 +89,7 @@ handle_dp :: (Show s, Hashable s, Ord v, Show v, Pretty v, Pretty s, Ord s
        => (Int -> D.Dictionary Satchmo.SAT.Mini.SAT num val B.Boolean )
        -> D.Dictionary (Either String) val val Bool
        -> Options -> TRS v (CC.Sym (TPDB.DP.Marked s))
-       -> IO ( Maybe ( M.Map (TPDB.DP.Marked s) (L.Linear (M.Matrix val))
+       -> IO ( Maybe ( Interpretation (TPDB.DP.Marked s) val
                      , TRS v (CC.Sym (TPDB.DP.Marked s))))
 handle_dp encoded direct opts sys = do
     eprint $ pretty sys
@@ -90,7 +97,7 @@ handle_dp encoded direct opts sys = do
 
     let count = MB.Count.run $ do
             system_dp MB.Count.linear (dim opts) sys
-    print count
+    hPutStrLn stderr $ show count
 
     out <- Satchmo.SAT.Mini.solve $ do
         let ldict = L.linear mdict
@@ -104,7 +111,13 @@ handle_dp encoded direct opts sys = do
             eprint $ pretty f
             let dict = L.linear $ M.matrix direct 
             case remaining_compressed True dict (dim opts) f sys of
-                Right sys' -> return $ Just ( f, sys' )
+                Right sys' -> return 
+                   $ Just ( Interpretation 
+                            { dimension = dim opts
+                            , domain = D.domain direct
+                            , mapping = f
+                            }
+                          , sys' )
                 Left err -> error $ render $ vcat
                     [ "verification error"
                     , "input system: " <+> pretty sys

@@ -16,6 +16,7 @@ data Options =
              , mirror :: Bool
              , parallel :: Bool
              , printStatistics :: Bool
+             , cpf :: Bool
              }
     deriving Show
 
@@ -27,6 +28,7 @@ options0 = Options
          , mirror = False
          , parallel = False
          , printStatistics = False
+         , cpf = False
          }
 
 options = 
@@ -49,11 +51,16 @@ options =
     , Option [ 'p' ] [ "dp" ]
        ( NoArg ( \ opts -> opts { dp = True })) "dependency pairs transformation"   
 
-    , Option [ 'p' ] [ "dp-fromtop" ]
+    , Option [ 'P' ] [ "dp-fromtop" ]
        ( NoArg ( \ opts -> opts { dp = True, fromtop = True })) "dependency pairs transformation and then compression from the top"   
 
     , Option [     ] [ "parallel" ]
        ( NoArg ( \ opts -> opts { parallel = True })) "start threads for different dimensions in parallel"
     , Option [ 's' ] [ "printStatistics" ]
        ( NoArg ( \ opts -> opts { printStatistics = True })) "print some statistics"   
+
+
+    , Option [ 'c' ] [ "cpf" ]
+       ( NoArg ( \ opts -> opts { cpf = True }))
+       "proof output in CPF (XML) format"
     ]
