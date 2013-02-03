@@ -181,7 +181,11 @@ main = do
 
            let m = case O.mirror opts of
                      False -> id
-                     True -> apply transform_mirror 
+                     True -> -- apply transform_mirror 
+                         \ strat  -> C.parallel
+                             [ strat
+                             , apply transform_mirror strat
+                             ]
 
            let emit x = case x of
                    Nothing -> print $ text "MAYBE"
