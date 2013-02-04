@@ -9,7 +9,6 @@ import qualified Satchmo.SMT.Linear as L
 import qualified Satchmo.SMT.Exotic.Semiring as S
 
 import Control.Monad.State.Strict
-import Text.PrettyPrint.HughesPJ
 import qualified Data.Map.Strict as M
 
 data Count =

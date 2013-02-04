@@ -1,0 +1,67 @@
+Name: matchbox
+Version: 1.0.0
+Cabal-Version: >= 1.9.2
+License: GPL
+Build-type: Simple
+Author: Johannes Waldmann, Eric Noeth, Alexander Bau
+Maintainer: Johannes Waldmann, Eric Noeth, Alexander Bau
+
+homepage:      http://github.com/jwaldmann/matchbox/
+bug-reports:   http://github.com/jwaldmann/matchbox/issues/
+
+synopsis: termination of rewriting, 
+       matrix interpretation, tree compression
+
+description: 
+  This program proves termination of rewriting systems.
+  .
+  This is derived from 
+  <http://dfa.imn.htwk-leipzig.de/matchbox/>. 
+  The intention is to keep the main program small, 
+  by moving re-usable components to libraries
+  (haskell-tpdb, satchmo-smt).
+  .
+  Input is in TPDB syntax (plain or XTC),
+  output is proof trace (textual, CPF).
+  .
+  Methods used: Matrix interpretations over natural
+  and arctic numbers, dependency pairs transformation,
+  compression of rewriting systems.
+  .
+  Constraint solvers used: 
+  glpk linear programming solver, minisat SAT solver.
+  .
+  Installation: basically just @cabal install@ 
+  but you need current versions of some libraries
+  (from github, not from hackage). See @build-all.sh@.
+  .
+  Usage:
+  > matchbox --help
+  > matchbox --bits=3 --dim=4 -C data/z001.srs
+  > matchbox --bits=5 --dim=4 -C --dp-fromtop --cpf data/z002.srs | grep -v YES | ceta /dev/stdin
+  (requires <http://cl-informatik.uibk.ac.at/software/ceta/>)
+  .
+  Note: due to a mis-feature of glpk, 
+  you cannot use both @--mirror@ and @+RTS -N@, 
+  see <https://github.com/albertoruiz/hmatrix/issues/32>
+
+source-repository head
+  type: git
+  location: git://github.com/jwaldmann/matchbox.git
+
+Executable matchbox
+  Main-Is:          MB.hs
+  Ghc-options:        -W -O2 -fno-warn-incomplete-patterns -threaded -rtsopts
+  Build-Depends:      base >= 4.2 && < 5.0
+                    , containers >= 0.5
+                    , tpdb >= 0.7
+                    , HaXml
+                    , satchmo == 2.6.*
+                    , satchmo-smt == 0.3.*
+                    , mtl == 2.*
+                    , array
+                    , transformer-combinators
+                    , hmatrix-glpk
+                    , ghc-prim
+                    , hashable                    
+
