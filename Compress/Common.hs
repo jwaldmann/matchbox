@@ -6,7 +6,7 @@ where
 import TPDB.Data
 import TPDB.Pretty
 import TPDB.Plain.Write ()
-import Text.PrettyPrint.HughesPJ
+-- import Text.PrettyPrint.HughesPJ
 
 import qualified Data.Set as S
 

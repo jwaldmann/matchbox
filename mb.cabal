@@ -12,8 +12,8 @@ Executable mb
   Build-Depends:      base >= 4.2 && < 5.0
                     , containers == 0.5.*
                     , pretty == 1.1.*
-                    , tpdb >= 0.6.5
-                    , HaXml, wl-pprint
+                    , tpdb >= 0.7.0
+                    , HaXml
                     , satchmo == 2.6.*
                     , satchmo-smt == 0.3.*
                     , mtl == 2.*
@@ -29,7 +29,7 @@ Executable statistik
   Build-Depends:      base >= 4.2 && < 5.0
                     , containers == 0.5.*
                     , directory == 1.*
-                    , tpdb >= 0.6.5
+                    , tpdb >= 0.7.0
                     , hashable
 
 Executable paper
@@ -37,8 +37,7 @@ Executable paper
   Ghc-options:        -W -fno-warn-incomplete-patterns
   Build-Depends:      base >= 4.2 && < 5.0
                     , containers == 0.5.*
-                    , pretty == 1.1.*
-                    , tpdb >= 0.6.5
+                    , tpdb >= 0.7.0
                     , hashable
                     , mtl == 2.*
                     , ghc-prim

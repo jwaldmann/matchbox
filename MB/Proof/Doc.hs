@@ -5,7 +5,7 @@ module MB.Proof.Doc where
 import MB.Proof.Type
 
 import TPDB.Plain.Write ()
-import Text.PrettyPrint.HughesPJ
+-- import Text.PrettyPrint.HughesPJ
 import TPDB.Pretty
 import MB.Pretty () -- instances
 

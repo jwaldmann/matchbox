@@ -12,7 +12,7 @@ import qualified Satchmo.SMT.Integer as I
 import qualified Satchmo.SMT.Linear as L
 import qualified Satchmo.SMT.Matrix as M
 
-import Text.PrettyPrint.HughesPJ (render, vcat, hsep, ( <+>), text )
+-- import Text.PrettyPrint.HughesPJ (render, vcat, hsep, ( <+>), text )
 import qualified Data.Map as M
 import Data.List ( transpose )
 
@@ -49,11 +49,11 @@ beside sep x y = vcat $
     in    take (max (length xs) (length ys))
         $ zipWith merge (xs ++ repeat "") (ys ++ repeat "")
 
-instance Pretty Integer where pretty = text . show
+-- instance Pretty Integer where pretty = text . show
 
 instance Pretty a => Pretty (A.Arctic a) where
     pretty a = case a of
-        A.Minus_Infinite -> text "-"
+        A.Minus_Infinite -> "-"
         A.Finite x -> pretty x
 
 eprint = hPutStrLn stderr . show

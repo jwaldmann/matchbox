@@ -10,7 +10,7 @@ import qualified Satchmo.SMT.Matrix as M
 import qualified Satchmo.SMT.Exotic.Semiring.Arctic  as A
 
 import qualified Data.Map as M
-import Text.PrettyPrint.HughesPJ
+import TPDB.Pretty ( Doc )
 
 -- * the data type
 

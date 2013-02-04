@@ -16,7 +16,7 @@ import qualified Control.Concurrent.Combine.Action as A
 import TPDB.Data hiding  (Termination)
 import TPDB.Plain.Write
 import TPDB.Pretty
-import Text.PrettyPrint.HughesPJ
+-- import Text.PrettyPrint.HughesPJ
 import qualified Data.Map as M
 
 

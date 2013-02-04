@@ -27,8 +27,7 @@ import qualified TPDB.DP
 import qualified TPDB.Mirror
 import TPDB.Input ( get_trs )
 
-import Text.PrettyPrint.HughesPJ
-import TPDB.Pretty ( pretty, Pretty )
+import TPDB.Pretty 
 
 import TPDB.Data
 
@@ -37,9 +36,8 @@ import qualified MB.Proof as P
 -- import Text.XML.HaXml.ByteStringPP ( document )
 -- import qualified Data.ByteString.Lazy.Char8 as DBS
 
-import Text.PrettyPrint.Leijen 
-       ( displayIO, renderCompact)
-import HaXml.Pretty ( document )
+
+import TPDB.Xml.Pretty ( document )
 
 import System.Environment
 import System.IO

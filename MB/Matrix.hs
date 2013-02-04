@@ -29,7 +29,7 @@ import qualified Data.Map as M
 import qualified Data.Set as S
 import Control.Monad ( forM, void, foldM )
 import Control.Monad.Identity
-import Text.PrettyPrint.HughesPJ (render, vcat, hsep, ( <+>), text )
+-- import Text.PrettyPrint.HughesPJ (render, vcat, hsep, ( <+>), text )
 import System.IO
 
 import Data.Hashable

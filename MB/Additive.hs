@@ -26,8 +26,8 @@ import Data.Map ( Map )
 import qualified Data.Map as M
 
 import Control.Monad (guard, when)
-import Text.PrettyPrint.HughesPJ
-import TPDB.Pretty (pretty, Pretty (..))
+-- import Text.PrettyPrint.HughesPJ
+import TPDB.Pretty 
 import Data.List ( sort )
 
 is_linear sys = and $ do
@@ -176,5 +176,3 @@ compress_continuation sys top dict dim int double_int expsys =
                     , "message:" <+> vcat (map text $ lines  err)
                     ]
 
-instance Pretty Double where 
-    pretty = text . show
