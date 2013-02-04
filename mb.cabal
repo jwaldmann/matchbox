@@ -13,7 +13,7 @@ Executable mb
                     , containers == 0.5.*
                     , pretty == 1.1.*
                     , tpdb >= 0.6.5
-                    , HaXml == 1.23.3
+                    , HaXml, wl-pprint
                     , satchmo == 2.6.*
                     , satchmo-smt == 0.3.*
                     , mtl == 2.*

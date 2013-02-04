@@ -26,13 +26,20 @@ import Satchmo.SMT.Dictionary (Domain(..))
 import qualified TPDB.DP
 import qualified TPDB.Mirror
 import TPDB.Input ( get_trs )
-import TPDB.Pretty ( pretty, Pretty )
+
 import Text.PrettyPrint.HughesPJ
+import TPDB.Pretty ( pretty, Pretty )
+
 import TPDB.Data
 
 import qualified MB.Proof as P
-import Text.XML.HaXml.ByteStringPP ( document )
-import qualified Data.ByteString.Lazy.Char8 as DBS
+
+-- import Text.XML.HaXml.ByteStringPP ( document )
+-- import qualified Data.ByteString.Lazy.Char8 as DBS
+
+import Text.PrettyPrint.Leijen 
+       ( displayIO, renderCompact)
+import HaXml.Pretty ( document )
 
 import System.Environment
 import System.IO
@@ -193,7 +200,10 @@ main = do
                    Just out -> do
                         putStrLn "YES"
                         case O.cpf opts of
-                            True -> DBS.putStrLn
+                            True -> 
+                              -- DBS.putStrLn 
+                              displayIO stdout
+                              $ renderCompact
                               $ document 
                               $ P.tox $ P.rtoc out
                             False -> print $ pretty out  
