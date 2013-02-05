@@ -133,6 +133,7 @@ expand_all_trs sys = RS
     { rules = map (fmap expand_all) $ rules sys 
     , separate = separate sys
     }
+
     
 -- | expand digrams until the top symbol
 -- is an original symbol.

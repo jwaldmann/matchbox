@@ -76,3 +76,24 @@ positions t = ( [], t ) : case expand_top t of
             return ( k : p , t' )
     _ -> []
 
+
+lift_marks_trs :: Hashable o
+               => TRS v (Sym (Marked o))
+           -> TRS v (Marked (Sym o))
+lift_marks_trs sys = RS
+    { rules = map (fmap $ fmap lift_marks) $ rules sys 
+    , separate = separate sys
+    }
+
+
+lift_marks :: Hashable o
+           => Sym (Marked o)
+           -> Marked (Sym o)
+lift_marks s = case s of
+     Orig (Marked f) -> Marked (Orig f)
+     Orig (Original f) -> Original (Orig f)
+     Dig d -> case ( lift_marks $ parent d
+                   , lift_marks $ child d ) of
+         (Marked f, Original g) -> Marked $ Dig 
+             $ hashed $ d { parent = f, child = g }
+             

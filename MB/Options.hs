@@ -13,6 +13,7 @@ data Options =
              , compression :: Compression
              , dp :: Bool
              , fromtop :: Bool
+             , naive :: Bool
              , mirror :: Bool
              , parallel :: Bool
              , printStatistics :: Bool
@@ -25,6 +26,7 @@ options0 = Options
          , compression = None
          , dp = False 
          , fromtop = False
+         , naive = False
          , mirror = False
          , parallel = False
          , printStatistics = False
@@ -53,6 +55,9 @@ options =
 
     , Option [ 'P' ] [ "dp-fromtop" ]
        ( NoArg ( \ opts -> opts { dp = True, fromtop = True })) "dependency pairs transformation and then compression from the top"   
+
+    , Option [ 'n' ] [ "dp-naive" ]
+       ( NoArg ( \ opts -> opts { dp = True, naive = True })) "apply compression after dependency pairs transformation"   
 
     , Option [     ] [ "parallel" ]
        ( NoArg ( \ opts -> opts { parallel = True })) "start threads for different dimensions in parallel"

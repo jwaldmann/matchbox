@@ -70,6 +70,9 @@ transformer_neutral = transformer
      ( \ sys -> return sys )
      ( \ sys proof -> proof )
 
+compressor_fromtop 
+    :: (Pretty v, Ord v, Ord s, Hashable s, Pretty s ) 
+    => Transformer v (CC.Sym s) (CC.Sym s) s
 compressor_fromtop = transformer
     ( \ sys ->  return $ Compress.DP.fromtop sys )
     ( \ sys proof -> P.Proof
@@ -79,11 +82,32 @@ compressor_fromtop = transformer
               P.Equivalent "compress_fromtop" proof
          } )
 
+compressor_naive
+    :: (Pretty v, Ord v, Ord s, Hashable s, Pretty s ) 
+    => Transformer v (CC.Sym s) (CC.Sym s) s
+compressor_naive = transformer
+    ( \ sys -> do
+        let sys0 = CC.expand_all_trs sys
+            (_, rs1) = CP.compress CP.Iterative 
+                     $ rules sys0
+        return -- $ Compress.DP.lift_marks_trs
+               $ RS { rules = CC.roots rs1 
+                    , separate = separate sys
+                    } )
+    ( \ sys proof -> P.Proof
+         { P.input = CC.expand_all_trs sys
+         , P.claim = P.Top_Termination
+         , P.reason = 
+              P.Equivalent "compress_naive" proof
+         } )
+
+type Transformer  v s t u = 
+    C.Lifter (TRS v s) (TRS v t) (P.Proof v u)
+
 compressor :: ( Hashable s, Pretty s, Ord s, Show s
               , Ord v, Pretty v, Show v)
            => Compression
-           -> C.Lifter (TRS v s) (TRS v (CC.Sym s)) 
-               (P.Proof v s)
+           -> Transformer v s (CC.Sym s) s
 compressor c = transformer 
     ( \ sys -> let (cost, rs) = ( case c of
                        O.None -> CS.nocompress 
@@ -103,7 +127,7 @@ compressor c = transformer
 
 simplex :: (Pretty v, Pretty s, Ord s, Ord v)
         => Bool -- ^ prove top termination?
-        -> C.Lifter (TRS v s) (TRS v s) (P.Proof v s)
+        -> Transformer v s s s
 simplex top = remover_natural "additive" id
     $ \ sys -> return $ do
          (f,sys') <- MB.Additive.find top sys 
@@ -115,8 +139,7 @@ simplex top = remover_natural "additive" id
 
 simplex_compress :: (Pretty v, Pretty s, Ord s, Ord v)
         => Bool -- ^ prove top termination?
-        -> C.Lifter (TRS v (CC.Sym s)) (TRS v (CC.Sym s))
-             (P.Proof v s)
+        -> Transformer v (CC.Sym s)(CC.Sym s) s
 simplex_compress top = 
        remover_natural "additive" CC.expand_all_trs
     $ \ sys -> return $ do
@@ -167,6 +190,10 @@ direct opts =
 dp opts = 
       apply (compressor $  O.compression opts )
     $ apply transform_dp
+    $ apply (case O.naive opts of
+         True  -> compressor_naive
+         False -> transformer_neutral 
+      )
     $ apply (case O.fromtop opts of
          True  -> compressor_fromtop
          False -> transformer_neutral 
