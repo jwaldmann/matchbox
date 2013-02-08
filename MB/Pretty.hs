@@ -12,7 +12,6 @@ import qualified Satchmo.SMT.Integer as I
 import qualified Satchmo.SMT.Linear as L
 import qualified Satchmo.SMT.Matrix as M
 
--- import Text.PrettyPrint.HughesPJ (render, vcat, hsep, ( <+>), text )
 import qualified Data.Map as M
 import Data.List ( transpose )
 
@@ -31,14 +30,19 @@ instance Pretty a => Pretty (L.Linear a) where
                  [ 1 .. ] ( L.lin l )
         in  besides $ ls ++ [ pretty $ L.abs l ]
 
+-- NOTE strange behaviour for
+-- pretty $ M.Matrix (2,2)[[1,2],[3,4]]  -- OK
+-- pretty (8,M.Matrix (2,2)[[1,2],[3,4]]) -- WRONG
+
 instance Pretty e => Pretty (M.Matrix e) where
     pretty m = case m of
         M.Zero {} -> "0"
         M.Unit {} -> "I"
-        M.Matrix {} -> besides $ map ( vcat . map pretty ) 
-                               $ transpose $ M.contents m
+        M.Matrix {} -> 
+            besides $ map ( vcat . map pretty ) 
+                    $ transpose $ M.contents m
 
-besides = foldl1 (beside " ") 
+besides docs = foldl1 (beside " ") docs
 
 beside sep x y = vcat $ 
     let xs = lines $ render x 
