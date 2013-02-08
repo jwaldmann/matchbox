@@ -12,6 +12,8 @@ import qualified Control.Concurrent.Combine.Action as A
 
 import qualified MB.Additive
 
+import qualified MB.Lock
+
 import qualified Compress.DP 
 import qualified Compress.Common as CC
 import qualified Compress.Simple as CS
@@ -138,11 +140,12 @@ simplex top = remover_natural "additive" id
              } , sys' )
 
 simplex_compress :: (Pretty v, Pretty s, Ord s, Ord v)
-        => Bool -- ^ prove top termination?
+        => MB.Lock.Lock
+        -> Bool -- ^ prove top termination?
         -> Transformer v (CC.Sym s)(CC.Sym s) s
-simplex_compress top = 
+simplex_compress lock top = 
        remover_natural "additive" CC.expand_all_trs
-    $ \ sys -> return $ do
+    $ \ sys -> MB.Lock.exclusive lock $ return $ do
          (f,sys') <- MB.Additive.find_compress top sys 
          return ( P.Interpretation
              { P.dimension = 1
@@ -176,18 +179,18 @@ cmatrix_dp opts =
 
 apply f k = \ sys -> do m <- f sys ; m k
 
-simplexed_compress top cont 
+simplexed_compress lock top cont 
     = C.orelse (no_strict_rules top CC.expand_all_trs)
-    $ apply ( C.orelse (simplex_compress top) cont )
-    $ simplexed_compress top cont
+    $ apply ( C.orelse (simplex_compress lock top) cont )
+    $ simplexed_compress lock top cont
 
-direct opts =  
+direct lock opts =  
       apply (compressor $  O.compression opts )
-    $ simplexed_compress False 
+    $ simplexed_compress lock False 
     $ cmatrix opts 
 
 
-dp opts = 
+dp     lock opts = 
       apply (compressor $  O.compression opts )
     $ apply transform_dp
     $ apply (case O.naive opts of
@@ -198,7 +201,7 @@ dp opts =
          True  -> compressor_fromtop
          False -> transformer_neutral 
       )
-    $ simplexed_compress True
+    $ simplexed_compress lock True
     $ cmatrix_dp opts
 
 main = do
@@ -233,9 +236,10 @@ main = do
                               $ P.tox $ P.rtoc out
                             False -> print $ pretty out  
 
+           lock <- MB.Lock.create
            case O.dp opts of
-             False -> A.run ( m ( direct opts ) sys ) >>= emit
-             True  -> A.run ( m ( dp     opts ) sys ) >>= emit
+             False -> A.run ( m ( direct lock opts ) sys ) >>= emit
+             True  -> A.run ( m ( dp     lock opts ) sys ) >>= emit
 
        (_,_,errs) -> do
            ioError $ userError $ concat errs

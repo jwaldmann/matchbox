@@ -75,6 +75,7 @@ mkinter opt sig fm = M.fromList $ do
                          } )
 
 
+
 -- | top = True: prove relative top termination
 -- (it is not allowed to remove weak rules).
 -- top = False: prover relative termination
