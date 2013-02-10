@@ -56,9 +56,10 @@ Executable matchbox
                     , containers >= 0.5
                     , tpdb >= 0.7
                     , HaXml
-                    , satchmo == 2.6.*
-                    , satchmo-smt == 0.3.*
-                    , mtl == 2.*
+                    , satchmo >= 2.6
+                    , satchmo-smt >= 0.3
+                    , mtl
+                    , stm
                     , array
                     , transformer-combinators
                     , hmatrix-glpk
