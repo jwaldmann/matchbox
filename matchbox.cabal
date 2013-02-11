@@ -1,5 +1,5 @@
 Name: matchbox
-Version: 1.0.0
+Version: 1.0.1
 Cabal-Version: >= 1.9.2
 License: GPL
 Build-type: Simple
@@ -54,7 +54,7 @@ Executable matchbox
   Ghc-options:        -W -O2 -fno-warn-incomplete-patterns -threaded -rtsopts
   Build-Depends:      base >= 4.2 && < 5.0
                     , containers >= 0.5
-                    , tpdb >= 0.7
+                    , tpdb >= 0.7.1
                     , HaXml
                     , satchmo >= 2.6
                     , satchmo-smt >= 0.3
