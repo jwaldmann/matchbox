@@ -39,8 +39,11 @@ instance Pretty e => Pretty (M.Matrix e) where
         M.Zero {} -> "0"
         M.Unit {} -> "I"
         M.Matrix {} -> 
-            besides $ map ( vcat . map pretty ) 
-                    $ transpose $ M.contents m
+            ( besides $ map vcat  
+                    $ transpose 
+                    $ zipWith (:) ("[" : repeat "," )
+                    $ map (map pretty ) 
+                    $ M.contents m ) <+> "]"
 
 besides docs = foldl1 (beside " ") docs
 
