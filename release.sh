@@ -6,8 +6,9 @@
 
 source=MB.hs
 exe=MB.exe
-# target=matchbox-nocompres
-target=matchbox-compress
+
+target=matchbox-nocompres
+# target=matchbox-compress
 
 # name of the binary in the release package 
 # will be $target.bin
