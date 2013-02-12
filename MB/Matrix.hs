@@ -50,7 +50,7 @@ handle :: (Show s, Hashable s, Ord v, Show v, Pretty v, Pretty s, Ord s
        -> IO ( Maybe ( Interpretation s val
                      , TRS v (CC.Sym s)))
 handle encoded direct opts sys = do
-    eprint $ pretty sys
+    eprint $ pretty_short sys
     eprint $ show opts
 
     let count = MB.Count.run $ do
@@ -92,7 +92,7 @@ handle_dp :: (Show s, Hashable s, Ord v, Show v, Pretty v, Pretty s, Ord s
        -> IO ( Maybe ( Interpretation (TPDB.DP.Marked s) val
                      , TRS v (CC.Sym (TPDB.DP.Marked s))))
 handle_dp encoded direct opts sys = do
-    eprint $ pretty sys
+    eprint $ pretty_short sys
     eprint $ show opts
 
     let count = MB.Count.run $ do

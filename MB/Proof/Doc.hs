@@ -5,13 +5,13 @@ module MB.Proof.Doc where
 import MB.Proof.Type
 
 import TPDB.Plain.Write ()
--- import Text.PrettyPrint.HughesPJ
+
 import TPDB.Pretty
-import MB.Pretty () -- instances
+import MB.Pretty (pretty_short) -- and instances
 
 instance (Pretty v, Pretty s) => Pretty (Proof v s) where
     pretty p = vcat 
-        [ "system" <+> pretty ( input p )
+        [ "system" <+> pretty_short ( input p )
         , "is" <+> pretty (claim p) <+> "because"
         , pretty (reason p)
         ]

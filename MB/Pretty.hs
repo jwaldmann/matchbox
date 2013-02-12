@@ -5,6 +5,8 @@ module MB.Pretty where
 
 import TPDB.Pretty
 import qualified TPDB.DP
+import TPDB.Data ( strict, rules, positions, lhs, rhs )
+
 
 import qualified Satchmo.SMT.Exotic.Semiring.Arctic as A
 
@@ -13,9 +15,25 @@ import qualified Satchmo.SMT.Linear as L
 import qualified Satchmo.SMT.Matrix as M
 
 import qualified Data.Map as M
-import Data.List ( transpose )
+import Data.List ( transpose, partition )
 
 import System.IO
+
+pretty_short sys = 
+    let h us = 
+            let (pre, post) = splitAt 10 us
+            in  vcat [ vcat (map pretty pre)
+                 , if null post then empty 
+                   else nest 4 $ hsep [ pretty (length post), "more", "rules" ]
+                 ]
+        (s,w) = partition strict $ rules sys
+    in  vcat [ h s, h w
+             , nest 4 $ hsep [ "total", "size", pretty (system_size sys) ]
+             ]
+
+term_size t = length $ positions t
+rule_size u = term_size (lhs u) + term_size (rhs u)
+system_size s = sum $ map rule_size $ rules s
 
 instance Pretty a => Show (TPDB.DP.Marked a) where
     show = render . pretty
