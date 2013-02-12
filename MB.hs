@@ -158,6 +158,11 @@ matrix_natural_full opts =
                       CC.expand_all_trs
     $ MB.Matrix.handle I.binary_fixed I.direct opts
                  
+matrix_natural_dp opts = 
+      remover_natural "matrix_natural_dp" 
+                      CC.expand_all_trs
+    $ MB.Matrix.handle_dp I.binary_fixed I.direct opts
+                 
 matrix_arctic_dp opts = 
       remover_arctic "matrix_arctic_dp" CC.expand_all_trs
     $ MB.Matrix.handle_dp A.unary_fixed A.direct opts
@@ -170,12 +175,11 @@ cmatrix opts =
           return $ matrix_natural_full 
                  ( opts { dim = d } ) 
 
-cmatrix_dp opts = 
+cmatrix_dp opts ma = 
     ( if O.parallel opts
       then C.parallel else C.sequential ) $ do
           d <- [ 1 .. dim opts ]
-          return $ matrix_arctic_dp
-                 ( opts { dim = d } ) 
+          return $ ma $ opts { dim = d } 
 
 apply f k = \ sys -> do m <- f sys ; m k
 
@@ -202,7 +206,9 @@ dp     lock opts =
          False -> transformer_neutral 
       )
     $ simplexed_compress lock True
-    $ cmatrix_dp opts
+    $ C.parallel [ cmatrix_dp ( opts { bits = 3 }) matrix_natural_dp
+                 , cmatrix_dp ( opts {bits =  5 }) matrix_arctic_dp
+                 ]
 
 main = do
    hSetBuffering stdout LineBuffering
