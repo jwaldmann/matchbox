@@ -206,8 +206,8 @@ dp     lock opts =
          False -> transformer_neutral 
       )
     $ simplexed_compress lock True
-    $ C.parallel [ cmatrix_dp ( opts { bits = 3 }) matrix_natural_dp
-                 , cmatrix_dp ( opts {bits =  5 }) matrix_arctic_dp
+    $ C.parallel [ cmatrix_dp ( opts ) matrix_arctic_dp
+                 -- , cmatrix_dp ( opts { bits = 3 }) matrix_natural_dp
                  ]
 
 main = do
