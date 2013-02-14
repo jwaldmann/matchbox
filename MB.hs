@@ -207,8 +207,8 @@ dp     lock opts =
       )
     $ simplexed_compress lock True
     $ C.parallel [ 
-                 -- , cmatrix_dp ( opts ) matrix_arctic_dp
-                 cmatrix_dp ( opts ) matrix_natural_dp
+                 cmatrix_dp ( opts ) matrix_arctic_dp
+                 -- cmatrix_dp ( opts ) matrix_natural_dp
                  ]
 
 main = do
