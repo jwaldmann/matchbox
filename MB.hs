@@ -76,7 +76,7 @@ compressor_fromtop
     :: (Pretty v, Ord v, Ord s, Hashable s, Pretty s ) 
     => Transformer v (CC.Sym s) (CC.Sym s) s
 compressor_fromtop = transformer
-    ( \ sys ->  return $ Compress.DP.fromtop sys )
+    ( \ sys ->  return $ Compress.DP.simple_fromtop sys )
     ( \ sys proof -> P.Proof
          { P.input = CC.expand_all_trs sys
          , P.claim = P.Top_Termination
@@ -206,8 +206,9 @@ dp     lock opts =
          False -> transformer_neutral 
       )
     $ simplexed_compress lock True
-    $ C.parallel [ cmatrix_dp ( opts ) matrix_arctic_dp
-                 -- , cmatrix_dp ( opts { bits = 3 }) matrix_natural_dp
+    $ C.parallel [ 
+                 -- , cmatrix_dp ( opts ) matrix_arctic_dp
+                 cmatrix_dp ( opts ) matrix_natural_dp
                  ]
 
 main = do

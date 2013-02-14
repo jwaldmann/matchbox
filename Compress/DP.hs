@@ -30,6 +30,14 @@ fromtop sys =
         ctop = roots $ CS.compress_tops $ build top
     in  sys { rules = ctop ++ deep }
 
+simple_fromtop sys = 
+    let (top, deep) = partition strict $ rules sys
+        ctop = roots $ CS.simple_compress_tops 
+                     $ build top
+    in  sys { rules = ctop ++ deep }
+
+
+
 -- | compute DP transform for compressed system,
 -- not expanding all digrams.
 dp :: (Hashable s, Ord s, Pretty s, Pretty v)

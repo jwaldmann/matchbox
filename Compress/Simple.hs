@@ -5,6 +5,7 @@ module Compress.Simple
 ( compress
 , nocompress
 , compress_tops
+, simple_compress_tops
 ) where
 
 import Compress.Common
@@ -85,7 +86,8 @@ digrams_as_list everywhere trees = do
 -- compress them from the top,
 -- not computing any cost.
 
-compress_tops = compress_tops_1
+compress_tops = compress_tops_1 
+simple_compress_tops = simple_compress_tops_1 
 
 notrace s x = x
 
@@ -107,7 +109,24 @@ compress_tops_1 trees =
                     $ notrace (unlines [ "dig: " ++ show dig 
                             , "parent/child" ++ show (parent_arity dig, child_arity dig)
                              ] )
-                    $ roots $ apply_all True dig (Trees { roots = us } )
+                    $ roots 
+                    $ apply_all True dig 
+                    $ Trees { roots = us } 
+   in   Trees { roots = h $ roots trees }
+
+simple_compress_tops_1 trees = 
+    let h us = case us of
+            [] -> []
+            u : vs -> case top_digrams ( Trees { roots = [u] } ) of
+                [] -> u : h vs
+                dig : _ -> h 
+                    $ notrace (unlines [ "dig: " ++ show dig 
+                            , "parent/child" ++ show (parent_arity dig, child_arity dig)
+                             ] )
+                    $ ( roots 
+                      $ apply_all True dig 
+                      $ Trees { roots = [u] } 
+                      ) ++ vs
    in   Trees { roots = h $ roots trees }
 
 -- * replacement 
