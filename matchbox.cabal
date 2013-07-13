@@ -40,10 +40,6 @@ description:
   > matchbox --bits=3 --dim=4 -C data/z001.srs
   > matchbox --bits=5 --dim=4 -C --dp-fromtop --cpf data/z002.srs | grep -v YES | ceta /dev/stdin
   (requires <http://cl-informatik.uibk.ac.at/software/ceta/>)
-  .
-  Note: due to a mis-feature of glpk, 
-  you cannot use both @--mirror@ and @+RTS -N@, 
-  see <https://github.com/albertoruiz/hmatrix/issues/32>
 
 source-repository head
   type: git
@@ -58,6 +54,8 @@ Executable matchbox
                     , HaXml
                     , satchmo >= 2.6
                     , satchmo-smt >= 0.3
+                    , co4 >= 0.0.52 , text, wl-pprint-text, satchmo-core
+                    , template-haskell		 
                     , mtl
                     , stm
                     , array

@@ -20,6 +20,8 @@ import qualified Compress.Simple as CS
 import qualified Compress.PaperIter as CPI
 import qualified Compress.Paper as CP
 
+import qualified MB.Label.SLPO 
+
 import qualified MB.Matrix 
 import qualified Satchmo.SMT.Integer as I
 import qualified Satchmo.SMT.Arctic  as A
