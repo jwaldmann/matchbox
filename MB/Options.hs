@@ -16,7 +16,10 @@ data Options =
              , naive :: Bool
              , mirror :: Bool
              , parallel :: Bool
-             , label :: Maybe Int
+             , label :: Maybe (Int,Int)
+             , use_lpo :: Bool
+             , use_natural :: Bool
+             , use_arctic :: Bool
              , printStatistics :: Bool
              , cpf :: Bool
              }
@@ -31,6 +34,9 @@ options0 = Options
          , mirror = False
          , parallel = False
          , label = Nothing
+         , use_lpo = False
+         , use_natural = False
+         , use_arctic = False
          , printStatistics = False
          , cpf = False
          }
@@ -42,8 +48,18 @@ options =
        ( ReqArg ( \ s opts -> opts { bits = read s }) "Int" ) "bit width"
 
     , Option [ 'l' ] [ "label" ]
-       ( ReqArg ( \ s opts -> opts { label = Just $ read s }) "Int" ) 
-       "label/unlabel with given number of interpretations in between"
+       ( ReqArg ( \ s opts -> opts { label = Just $ read $ "(" ++ s ++ ")" }) "Int,Int" ) 
+       "-l x,y : label by model with x bits and y interpretations before unlabeling"
+
+    , Option [] ["lpo" ] 
+             (NoArg ( \ opts -> opts { use_lpo = True } ) )
+             "(with l) use LPO"
+    , Option [ 'n' ] ["natural" ] 
+             (NoArg ( \ opts -> opts { use_natural = True } ) )
+             "(with l) use natural matrix interpretations"
+    , Option [ 'a' ] ["arctic" ] 
+             (NoArg ( \ opts -> opts { use_arctic = True } ) )
+             "(with l) use arctic matrix interpretations"
 
     , Option [ 'm' ] [ "mirror" ]
        ( NoArg ( \ opts -> opts { mirror = True })) "if input is SRS, then mirror lhs and rhs"   

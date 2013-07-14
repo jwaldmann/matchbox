@@ -31,7 +31,7 @@ import TPDB.DP (dp)
 import TPDB.Convert (srs2trs, trs2srs)
 
 import qualified Compress.Common as CC
-
+import qualified MB.Options as O
 
 import qualified Text.PrettyPrint.Leijen.Text as PP
 import Data.Text.Lazy (pack)
@@ -76,17 +76,20 @@ uArctic bits =
 uMatrix dim elem = 
     kList dim $ kList dim $ elem 
 
-uInter bits_for_symbols dim bfn = known 0 1
-    [ -- known 1 1 [] -- just natural
-      constructors [ Just [], Just [] ] -- arctic or natural
+uInter conf bits_for_symbols dim bfn = known 0 1
+    [ if use_arctic conf && use_natural conf 
+      then constructors [ Just [], Just [] ] -- arctic or natural
+      else if use_arctic conf then known 0 2 [] else known 1 2 []
     , uTree bits_for_symbols ( uMatrix dim $ uArctic bfn ) 
     , uTree bits_for_symbols ( uMatrix dim $ uNat    bfn ) 
     ]
 
-uRemove bits_for_symbols dim bfn = known 0 1
-    [ constructors [ Just [], Just [] ] -- LPO or Intepretation
+uRemove conf bits_for_symbols dim bfn = known 0 1
+    [ if use_lpo conf && (use_arctic conf || use_natural conf) 
+      then constructors [ Just [], Just [] ] -- LPO or Interpretation
+      else if use_lpo conf then known 0 2 [] else known 1 2 [] 
     , uQuasiPrec bits_for_symbols
-    , uInter bits_for_symbols dim bfn
+    , uInter conf bits_for_symbols dim bfn
     ]
 
 uLab conf srs =
@@ -96,7 +99,8 @@ uLab conf srs =
     in  known 0 1 
            [ uModel bits_for_symbols (bits_for_model conf)
            , kList (number_of_interpretations conf)
-                  $ uRemove (bits_for_symbols + bits_for_model conf)
+                  $ uRemove conf
+                            (bits_for_symbols + bits_for_model conf)
                             (dimension_for_matrices conf) (bits_for_numbers conf)
            , kList (length srs) uBool
            ]
@@ -123,6 +127,9 @@ data Config =
      Config { use_dp_transform :: Bool
              , bits_for_model :: Int
              , number_of_interpretations :: Int
+             , use_lpo :: Bool
+             , use_natural :: Bool
+             , use_arctic :: Bool
              , dimension_for_matrices :: Int
              , bits_for_numbers :: Int
              }
@@ -132,6 +139,9 @@ config0 = Config
          { use_dp_transform = False
          , bits_for_model = 1 
          , number_of_interpretations = 2
+         , use_lpo = False
+         , use_natural = False
+         , use_arctic = False
          , dimension_for_matrices = 2
          , bits_for_numbers = 4
          }
@@ -139,6 +149,15 @@ config0 = Config
 options = [ Option [] ["dp" ] 
              (NoArg ( \ conf -> conf { use_dp_transform = True } ) )
              "use dependency pairs transformation"
+          , Option [] ["lpo" ] 
+             (NoArg ( \ conf -> conf { use_lpo = True } ) )
+             "use LPO"
+          , Option [ 'n' ] ["natural" ] 
+             (NoArg ( \ conf -> conf { use_natural = True } ) )
+             "use natural matrix interpretations"
+          , Option [ 'a' ] ["arctic" ] 
+             (NoArg ( \ conf -> conf { use_arctic = True } ) )
+             "use arctic matrix interpretations"
           , Option ['m'] ["model"]
              (ReqArg ( \ s conf -> conf { bits_for_model = read s } ) "Int")
              "bits for model"
@@ -153,6 +172,17 @@ options = [ Option [] ["dp" ]
              "bits for numbers"
           ]
 
+mkConfig :: O.Options -> MB.Label.SLPO.Config
+mkConfig o = Config
+    { use_dp_transform = False
+    , dimension_for_matrices = O.dim o
+    , bits_for_numbers = O.bits o
+    , bits_for_model = maybe 0 fst $ O.label o
+    , number_of_interpretations = maybe 1 snd $ O.label o
+    , use_lpo = O.use_lpo o
+    , use_natural = O.use_natural o
+    , use_arctic = O.use_arctic o
+    }
 
 __main = do
     argv <- getArgs
@@ -188,9 +218,9 @@ solve_completely conf sys = do
                Just sys' -> solve_completely conf sys'
 
 -- | this is the interface to MB top level program:
-handle _ sys = do
+handle opts sys = do
     let Just srs = trs2srs $ CC.expand_all_trs sys
-    m <- solveTPDB' config0 srs
+    m <- solveTPDB' (mkConfig opts) srs
     case m of
         Nothing -> return Nothing
         Just ( remove, info ) -> do
