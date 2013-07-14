@@ -190,10 +190,17 @@ simplexed_compress lock top cont
     $ apply ( C.orelse (simplex_compress lock top) cont )
     $ simplexed_compress lock top cont
 
+label_remove_unlabel opts = 
+      remover_label "label/remove/unlabel" CC.expand_all_trs
+    $ MB.Label.SLPO.handle opts
+
+
 direct lock opts =  
       apply (compressor $  O.compression opts )
     $ simplexed_compress lock False 
-    $ cmatrix opts 
+    $ case label opts of
+          Nothing -> cmatrix opts 
+          Just l  -> label_remove_unlabel opts
 
 
 dp     lock opts = 
@@ -208,10 +215,12 @@ dp     lock opts =
          False -> transformer_neutral 
       )
     $ simplexed_compress lock True
-    $ C.parallel [ 
+    $ case label opts of
+          Nothing ->  C.parallel [ 
                  cmatrix_dp ( opts ) matrix_arctic_dp
                  -- cmatrix_dp ( opts ) matrix_natural_dp
                  ]
+          Just l  -> label_remove_unlabel opts
 
 main = do
    hSetBuffering stdout LineBuffering

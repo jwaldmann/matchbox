@@ -32,6 +32,15 @@ do
     popd
 done
 
+for arch in satchmo-core co4
+do
+    git clone https://github.com/apunktbau/$arch.git
+    pushd $arch
+    cabal install --force-reinstalls
+    popd
+done
+    
+
 popd
 
 # this uses mb.cabal:

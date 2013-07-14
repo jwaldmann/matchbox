@@ -37,5 +37,6 @@ data Reason v s = No_Strict_Rules
      | Matrix_Interpretation_Arctic  
          (Interpretation s (A.Arctic Integer))
            (Proof v s)
+     | Extra Doc (Proof v s)
 
 

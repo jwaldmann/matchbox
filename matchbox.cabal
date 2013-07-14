@@ -1,5 +1,5 @@
 Name: matchbox
-Version: 1.0.2
+Version: 2.0.0
 Cabal-Version: >= 1.9.2
 License: GPL
 Build-type: Simple
@@ -26,10 +26,11 @@ description:
   .
   Methods used: Matrix interpretations over natural
   and arctic numbers, dependency pairs transformation,
+  (for strings:) lexicographic path order, semantic labelling/unlabelling,
   compression of rewriting systems.
   .
   Constraint solvers used: 
-  glpk linear programming solver, minisat SAT solver.
+  glpk linear programming solver, minisat SAT solver via CO4 SAT compiler
   .
   Installation: basically just @cabal install@ 
   but you need current versions of some libraries

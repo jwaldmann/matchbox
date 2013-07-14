@@ -57,3 +57,8 @@ instance (Pretty v, Pretty s) => Pretty (Reason v s) where
             , nest 4 $ pretty i
             , pretty p
             ]
+        Extra doc p -> vcat
+            [ "extra proof method"
+            , nest 4 doc
+            , pretty p
+            ]

@@ -16,6 +16,7 @@ data Options =
              , naive :: Bool
              , mirror :: Bool
              , parallel :: Bool
+             , label :: Maybe Int
              , printStatistics :: Bool
              , cpf :: Bool
              }
@@ -29,6 +30,7 @@ options0 = Options
          , naive = False
          , mirror = False
          , parallel = False
+         , label = Nothing
          , printStatistics = False
          , cpf = False
          }
@@ -38,6 +40,10 @@ options =
        ( ReqArg ( \ s opts -> opts { dim = read s }) "Int" ) "vector dimension"
     , Option [ 'b' ] [ "bits" ]
        ( ReqArg ( \ s opts -> opts { bits = read s }) "Int" ) "bit width"
+
+    , Option [ 'l' ] [ "label" ]
+       ( ReqArg ( \ s opts -> opts { label = Just $ read s }) "Int" ) 
+       "label/unlabel with given number of interpretations in between"
 
     , Option [ 'm' ] [ "mirror" ]
        ( NoArg ( \ opts -> opts { mirror = True })) "if input is SRS, then mirror lhs and rhs"   

@@ -30,6 +30,9 @@ import qualified TPDB.Plain.Read as TPDB
 import TPDB.DP (dp)
 import TPDB.Convert (srs2trs, trs2srs)
 
+import qualified Compress.Common as CC
+
+
 import qualified Text.PrettyPrint.Leijen.Text as PP
 import Data.Text.Lazy (pack)
 import System.Console.GetOpt
@@ -171,7 +174,7 @@ solve conf filePath = do
                      $ maybe (error "huh") id $ trs2srs $ dp $ srs2trs sys
 
 solve_completely :: ( Ord i, PP.Pretty i )
-                 => Main.Config -> TPDB.SRS i -> IO ()
+                 => MB.Label.SLPO.Config -> TPDB.SRS i -> IO ()
 solve_completely conf sys = do
     print $ TPDB.text "input" PP.<+> TPDB.pretty sys
     if null $ TPDB.strict_rules sys
@@ -184,9 +187,34 @@ solve_completely conf sys = do
                Nothing -> print $ PP.text "giving up"
                Just sys' -> solve_completely conf sys'
 
+-- | this is the interface to MB top level program:
+handle _ sys = do
+    let Just srs = trs2srs $ CC.expand_all_trs sys
+    m <- solveTPDB' config0 srs
+    case m of
+        Nothing -> return Nothing
+        Just ( remove, info ) -> do
+            let annotated = zip (TPDB.rules sys) remove 
+                remaining = TPDB.with_rules sys $ map fst $ filter (not . snd) annotated
+            print $ PP.vcat [ info, TPDB.pretty annotated ]
+            return $ Just (info, remaining )
+
+-- | remove at least one rule
 solveTPDB :: (Ord i, PP.Pretty i ) 
-          => Main.Config -> TPDB.SRS i -> IO (Maybe (TPDB.SRS i))
+          => MB.Label.SLPO.Config 
+          -> TPDB.SRS i 
+          -> IO (Maybe (TPDB.SRS i))
 solveTPDB conf sys = do
+    m <- solveTPDB' conf sys
+    case m of 
+        Nothing -> return Nothing
+        Just ( remove, info ) -> do
+            let annotated = zip (TPDB.rules sys) remove 
+                remaining = TPDB.with_rules sys $ map fst $ filter (not . snd) annotated
+            print $ PP.vcat [ info, TPDB.pretty annotated ]
+            return $ Just remaining
+
+solveTPDB' conf sys = do
 
   let sigma = nub $ do u <- TPDB.rules sys ; TPDB.lhs u ++ TPDB.rhs u
       bits_for_symbols = length $ toBin $ length sigma - 1
@@ -241,8 +269,8 @@ solveTPDB conf sys = do
   case solution of
     Nothing -> return Nothing
     Just (Label mod ints remove) -> do
-        print $ TPDB.pretty sys
-        print $ "model:" PP.<$> PP.indent 4 ( PP.vcat
+        -- print $ TPDB.pretty sys
+        let model_info = "model:" PP.<$> PP.indent 4 ( PP.vcat
               $ for  ( M.toList $ bdt2int mod ) $ \ (k, v) -> 
                 PP.hsep $ for (M.toList v ) $ \ (from,to) -> 
                     PP.hcat [ PP.pretty to, PP.pretty k, PP.pretty from ] 
@@ -254,26 +282,24 @@ solveTPDB conf sys = do
                                  , TPDB.rhs = map (head . mklab) r
                                  , TPDB.top = False -- ??
                                  } 
-        print $ ( "labelled system:" PP.<$> ) $ PP.indent 4 $ 
-            PP.vcat $ for (labelled srs mod) $ \ subsrs -> 
+        let labelled_info = "labelled system:" PP.<$> PP.indent 4 ( PP.vcat 
+              $ for (labelled srs mod) $ \ subsrs -> 
                 PP.vcat $ for subsrs $ \ ((lval,rval), u ) -> 
                     TPDB.pretty $ mkrule u
-        void $ forM ints $ \ (Remove tag qp int) -> case tag of
-            Remove_LPO -> case qp of 
-              QP dir del ord -> do
-                print $ PP.pretty $ Qup dir (bdt2labelled_int del) 
-                                        (bdt2labelled_int ord )
-            Remove_Interpretation -> case int of 
-              Interpretation tag ai ni -> do
-                print $ PP.pretty tag PP.<$> ( PP.indent 4 $ case tag of
-                    Arctic_Tag  -> PP.pretty $ bdt2labelled_int ai
-                    Natural_Tag -> PP.pretty $ bdt2labelled_int ni
-                                             )                  
+              )
+        let remove_info = PP.vcat $ for ints $ \ (Remove tag qp int) -> case tag of
+                Remove_LPO -> case qp of 
+                    QP dir del ord -> do
+                        PP.pretty $ Qup dir (bdt2labelled_int del) 
+                                            (bdt2labelled_int ord )
+                Remove_Interpretation -> case int of 
+                    Interpretation tag ai ni -> do
+                        PP.pretty tag PP.<$> ( PP.indent 4 $ case tag of
+                            Arctic_Tag  -> PP.pretty $ bdt2labelled_int ai
+                            Natural_Tag -> PP.pretty $ bdt2labelled_int ni
+                                             )
+        return $ Just ( remove , PP.vcat [ model_info, labelled_info, remove_info ] )
 
-        let annotated = zip (TPDB.rules sys) remove 
-            remaining = TPDB.with_rules sys $ map fst $ filter (not . snd) annotated
-        print $ TPDB.pretty annotated
-        return $ Just remaining
         
 for = flip map
 

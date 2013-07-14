@@ -71,3 +71,18 @@ remover_arctic msg unpack h = \ sys -> do
                , claim = Top_Termination
                , reason = Matrix_Interpretation_Arctic m out
                }
+
+remover_label ::  ( )
+     => Doc
+     ->  ( TRS v s -> TRS v u )
+     -> ( TRS v s -> IO (Maybe (Doc, TRS v t)))
+     -> Lifter (TRS v s) (TRS v t) (Proof v u)
+remover_label msg unpack h = \ sys -> do
+    (m, sys') <- A.io $ h sys
+    return $ \ k -> do
+        out <- k sys'
+        return $ Proof 
+               { input = unpack sys
+               , claim = Termination
+               , reason = Extra m out
+               }
