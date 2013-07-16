@@ -9,6 +9,7 @@
 module MB.Label.SLPO where
 
 import           Language.Haskell.TH (runIO)
+import           Language.Haskell.TH.Syntax (addDependentFile)
 
 import qualified Satchmo.Core.SAT.Minisat
 import qualified Satchmo.Core.Decode 
@@ -44,7 +45,7 @@ $( runIO $ configurable [ Verbose
                         , Cache
                         ] 
          $ compileFile "MB/Label/SLPO.standalone.hs" )
-
+$(addDependentFile     "MB/Label/SLPO.standalone.hs" >> return [] )
 
 uTree bits leaf = 
     let t depth = if depth > 0
