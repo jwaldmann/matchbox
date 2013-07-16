@@ -73,15 +73,18 @@ uQuasiPrec bits_for_symbols =
 uArctic bits = 
     constructors [ Just [], Just [ uNat bits] ]
 
-uMatrix dim elem = 
-    kList dim $ kList dim $ elem 
+uMatrix rows cols elem = 
+    kList rows $ kList cols $ elem 
+
+uLinear dim elem = 
+    known 0 1 [ uMatrix dim dim elem , uMatrix dim 1 elem ]
 
 uInter conf bits_for_symbols dim bfn = known 0 1
     [ if use_arctic conf && use_natural conf 
       then constructors [ Just [], Just [] ] -- arctic or natural
       else if use_arctic conf then known 0 2 [] else known 1 2 []
-    , uTree bits_for_symbols ( uMatrix dim $ uArctic bfn ) 
-    , uTree bits_for_symbols ( uMatrix dim $ uNat    bfn ) 
+    , uTree bits_for_symbols ( uLinear dim $ uArctic bfn ) 
+    , uTree bits_for_symbols ( uLinear dim $ uNat    bfn ) 
     ]
 
 uRemove conf bits_for_symbols dim bfn = known 0 1
@@ -375,6 +378,9 @@ instance PP.Pretty Arctic where
         MinusInfinity -> "-"
         Finite f -> PP.text $ pack $ show f
 
+
+instance PP.Pretty a => PP.Pretty (Linear a) where
+    pretty (Linear f1 f0) = PP.hsep [ "x ->", PP.pretty f1 , "* x + ", PP.pretty f0 ]
 
 instance PP.Pretty Direction where pretty = PP.text . pack . show
 

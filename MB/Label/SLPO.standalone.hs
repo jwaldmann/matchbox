@@ -246,31 +246,31 @@ data Interpretation_Tag = Arctic_Tag | Natural_Tag
 
 data Interpretation 
    = Interpretation Interpretation_Tag
-         (Tree (Matrix Arctic))
-         (Tree (Matrix    Nat))
+         (Tree (Linear Arctic))
+         (Tree (Linear    Nat))
     deriving Show
 
 comp_interpretation :: Interpretation -> Rule -> Comp
 comp_interpretation i u = case i of
     Interpretation tag ai ni -> case tag of
         Natural_Tag -> case iRuleN ni u of
-            (l,r) -> case geMN l r of
+            (l,r) -> case geLN l r of
                 False -> None
-                True ->  case gtMN l r of
+                True ->  case gtLN l r of
                     True -> Greater
                     False -> GreaterEquals
         Arctic_Tag -> case iRuleA ai u of
-            (l,r) -> case geMA l r of
+            (l,r) -> case geLA l r of
                 False -> None
-                True ->  case gtMA l r of
+                True ->  case gtLA l r of
                     True -> Greater
                     False -> GreaterEquals
 
 positiveI :: Interpretation -> Bool
 positiveI i = case i of
     Interpretation tag ai ni -> case tag of
-        Natural_Tag -> allI positiveMN ni
-        Arctic_Tag  -> allI positiveMA ai
+        Natural_Tag -> allI positiveLN ni
+        Arctic_Tag  -> allI positiveLA ai
 
 allI :: (a -> Bool) -> Tree a -> Bool
 allI prop t = case t of
@@ -278,11 +278,7 @@ allI prop t = case t of
     Branch l r -> allI prop l && allI prop r
 
 positiveMA :: Matrix Arctic -> Bool
-positiveMA m = case m of
-    [] -> False
-    xs : _ -> case xs of
-        [] -> False
-        x : _ -> finite x
+positiveMA m = finite (head (head m))
 
 positiveMN :: Matrix Nat -> Bool
 positiveMN m = 
@@ -299,17 +295,55 @@ gtMN a b = gtNat (last (head a)) (last(head b))
 
 iSymbol i s = get i s
 
-iWord timesM i w = case w of
+iWord timesL i w = case w of
     [] -> undefined
     x : xs -> let m = iSymbol i x 
               in case xs of
                     [] -> m
-                    _  -> timesM m (iWord timesM i xs)
+                    _  -> timesL m (iWord timesL i xs)
 
-iRule timesM i u = (iWord timesM i (lhs u), iWord timesM i (rhs u))
+iRule timesL i u = (iWord timesL i (lhs u), iWord timesL i (rhs u))
 
-iRuleA i u = iRule (timesM   plusA   timesA) i u
-iRuleN i u = iRule (timesM plusNat timesNat) i u
+iRuleA i u = iRule (timesL   plusA   timesA) i u
+iRuleN i u = iRule (timesL plusNat timesNat) i u
+
+
+-- * linear (vector values) functions
+
+data Linear a = Linear ( Matrix a ) -- ^ factor 
+                       ( Matrix a ) -- ^ absolute part (as column vector)
+   deriving Show
+
+plusL plus f g = case f of 
+    Linear f1 f0 -> case g of
+        Linear g1 g0 -> Linear (plusM plus f1 g1) (plusM plus f0 g0)
+
+timesL plus times f g = case f of 
+    Linear f1 f0 -> case g of
+        Linear g1 g0 -> Linear (timesM plus times f1 g1) 
+                               (plusM plus f0 (timesM plus times f1 g0))
+
+positiveLA f = case f of
+    Linear f1 f0 -> positiveMA f1 
+
+positiveLN f = case f of
+    Linear f1 f0 -> not (isZeroNat (head (head f1))) 
+
+geLN f g =  case f of 
+    Linear f1 f0 -> case g of
+        Linear g1 g0 -> geMN f1 g1 && geMN f0 g0
+
+geLA f g =  case f of 
+    Linear f1 f0 -> case g of
+        Linear g1 g0 -> geMA f1 g1 && geMA f0 g0
+
+gtLN f g =  case f of 
+    Linear f1 f0 -> case g of
+        Linear g1 g0 -> gtMN f0 g0
+
+gtLA f g =  case f of 
+    Linear f1 f0 -> case g of
+        Linear g1 g0 -> gtMA f1 g1 && gtMA f0 g0
 
 
 -- * matrices:
