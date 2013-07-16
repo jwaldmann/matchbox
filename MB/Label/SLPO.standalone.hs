@@ -63,8 +63,6 @@ type Func = Tree [Bool]
     
 -- | produces semantically labelled version (one SRS for each rule)
 -- (the type is identical but the symbols have additional bits)
--- this function raises an exception if the given structure
--- is not a model
 labelled :: SRS -> Model -> [ [ ((Value,Value),Rule) ] ]
 labelled srs mod =
     let ks = keys ( leftmost mod )
