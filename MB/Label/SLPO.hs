@@ -64,8 +64,7 @@ uModel sym_bits model_bits = uTree sym_bits
                            $ kList model_bits uBool
 
 uQuasiPrec bits_for_symbols = 
-    known 0 1 [ uBool
-              , uTree bits_for_symbols $ uBool
+    known 0 1 [ uTree bits_for_symbols $ uBool
               , uTree bits_for_symbols $ uNat bits_for_symbols 
               ]
 
@@ -91,6 +90,7 @@ uRemove conf bits_for_symbols dim bfn = known 0 1
     [ if use_lpo conf && (use_arctic conf || use_natural conf) 
       then constructors [ Just [], Just [] ] -- LPO or Interpretation
       else if use_lpo conf then known 0 2 [] else known 1 2 [] 
+    , constructors [ Just [], Just [] ] -- direction
     , uQuasiPrec bits_for_symbols
     , uInter conf bits_for_symbols dim bfn
     ]
@@ -320,13 +320,14 @@ solveTPDB' conf sys = do
                 PP.vcat $ for subsrs $ \ ((lval,rval), u ) -> 
                     TPDB.pretty $ mkrule u
               )
-        let remove_info = PP.vcat $ for ints $ \ (Remove tag qp int) -> case tag of
+        let remove_info = PP.vcat $ for ints $ \ (Remove tag dir qp int) -> 
+              PP.pretty dir PP.<+> case tag of
                 Remove_LPO -> case qp of 
-                    QP dir del ord -> do
+                    QP del ord -> 
                         PP.pretty $ Qup dir (bdt2labelled_int del) 
                                             (bdt2labelled_int ord )
                 Remove_Interpretation -> case int of 
-                    Interpretation tag ai ni -> do
+                    Interpretation tag ai ni -> 
                         PP.pretty tag PP.<$> ( PP.indent 4 $ case tag of
                             Arctic_Tag  -> PP.pretty $ bdt2labelled_int ai
                             Natural_Tag -> PP.pretty $ bdt2labelled_int ni

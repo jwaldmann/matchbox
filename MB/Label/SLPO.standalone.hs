@@ -30,12 +30,16 @@ data Label = Label Model [ Remove ] [ Bool ]
 data Remove_Tag = Remove_LPO | Remove_Interpretation
     deriving ( Eq, Show )
 
-data Remove = Remove Remove_Tag QP Interpretation
+
+data Direction = Original | Reversed deriving Show
+
+data Remove = Remove Remove_Tag Direction QP Interpretation
     deriving ( Show )
 
-tag (Remove t qp i) = t
-precedence (Remove t qp i) = qp
-interpretation (Remove t qp i) = i
+tag (Remove t d qp i) = t
+direction (Remove t d qp i) = d
+precedence (Remove t d qp i) = qp
+interpretation (Remove t d qp i) = i
 
 
 -- | lex. comb. of  interpretations removes one original rule completely 
@@ -50,7 +54,7 @@ constraint srs lab = case lab of
               && or remove -- ^ at least one strictly
               && eqSymbol remove ( map ( all isGreater ) css ) -- ^ we guessed correctly
               && all (\(ltop,rtop) -> eqSymbol ltop rtop) values -- ^ we have a model
-              && all ( \ rem -> case rem of Remove tag qp int -> positiveI int ) qps
+              && all ( \ rem -> case rem of Remove tag dir qp int -> positiveI int ) qps
 
 -- * model, labelling
 
@@ -144,30 +148,29 @@ lexi cs = case cs of
         None -> None
 
 comp :: Remove -> Rule -> Comp
-comp r u = case tag r of
-    Remove_LPO -> comp_lpo (precedence r) u
-    Remove_Interpretation -> comp_interpretation (interpretation r) u
+comp r u = 
+    let rev u = Rule (mode u) (reverse (lhs u)) (reverse (rhs u)) 
+        c u = case tag r of
+            Remove_LPO -> comp_lpo (precedence r) u
+            Remove_Interpretation -> comp_interpretation (interpretation r) u
+    in  case direction r of
+             Original -> c u 
+             Reversed -> c (rev u)
 
 
 -- * path order (with deletion of symbols)
 
-comp_lpo qp u = case direction qp of
-                Original -> compareW (\ x -> get (delete qp) x)
-                         (compareS (order qp)) (lhs u) (rhs u)
-                Reversed -> compareW (\ x -> get (delete qp) x)
-                         (compareS (order qp)) (reverse (lhs u)) (reverse (rhs u))
-
-data Direction = Original | Reversed deriving Show
+comp_lpo qp u = 
+    compareW (\ x -> get (delete qp) x)
+             (compareS (order qp)) (lhs u) (rhs u)
 
 data QP = 
-     QP Direction 
-        (Tree Bool) -- ^ False: delete symbol
+     QP (Tree Bool) -- ^ False: delete symbol
         (Tree Nat) -- ^  height in the precedence
     deriving Show
 
-direction qp = case qp of QP dir del ord -> dir
-delete    qp = case qp of QP dir del ord -> del
-order     qp = case qp of QP dir del ord -> ord
+delete (QP del ord) = del
+order  (QP del ord) = ord
 
 type Preorder s = s -> s -> Comp
 
