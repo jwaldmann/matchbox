@@ -357,9 +357,8 @@ instance (Ord s, PP.Pretty s ) => PP.Pretty (Qup s) where
                       PP.hsep $ PP.punctuate ( " =" )
                     $ for xs PP.pretty
         in  "LPO" PP.<$> PP.indent 4 ( PP.vcat 
-                [ "direction:" PP.<+> PP.pretty dir
+                [ "delete symbols:" PP.<+> PP.hsep (map PP.pretty deleted)
                 -- , "heights:" PP.<+> PP.pretty ord'
-                , "delete symbols:" PP.<+> PP.hsep (map PP.pretty deleted)
                 , "precedence:" PP.<+> plevels
                 ] )
 

@@ -151,9 +151,8 @@ comp r u =
         c u = case tag r of
             Remove_LPO -> comp_lpo (precedence r) u
             Remove_Interpretation -> comp_interpretation (interpretation r) u
-    in  case direction r of
-             Original -> c u 
-             Reversed -> c (rev u)
+    in  -- case direction r of { Original -> c u ; Reversed -> c (rev u) }
+        c ( case direction r of { Original -> u ; Reversed -> (rev u) } )
 
 
 -- * path order (with deletion of symbols)
