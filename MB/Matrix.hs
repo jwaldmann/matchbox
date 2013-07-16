@@ -159,8 +159,9 @@ traced_rule top dict dim funmap u = do
            ) $ L.assert dict [w] 
     case relation u of
         Strict -> L.strictly_greater dict l r
-        Weak   -> L.bconstant dict $ not top
-
+        Weak   -> case top of
+            False -> L.strictly_greater dict l r
+            True  -> L.bconstant dict  False -- cannot remove
 
 mdecode dict f = do
     pairs <- forM ( M.toList f) $ \ (k,v) -> do
