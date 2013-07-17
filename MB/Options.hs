@@ -15,6 +15,7 @@ data Options =
              , fromtop :: Bool
              , naive :: Bool
              , mirror :: Bool
+             , mirror_labelled :: Bool
              , parallel :: Bool
              , label :: Maybe (Int,Int)
              , use_lpo :: Bool
@@ -32,6 +33,7 @@ options0 = Options
          , fromtop = False
          , naive = False
          , mirror = False
+         , mirror_labelled = False
          , parallel = False
          , label = Nothing
          , use_lpo = False
@@ -50,6 +52,10 @@ options =
     , Option [ 'l' ] [ "label" ]
        ( ReqArg ( \ s opts -> opts { label = Just $ read $ "(" ++ s ++ ")" }) "Int,Int" ) 
        "-l x,y : label by model with x bits and y interpretations before unlabeling"
+
+    , Option [ 'M' ] ["mirror-labelled" ] 
+             (NoArg ( \ opts -> opts { mirror_labelled = True } ) )
+             "(with l) for each labelled rule, try all methods also for the mirror image"
 
     , Option [] ["lpo" ] 
              (NoArg ( \ opts -> opts { use_lpo = True } ) )

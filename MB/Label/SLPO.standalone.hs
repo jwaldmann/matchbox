@@ -44,16 +44,17 @@ interpretation (Remove t d qp i) = i
 
 -- | lex. comb. of  interpretations removes one original rule completely 
 -- (that is, all its labelled versions)
+constraint :: SRS -> Label -> Bool
 constraint srs lab = case lab of
-    Label mod qps remove -> 
-          let result = labelled srs mod
+    Label model qps remove -> 
+          let result = labelled srs model
               srss = map (map snd) result
               values = concat ( map (map fst) result )
               css  = map (map (comps qps  )) srss
           in     not ( any (any isNone) css ) -- ^ all are compatible at least weakly
               && or remove -- ^ at least one strictly
               && eqSymbol remove ( map ( all isGreater ) css ) -- ^ we guessed correctly
-              && all (\(ltop,rtop) -> eqSymbol ltop rtop) values -- ^ we have a model
+              && all (\ (ltop,rtop) -> eqSymbol ltop rtop) values -- ^ we have a model
               && all ( \ rem -> case rem of Remove tag dir qp int -> positiveI int ) qps
 
 -- * model, labelling
@@ -64,11 +65,11 @@ type Func = Tree [Bool]
 -- | produces semantically labelled version (one SRS for each rule)
 -- (the type is identical but the symbols have additional bits)
 labelled :: SRS -> Model -> [ [ ((Value,Value),Rule) ] ]
-labelled srs mod =
-    let ks = keys ( leftmost mod )
-        labelRule u k = case labelledW mod (lhs u) k of 
-                ( ltop, l' ) -> case labelledW mod (rhs u) k of 
-                    ( rtop, r' ) -> ((ltop,rtop),Rule (mode u) l' r')
+labelled srs model =
+    let ks = keys ( leftmost model )
+        labelRule (Rule mode l r) k = case labelledW model l k of 
+            ( ltop, l' ) -> case labelledW model r k of 
+                    ( rtop, r' ) -> ((ltop,rtop),Rule mode l' r')
     in  map ( \ u ->  map ( \ k -> labelRule u k ) ks    ) srs 
 
 type Value = [Bool]

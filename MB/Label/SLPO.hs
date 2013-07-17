@@ -91,7 +91,9 @@ uRemove conf bits_for_symbols dim bfn = known 0 1
     [ if use_lpo conf && (use_arctic conf || use_natural conf) 
       then constructors [ Just [], Just [] ] -- LPO or Interpretation
       else if use_lpo conf then known 0 2 [] else known 1 2 [] 
-    , constructors [ Just [], Just [] ] -- direction
+    , if mirror_labelled conf
+      then constructors [ Just [], Just [] ] -- direction
+      else known 0 2 [] -- original only
     , uQuasiPrec bits_for_symbols
     , uInter conf bits_for_symbols dim bfn
     ]
@@ -134,6 +136,7 @@ data Config =
              , use_lpo :: Bool
              , use_natural :: Bool
              , use_arctic :: Bool
+             , mirror_labelled :: Bool
              , dimension_for_matrices :: Int
              , bits_for_numbers :: Int
              }
@@ -146,6 +149,7 @@ config0 = Config
          , use_lpo = False
          , use_natural = False
          , use_arctic = False
+         , mirror_labelled = False
          , dimension_for_matrices = 2
          , bits_for_numbers = 4
          }
@@ -153,6 +157,9 @@ config0 = Config
 options = [ Option [] ["dp" ] 
              (NoArg ( \ conf -> conf { use_dp_transform = True } ) )
              "use dependency pairs transformation"
+          , Option [] ["mirror-labelled" ] 
+             (NoArg ( \ conf -> conf { mirror_labelled = True } ) )
+             "for each labelled rule, try all methods also for the mirror image"
           , Option [] ["lpo" ] 
              (NoArg ( \ conf -> conf { use_lpo = True } ) )
              "use LPO"
@@ -183,6 +190,7 @@ mkConfig o = Config
     , bits_for_numbers = O.bits o
     , bits_for_model = maybe 0 fst $ O.label o
     , number_of_interpretations = maybe 1 snd $ O.label o
+    , mirror_labelled = O.mirror_labelled o
     , use_lpo = O.use_lpo o
     , use_natural = O.use_natural o
     , use_arctic = O.use_arctic o
