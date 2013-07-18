@@ -1,5 +1,5 @@
 Name: matchbox
-Version: 2.0.1
+Version: 2.0.2
 Cabal-Version: >= 1.9.2
 License: GPL
 Build-type: Simple
@@ -55,7 +55,8 @@ Executable matchbox
                     , HaXml
                     , satchmo >= 2.6
                     , satchmo-smt >= 0.3
-                    , co4 >= 0.0.53 , text, wl-pprint-text, satchmo-core
+                    , co4 >= 0.0.55 , satchmo-core >= 0.6.4
+                    , text, wl-pprint-text
                     , template-haskell		 
                     , mtl
                     , stm
