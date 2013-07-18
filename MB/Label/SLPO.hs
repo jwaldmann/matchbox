@@ -35,6 +35,8 @@ import qualified Compress.Common as CC
 import qualified MB.Options as O
 
 import qualified Text.PrettyPrint.Leijen.Text as PP
+import Prelude hiding ( print )
+import System.IO (stderr)
 import Data.Text.Lazy (pack)
 import System.Console.GetOpt
 
@@ -142,6 +144,8 @@ data Config =
              }
     deriving Show
 
+instance PP.Pretty MB.Label.SLPO.Config where pretty = PP.text . pack . show
+
 config0 = Config
          { use_dp_transform = False
          , bits_for_model = 1 
@@ -208,6 +212,9 @@ __main = do
 example = case TPDB.srs "(RULES a a -> a b a)" of 
     Right sys -> solveTPDB config0 sys
 
+-- this code should NEVER print to stdout
+print x = PP.hPutDoc stderr $ PP.pretty x
+
 solve conf filePath = do
     sys <- TPDB.get_srs filePath 
     case use_dp_transform conf of
@@ -247,6 +254,7 @@ solveTPDB :: (Ord i, PP.Pretty i )
           -> TPDB.SRS i 
           -> IO (Maybe (TPDB.SRS i))
 solveTPDB conf sys = do
+
     m <- solveTPDB' conf sys
     case m of 
         Nothing -> return Nothing
