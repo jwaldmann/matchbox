@@ -40,13 +40,12 @@ import System.IO (stderr)
 import Data.Text.Lazy (pack)
 import System.Console.GetOpt
 
-$( runIO $ configurable [ Verbose
-                        , ImportPrelude
-                        -- , DumpAll "/tmp/sl" 
-                        -- , Profile
-                        , Cache
-                        ] 
-         $ compileFile "MB/Label/SLPO.standalone.hs" )
+$( compileFile [ Verbose
+               , ImportPrelude
+               -- , DumpAll "/tmp/sl" 
+               -- , Profile
+               , Cache
+               ] "MB/Label/SLPO.standalone.hs" )
 $(addDependentFile     "MB/Label/SLPO.standalone.hs" >> return [] )
 
 uTree bits leaf = 
@@ -58,7 +57,7 @@ uTree bits leaf =
 cSymbol xs = case xs of
     [] -> known 0 2 []
     x:xs' -> 
-        known 1 2 [ known (fromEnum x) 2 []
+        known 1 2 [ known x 2 []
                   , cSymbol xs' 
                   ]
 
