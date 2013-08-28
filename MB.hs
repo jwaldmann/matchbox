@@ -192,7 +192,7 @@ simplexed_compress lock top cont
 
 label_remove_unlabel opts = ( if O.parallel opts then C.parallel else C.sequential ) $ do
     let (m,i) = maybe (0,1) id $ O.label opts
-    m <- [ 0 .. m ]
+    -- m <- [ 0 .. m ]
     let opts' = opts { O.label = Just (m, max 1 $ min m i) }
     return $ remover_label "label/remove/unlabel" CC.expand_all_trs
            $ MB.Label.SLPO.handle opts'

@@ -40,13 +40,12 @@ import System.IO (stderr)
 import Data.Text.Lazy (pack)
 import System.Console.GetOpt
 
-$( compileFile [ Verbose
-               , ImportPrelude
+$( compileFile [ ImportPrelude
                -- , DumpAll "/tmp/sl" 
                -- , Profile
                , Cache
                ] "MB/Label/SLPO.standalone.hs" )
-$(addDependentFile     "MB/Label/SLPO.standalone.hs" >> return [] )
+
 
 uTree bits leaf = 
     let t depth = if depth > 0

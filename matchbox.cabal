@@ -55,7 +55,7 @@ Executable matchbox
                     , HaXml
                     , satchmo >= 2.6
                     , satchmo-smt >= 0.3
-                    , co4 >= 0.0.55 , satchmo-core >= 0.6.4
+                    , co4 >= 0.0.62 , satchmo-core >= 0.6.8
                     , text, wl-pprint-text
                     , template-haskell		 
                     , mtl
