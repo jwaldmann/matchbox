@@ -28,7 +28,10 @@ filterAllocator = kList' . map goArity . M.toList . nodeArities
 modelAllocator :: Int -> Int -> Trs v MarkedSymbol () -> Allocator
 modelAllocator n numPatterns = kList' . map goArity . M.toList . nodeArities
   where
-    goArity (s,arity)      = kTuple2 (kMarkedSymbolAllocator s) (goInterpretation arity)
+    goArity (sym@(_,marked),arity) = kTuple2 (kMarkedSymbolAllocator sym) $
+      if marked 
+      then kList' [ kTuple2 (kList' [kPattern Nothing]) (kValueAllocator $ nat 0 0) ]
+      else goInterpretation arity
 
     goInterpretation arity = if numPatterns <= 0 || numPatterns >= interpretationSize
                              then completeInterpretation
