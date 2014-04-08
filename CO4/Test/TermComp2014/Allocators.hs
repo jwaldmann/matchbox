@@ -65,18 +65,19 @@ kPattern alloc = case alloc of
   Just a  -> known 1 2 [ a ]
 
 precedenceAllocator :: Config -> Trs v MarkedSymbol () -> Allocator
-precedenceAllocator config trs = kList' $ concatMap goArity $ M.toList arities
+precedenceAllocator config trs = kList' $ concatMap goArity arities
   where
-    arities                = nodeArities trs
+    arities                = M.toList $ nodeArities trs
     n                      = modelBitWidth config
-    labels                 = map (nat n) [0..(2^n)-1]
-    numLabeledSymbols      = (M.size arities) * (length labels)
+    height                 = 2^n
+    labels                 = map (nat n) [0..height-1]
+    numPrecedences         = sum $ map (\(_,arity) -> height^arity) arities
     goArity (symbol,arity) = do
       args <- sequence $ replicate arity labels
       return $ kTuple2 (kTuple2 (kMarkedSymbolAllocator symbol) 
                                 (kLabelAllocator args)
                        ) 
-                       (uNat $ bitWidth numLabeledSymbols)
+                       (uNat $ bitWidth numPrecedences)
 
 kValueAllocator :: Domain -> Allocator
 kValueAllocator = kNat'
