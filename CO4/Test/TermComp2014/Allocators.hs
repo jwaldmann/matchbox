@@ -5,7 +5,8 @@ import           Control.Exception (assert)
 import qualified Data.Map as M
 import           CO4.AllocatorData (Allocator,constructors,known)
 import           CO4.Prelude (kList,uList,kList',uBool,kBool,kTuple2,uNat)
-import           CO4.Util (binaries,bitWidth)
+import           CO4.PreludeNat (nat,kNat',uNat)
+import           CO4.Util (bitWidth)
 import           CO4.Test.TermComp2014.Standalone (Symbol,Domain,Trs(..),DPTrs(..),MarkedSymbol,Label)
 import           CO4.Test.TermComp2014.Util (nodeArities,dpToTrs)
 
@@ -33,13 +34,15 @@ modelAllocator n numPatterns = kList' . map goArity . M.toList . nodeArities
                              then completeInterpretation
                              else incompleteInterpretation
       where
-        interpretationSize = (length $ binaries n) ^ arity
+        domainSize         = 2^n
+        interpretationSize = domainSize ^ arity
 
-        completeInterpretation = kList' $ do args <- sequence $ replicate arity $ binaries n
+        completeInterpretation = kList' $ do args <- sequence $ replicate arity [0..domainSize - 1]
                                              return $ goMapping args
           where 
-            goMapping args = kTuple2 (kList' $ map (kPattern . Just . kValueAllocator) args)
-                                     (uValueAllocator n)
+            goMapping args = 
+              kTuple2 (kList' $ map (kPattern . Just . kValueAllocator . nat n . fromIntegral) args)
+                      (uValueAllocator n)
 
         incompleteInterpretation = kList numPatterns goMapping
           where
@@ -58,7 +61,7 @@ precedenceAllocator :: Int -> Trs v MarkedSymbol () -> Allocator
 precedenceAllocator n trs = kList' $ map goArity $ M.toList arities
   where
     arities                = nodeArities trs
-    labels                 = binaries n
+    labels                 = map (nat n) [0..(2^n)-1]
     numLabeledSymbols      = (M.size arities) * (length labels)
     goArity (symbol,arity) = 
       kTuple2 (kMarkedSymbolAllocator symbol)
@@ -68,13 +71,13 @@ precedenceAllocator n trs = kList' $ map goArity $ M.toList arities
               )
 
 kValueAllocator :: Domain -> Allocator
-kValueAllocator = kList' . map kBool
+kValueAllocator = kNat'
   
 uValueAllocator :: Int -> Allocator
-uValueAllocator n = kList' $ replicate n uBool
+uValueAllocator = uNat
 
 kSymbolAllocator :: Symbol -> Allocator
-kSymbolAllocator s = assert (not $ null s) $ kValueAllocator s
+kSymbolAllocator s = assert (not $ null s) $ kList' $ map kBool s
 
 kMarkedSymbolAllocator :: MarkedSymbol -> Allocator
 kMarkedSymbolAllocator (s,m) = kTuple2 (kSymbolAllocator s) (kBool m)

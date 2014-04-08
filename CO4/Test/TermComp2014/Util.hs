@@ -11,7 +11,8 @@ import           Data.Tuple (swap)
 import qualified Data.Map as M
 import qualified TPDB.Data as TPDB
 import qualified TPDB.Input as Input
-import           CO4.Util (toBinary, binaries)
+import           CO4.Util (toBinary)
+import           CO4.PreludeNat (nat)
 import           CO4.Test.TermComp2014.Standalone hiding (ord)
 
 {-
@@ -52,7 +53,7 @@ parseTrs path = Input.get path >>= \case
 
 assignments :: Eq var => Int -> Trs var n l -> Assignments var
 assignments n trs = do 
-  values <- sequence $ replicate (length vars) $ binaries n
+  values <- sequence $ replicate (length vars) [0..(2^n)-1]
   return $ zipWith goMapping vars values
   where
     vars                    = goTrs trs
@@ -61,7 +62,7 @@ assignments n trs = do
     goTerm (Var v)          = [v]
     goTerm (Node _  _ args) = concatMap goTerm args
 
-    goMapping v value = (v, value)
+    goMapping v value = (v, nat n value)
 
 nodeArities :: Ord node => Trs v node l -> M.Map node Int
 nodeArities (Trs rules) = M.fromListWith (\a b -> assert (a == b) a) 

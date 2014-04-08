@@ -36,8 +36,7 @@ pprintRule goV goN goL symbolMap (Rule l r) = concat [ goTerm l, " -> ", goTerm 
         l' -> concat [ goN symbolMap s, "^", l' ," (", intercalate ", " (map goTerm args), ")" ]
 
 pprintValue :: Domain -> String
-pprintValue [] = "0"
-pprintValue d  = show $ fromBinary d
+pprintValue = show . value
 
 pprintSymbol :: SymbolMap -> Symbol -> String
 pprintSymbol map symbol = case M.lookup symbol map of

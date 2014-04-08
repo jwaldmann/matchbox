@@ -13,7 +13,7 @@ data Pattern p               = Any
 
 type Symbol                  = [Bool]
 
-type Domain                  = [Bool]
+type Domain                  = Nat
 
 type Label                   = [Domain]
 
@@ -116,7 +116,7 @@ valueOfFun s args model =
     lookup (\xs ys -> and (zipWith (eqPattern eqValue) xs ys)) argPattern interp
 
 valueOfVar :: Symbol -> Sigma Symbol -> Domain
-valueOfVar v = lookup eqSymbol (v)
+valueOfVar = lookup eqSymbol
 
 interpretation :: MarkedSymbol -> Model MarkedSymbol -> Interpretation
 interpretation = lookup eqMarkedSymbol
@@ -271,7 +271,7 @@ eqSymbol :: Symbol -> Symbol -> Bool
 eqSymbol = eqList eqBool
 
 eqValue :: Domain -> Domain -> Bool
-eqValue = eqList eqBool
+eqValue = eqNat
 
 eqList :: (a -> a -> Bool) -> [a] -> [a] -> Bool
 eqList f xs ys = case xs of
