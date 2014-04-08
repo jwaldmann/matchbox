@@ -142,11 +142,11 @@ filterArgumentsDPTerm filter term = case term of
 
 allRulesDecreasing :: DPTrs Label -> [FilterAndPrec MarkedSymbol Label] -> Bool
 allRulesDecreasing (DPTrs rules) filterAndPrecedences =
-  all (all (isDecreasingRule filterAndPrecedences)) rules
+  forall rules (all (isDecreasingRule filterAndPrecedences))
 
 isDecreasingRule :: [FilterAndPrec MarkedSymbol Label] -> DPRule Label -> Bool
 isDecreasingRule filterAndPrecedences (Rule lhs rhs) = 
-  exists filterAndPrecedences (\(f,p) ->
+  forall filterAndPrecedences (\(f,p) ->
     case lpo (ord p) (filterArgumentsDPTerm f lhs) (filterArgumentsDPTerm f rhs) of
       Gr  -> True
       Eq  -> True
@@ -290,3 +290,6 @@ eqPattern f x y = case x of
 
 exists :: [a] -> (a -> Bool) -> Bool
 exists xs f = any f xs
+
+forall :: [a] -> (a -> Bool) -> Bool
+forall xs f = all f xs
