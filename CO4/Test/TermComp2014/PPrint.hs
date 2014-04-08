@@ -4,7 +4,6 @@ where
 import           Data.List (intercalate,intersperse,sortBy,groupBy)
 import           Data.Function (on)
 import qualified Data.Map as M
-import           CO4.Util (fromBinary)
 import           CO4.PreludeNat (value)
 import           CO4.Test.TermComp2014.Standalone 
 import           CO4.Test.TermComp2014.Util (SymbolMap,dpToTrs)

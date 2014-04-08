@@ -4,7 +4,7 @@ where
 import           Control.Exception (assert)
 import qualified Data.Map as M
 import           CO4.AllocatorData (Allocator,constructors,known)
-import           CO4.Prelude (kList,uList,kList',uBool,kBool,kTuple2,uNat)
+import           CO4.Prelude (kList,uList,kList',kBool,kTuple2)
 import           CO4.PreludeNat (nat,kNat',uNat)
 import           CO4.Util (bitWidth)
 import           CO4.Test.TermComp2014.Standalone (Symbol,Domain,Trs(..),DPTrs(..),MarkedSymbol,Label)
