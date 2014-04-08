@@ -53,7 +53,7 @@ type Assignments sym         = [Sigma sym]
 data Order                   = Gr | Eq | NGe
                              deriving (Eq,Show)
 
-type Precedence sym label    = Map sym (Map label Nat)
+type Precedence sym label    = Map (sym, label) Nat
 
 data Index                   = This | Next Index
 
@@ -194,11 +194,13 @@ lpo ord s t = case t of
                     NGe -> NGe
 
 ord :: Precedence MarkedSymbol Label -> (MarkedSymbol, Label) -> (MarkedSymbol, Label) -> Order
-ord prec (symA,labelA) (symB,labelB) = 
-  let pA = lookupPrecedence eqMarkedSymbol eqLabel symA labelA prec
-      pB = lookupPrecedence eqMarkedSymbol eqLabel symB labelB prec
+ord prec a b = 
+  let key (s,l) (s',l') = (eqMarkedSymbol s s') && (eqLabel l l')
+
+      pa = lookup key a prec
+      pb = lookup key b prec
   in
-    ordNat pA pB
+    ordNat pa pb
 
 ordNat :: Nat -> Nat -> Order
 ordNat a b = case eqNat a b of
@@ -224,10 +226,6 @@ lex ord xs ys = case xs of
       NGe -> NGe
 
 -- * utilities
-
-lookupPrecedence :: (sym -> sym -> Bool) -> (label -> label -> Bool) -> sym -> label 
-                 -> Precedence sym label -> Nat
-lookupPrecedence eqSym eqLabel sym label prec = lookup eqLabel label (lookup eqSym sym prec)
 
 atIndex :: Index -> [a] -> a
 atIndex index xs = case index of
