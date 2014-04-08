@@ -71,13 +71,17 @@ precedenceAllocator config trs = kList' $ concatMap goArity arities
     n                      = modelBitWidth config
     height                 = 2^n
     labels                 = map (nat n) [0..height-1]
-    numPrecedences         = sum $ map (\(_,arity) -> height^arity) arities
+    precedenceBitWidth     = 
+      if bitWidthPrecedenceDomain config <= 0
+      then bitWidth $ sum $ map (\(_,arity) -> height^arity) arities
+      else bitWidthPrecedenceDomain config
+
     goArity (symbol,arity) = do
       args <- sequence $ replicate arity labels
       return $ kTuple2 (kTuple2 (kMarkedSymbolAllocator symbol) 
                                 (kLabelAllocator args)
                        ) 
-                       (uNat $ bitWidth numPrecedences)
+                       (uNat precedenceBitWidth)
 
 kValueAllocator :: Domain -> Allocator
 kValueAllocator = kNat'
