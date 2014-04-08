@@ -4,6 +4,7 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE LambdaCase #-}
+{-# OPTIONS_GHC -fno-warn-unused-binds #-}
 
 import           Prelude hiding (lex,lookup,length,iterate)
 import           Control.Monad (forM_)
