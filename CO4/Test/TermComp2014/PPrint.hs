@@ -68,12 +68,14 @@ pprintLabel vs = "[" ++ (intercalate ", " $ map pprintValue vs) ++ "]"
 
 pprintPrecedence :: (SymbolMap -> s -> String) -> (l -> String) -> SymbolMap 
                  -> Precedence s l -> String
-pprintPrecedence goS goL symbolMap = intercalate " > "
-                                   . map     (intercalate " = " . map fst)
-                                   . groupBy ((==)    `on` snd)
-                                   . reverse
-                                   . sortBy  (compare `on` snd)
-                                   . map     (\((s,l),n) -> (goS symbolMap s ++ "^" ++ goL l, value n))
+pprintPrecedence goS goL symbolMap = 
+    intercalate " > "
+  . map         (intercalate " = " . map fst)
+  . groupBy     ((==)    `on` snd)
+  . reverse
+  . sortBy      (compare `on` snd)
+  . map         (\(s,l,n) -> (goS symbolMap s ++ "^" ++ goL l, value n))
+  . concatMap   (\(s,ls) -> map (\(l,n) -> (s,l,n)) ls)
 
 pprintArgFilter :: (SymbolMap -> s -> String) -> SymbolMap -> ArgFilter s -> String
 pprintArgFilter goS symbolMap = unlines . map go
