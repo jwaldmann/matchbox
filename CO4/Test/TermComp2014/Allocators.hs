@@ -9,12 +9,13 @@ import           CO4.PreludeNat (nat,kNat',uNat)
 import           CO4.Util (bitWidth)
 import           CO4.Test.TermComp2014.Standalone (Symbol,Domain,Trs(..),DPTrs(..),MarkedSymbol,Label)
 import           CO4.Test.TermComp2014.Util (nodeArities,dpToTrs)
+import           CO4.Test.TermComp2014.Config
 
-allocator :: Int -> Int -> Int -> DPTrs () -> Allocator
-allocator bitWidth numPrecedences numPatterns dpTrs = 
-  kTuple2 (modelAllocator bitWidth numPatterns trs)
-          (kList numPrecedences $ kTuple2 (filterAllocator trs)
-                                          (precedenceAllocator bitWidth trs))
+allocator :: Config -> DPTrs () -> Allocator
+allocator config dpTrs = 
+  kTuple2 (modelAllocator config trs)
+          (kList (numPrecedences config) $ kTuple2 (filterAllocator trs)
+                                                   (precedenceAllocator config trs))
   where
     trs = dpToTrs dpTrs
 
@@ -25,32 +26,35 @@ filterAllocator = kList' . map goArity . M.toList . nodeArities
     goIndex 0         = known 0 2 [ ]
     goIndex i         = constructors [ Just [], Just [ goIndex $ i - 1 ] ]
 
-modelAllocator :: Int -> Int -> Trs v MarkedSymbol () -> Allocator
-modelAllocator n numPatterns = kList' . map goArity . M.toList . nodeArities
+modelAllocator :: Config -> Trs v MarkedSymbol () -> Allocator
+modelAllocator config = kList' . map goArity . M.toList . nodeArities
   where
     goArity (sym@(_,marked),arity) = kTuple2 (kMarkedSymbolAllocator sym) $
       if marked 
       then kList' [ kTuple2 (kList' [kPattern Nothing]) (kValueAllocator $ nat 0 0) ]
       else goInterpretation arity
 
-    goInterpretation arity = if numPatterns <= 0 || numPatterns >= interpretationSize
+    goInterpretation arity = if (numPatterns config) <= 0 || 
+                                (numPatterns config) >= interpretationSize
                              then completeInterpretation
                              else incompleteInterpretation
       where
-        domainSize         = 2^n
+        domainSize         = 2^(modelBitWidth config)
         interpretationSize = domainSize ^ arity
 
         completeInterpretation = kList' $ do args <- sequence $ replicate arity [0..domainSize - 1]
                                              return $ goMapping args
           where 
             goMapping args = 
-              kTuple2 (kList' $ map (kPattern . Just . kValueAllocator . nat n . fromIntegral) args)
-                      (uValueAllocator n)
+              kTuple2 (kList' $ map (kPattern . Just . kValueAllocator 
+                                              . nat (modelBitWidth config) 
+                                              . fromIntegral) args)
+                      (uValueAllocator $ modelBitWidth config)
 
-        incompleteInterpretation = kList numPatterns goMapping
+        incompleteInterpretation = kList (numPatterns config) goMapping
           where
-            goMapping = kTuple2 (kList arity $ uPattern $ uValueAllocator n)
-                                (uValueAllocator n)
+            goMapping = kTuple2 (kList arity $ uPattern $ uValueAllocator $ modelBitWidth config)
+                                (uValueAllocator $ modelBitWidth config)
 
 uPattern :: Allocator -> Allocator
 uPattern k = constructors [ Just [], Just [k] ]
@@ -60,10 +64,11 @@ kPattern alloc = case alloc of
   Nothing -> known 0 2 []
   Just a  -> known 1 2 [ a ]
 
-precedenceAllocator :: Int -> Trs v MarkedSymbol () -> Allocator
-precedenceAllocator n trs = kList' $ concatMap goArity $ M.toList arities
+precedenceAllocator :: Config -> Trs v MarkedSymbol () -> Allocator
+precedenceAllocator config trs = kList' $ concatMap goArity $ M.toList arities
   where
     arities                = nodeArities trs
+    n                      = modelBitWidth config
     labels                 = map (nat n) [0..(2^n)-1]
     numLabeledSymbols      = (M.size arities) * (length labels)
     goArity (symbol,arity) = do

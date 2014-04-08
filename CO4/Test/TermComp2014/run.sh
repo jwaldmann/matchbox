@@ -1,6 +1,6 @@
 #!/bin/bash
 
-if [ $# -lt 4 ]
+if [ $# -lt 5 ]
 then
   echo "Syntax: $0 CMD TIMEOUT UPPER_BITWIDTH NUM_PRECEDENCES NUM_PATTERNS [FILES] ..."
   exit 1
@@ -24,9 +24,10 @@ do
 
   for BITWIDTH in $(seq 0 ${UPPER_BITWIDTH})
   do
-    echo Solving ${CMD} ${BITWIDTH} ${NUM_PRECEDENCES} ${NUM_PATTERNS} ${FILE}
+    CALL="${CMD} --model ${BITWIDTH} --precedences ${NUM_PRECEDENCES} --patterns ${NUM_PATTERNS} ${FILE}"
+    echo Calling ${CALL}
 
-    /usr/bin/timeout --signal=SIGKILL ${TIMEOUT} ${CMD} ${BITWIDTH} ${NUM_PRECEDENCES} ${NUM_PATTERNS} ${FILE} &> ${LOG_FILE}
+    /usr/bin/timeout --signal=SIGKILL ${TIMEOUT} ${CALL} &> ${LOG_FILE}
     if [ $? -eq 0 ]
     then
       echo Terminates
