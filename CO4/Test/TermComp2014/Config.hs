@@ -36,6 +36,6 @@ parseConfig = do
 
   let syntaxMsg = "[OPTION ...] FILE"
 
-  case getOpt RequireOrder options args of
+  case getOpt Permute options args of
      (o,[n],[]) -> return (foldl (\c o -> o c) defaultConfig o, n)
      (_,_,msgs) -> error $ (unlines msgs) ++ (usageInfo syntaxMsg options)
