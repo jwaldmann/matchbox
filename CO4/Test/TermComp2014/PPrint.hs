@@ -6,7 +6,7 @@ import           Data.Function (on)
 import qualified Data.Map as M
 import           CO4.PreludeNat (value)
 import           CO4.Test.TermComp2014.Standalone 
-import           CO4.Test.TermComp2014.Util (SymbolMap,dpToTrs)
+import           CO4.Test.TermComp2014.Util (SymbolMap)
 
 pprintUnlabeledTrs :: SymbolMap -> UnlabeledTrs -> String
 pprintUnlabeledTrs = pprintTrs pprintSymbol pprintSymbol $ const ""
@@ -15,7 +15,7 @@ pprintLabeledTrs :: (label -> String) -> SymbolMap -> Trs Symbol Symbol label ->
 pprintLabeledTrs = pprintTrs pprintSymbol pprintSymbol
 
 pprintDPTrs :: (l -> String) -> SymbolMap -> DPTrs l -> String
-pprintDPTrs goL symbolMap = pprintTrs pprintSymbol pprintMarkedSymbol goL symbolMap . dpToTrs
+pprintDPTrs goL symbolMap = pprintTrs pprintSymbol pprintMarkedSymbol goL symbolMap
 
 pprintDPRule :: (l -> String) -> SymbolMap -> DPRule l -> String
 pprintDPRule = pprintRule pprintSymbol pprintMarkedSymbol

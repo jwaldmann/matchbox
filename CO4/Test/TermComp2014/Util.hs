@@ -96,8 +96,7 @@ definedSymbols (Trs rules) = mapMaybe goRule rules
     goTerm (Node s l _) = Just (s,l)
 
 dependencyPairs :: UnlabeledTrs -> DPTrs ()
-dependencyPairs (Trs rules) = DPTrs $ do r <- concatMap goRule rules
-                                         return [r]
+dependencyPairs (Trs rules) = Trs $ concatMap goRule rules
   where
     defined = definedSymbols $ Trs rules
 
@@ -113,16 +112,13 @@ dependencyPairs (Trs rules) = DPTrs $ do r <- concatMap goRule rules
                 return s
 
 dpProblem :: UnlabeledTrs -> DPTrs ()
-dpProblem trs = DPTrs $ original ++ dp
+dpProblem trs = Trs $ original ++ dp
   where
-    DPTrs original = trsToDp trs
-    DPTrs dp       = dependencyPairs trs
-
-dpToTrs :: DPTrs label -> Trs Symbol MarkedSymbol label
-dpToTrs (DPTrs rules) = Trs $ concat rules
+    Trs original = trsToDp trs
+    Trs dp       = dependencyPairs trs
 
 trsToDp :: Trs Symbol Symbol label -> DPTrs label
-trsToDp (Trs rules) = DPTrs $ map (return . goRule) rules
+trsToDp (Trs rules) = Trs $ map goRule rules
   where
     goRule (Rule lhs rhs)  = Rule (toDpTerm lhs) (toDpTerm rhs)
 
@@ -130,20 +126,23 @@ toDpTerm :: Term v n l -> Term v (n,Bool) l
 toDpTerm (Var v)         = Var v
 toDpTerm (Node s l args) = Node (s,False) l $ map toDpTerm args
 
-removeStrongDecreasingRules :: DPTrs () -> DPTrs Label -> [FilterAndPrec MarkedSymbol Label]
+ungroupTrs :: GroupedTrs v n l -> Trs v n l
+ungroupTrs (GroupedTrs rules) = Trs $ concat rules
+
+removeStrongDecreasingRules :: DPTrs () -> GroupedDPTrs Label -> [FilterAndPrec MarkedSymbol Label]
                             -> (DPTrs (), [DPRule ()])
-removeStrongDecreasingRules (DPTrs rules) (DPTrs labeledRules) filterAndPrecedences = 
+removeStrongDecreasingRules (Trs rules) (GroupedTrs labeledRules) filterAndPrecedences = 
     assert (length rules == length labeledRules) 
-  $ (DPTrs $ map return keep, delete)
+  $ (Trs keep, delete)
   where
     (delete, keep) = partitionEithers $ zipWith check rules labeledRules
   
-    check [rule] labeledRules = 
+    check rule labeledRules = 
       if all (isMarkedStrongDecreasingRule filterAndPrecedences) labeledRules
       then Left  rule
       else Right rule
 
 hasMarkedRule :: DPTrs label -> Bool
-hasMarkedRule (DPTrs rules) = any (any goRule) rules
+hasMarkedRule (Trs rules) = any goRule rules
   where
     goRule (Rule lhs _) = isMarked lhs

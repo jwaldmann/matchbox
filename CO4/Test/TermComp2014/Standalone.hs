@@ -5,61 +5,60 @@ import Prelude hiding (lex,lookup,length)
 import CO4.PreludeNat
 import CO4.PreludeBool (xor2)
 
-type Map k v                 = [(k,v)]
+type Map k v                   = [(k,v)]
 
-data Pattern p               = Any
-                             | Exactly p
-                             deriving (Eq,Show)
+data Pattern p                 = Any
+                               | Exactly p
+                               deriving (Eq,Show)
 
-type Symbol                  = [Bool]
+type Symbol                    = [Bool]
 
-type Domain                  = Nat
+type Domain                    = Nat
 
-type Label                   = [Domain]
+type Label                     = [Domain]
 
-data Term var node label     = Var  var
-                             | Node node label [Term var node label]
-                             deriving (Eq,Show)
+data Term var node label       = Var  var
+                               | Node node label [Term var node label]
+                               deriving (Eq,Show)
 
-data Rule var node label     = Rule (Term var node label) (Term var node label)
-                             deriving (Eq,Show)
+data Rule var node label       = Rule (Term var node label) (Term var node label)
+                               deriving (Eq,Show)
 
-data Trs var node label      = Trs [Rule var node label]
-                             deriving (Eq,Show)
+data Trs var node label        = Trs [Rule var node label]
+                               deriving (Eq,Show)
 
-type UnlabeledTerm           = Term Symbol Symbol ()
-type UnlabeledRule           = Rule Symbol Symbol ()
-type UnlabeledTrs            = Trs  Symbol Symbol ()
+data GroupedTrs var node label = GroupedTrs [[Rule var node label]]
+                               deriving (Eq,Show)
 
-type MarkedSymbol            = (Symbol, Bool)
+type UnlabeledTerm             = Term Symbol Symbol ()
+type UnlabeledRule             = Rule Symbol Symbol ()
+type UnlabeledTrs              = Trs  Symbol Symbol ()
 
-type DPTerm label            = Term Symbol MarkedSymbol label
-type DPRule label            = Rule Symbol MarkedSymbol label
-data DPTrs label             = DPTrs [ [DPRule label] ]
-                             deriving (Eq,Show)
+type MarkedSymbol              = (Symbol, Bool)
 
-type LabeledTerm             = Term Symbol Symbol Label
-type LabeledRule             = Rule Symbol Symbol Label
-type LabeledTrs              = Trs  Symbol Symbol Label
+type DPTerm       label        = Term Symbol MarkedSymbol label
+type DPRule       label        = Rule Symbol MarkedSymbol label
+type DPTrs        label        = Trs  Symbol MarkedSymbol label
+type GroupedDPTrs label        = GroupedTrs Symbol MarkedSymbol label
 
-type Interpretation          = Map [Pattern Domain] Domain
+type Interpretation            = Map [Pattern Domain] Domain
 
-type Model sym               = Map sym Interpretation
+type Model sym                 = Map sym Interpretation
 
-type Sigma sym               = Map sym Domain
+type Sigma sym                 = Map sym Domain
 
-type Assignments sym         = [Sigma sym]
+type Assignments sym           = [Sigma sym]
 
-data Order                   = Gr | Eq | NGe
-                             deriving (Eq,Show)
+data Order                     = Gr | Eq | NGe
+                               deriving (Eq,Show)
 
-type Precedence sym label    = Map (sym, label) Nat
+type Precedence sym label      = Map (sym, label) Nat
 
-data Index                   = This | Next Index
+data Index                     = This | Next Index
 
-type ArgFilter sym           = Map sym [Index]
+type ArgFilter sym             = Map sym [Index]
 
-type FilterAndPrec sym label = (ArgFilter sym, Precedence sym label)
+type FilterAndPrec sym label   = (ArgFilter sym, Precedence sym label)
 
 constraint :: (DPTrs (), Assignments Symbol) 
            -> (Model MarkedSymbol, [FilterAndPrec MarkedSymbol Label]) 
@@ -74,9 +73,9 @@ constraint (trs,assignments) (model, filterAndPrecedences) =
 
 -- * make labeled TRS
 
-makeLabeledTrs :: Model MarkedSymbol -> DPTrs () -> Assignments Symbol -> DPTrs Label
-makeLabeledTrs model (DPTrs rules) assignments = 
-  let goRules                       = concatMap (\r -> map (goRule r) assignments)
+makeLabeledTrs :: Model MarkedSymbol -> DPTrs () -> Assignments Symbol -> GroupedDPTrs Label
+makeLabeledTrs model (Trs rules) assignments = 
+  let goAssignments rule            = map (goRule rule) assignments
       goRule  (Rule lhs rhs) sigma  = Rule (fst (goTerm lhs sigma)) (fst (goTerm rhs sigma))
       goTerm  term           sigma  = case term of
         Var s         -> (Var s, valueOfVar s sigma)
@@ -84,7 +83,7 @@ makeLabeledTrs model (DPTrs rules) assignments =
           () -> case unzip (map (\t -> goTerm t sigma) args) of
             (args', argsValues) -> (Node s argsValues args', valueOfFun s argsValues model)
   in
-    DPTrs (map goRules rules)
+    GroupedTrs (map goAssignments rules)
 
 -- * search model
 
@@ -93,7 +92,7 @@ isModelForTrsUnderAllAssignments model trs assignments =
   all (isModelForTrs model trs) assignments
 
 isModelForTrs :: Model MarkedSymbol -> DPTrs () -> Sigma Symbol -> Bool
-isModelForTrs model (DPTrs rules) sigma = all (all (isModelForRule model sigma)) rules
+isModelForTrs model (Trs rules) sigma = all (isModelForRule model sigma) rules
 
 isModelForRule :: Model MarkedSymbol -> Sigma Symbol -> DPRule () -> Bool
 isModelForRule model sigma (Rule lhs rhs) = 
@@ -124,11 +123,11 @@ interpretation = lookup eqMarkedSymbol
 -- * filter arguments
 
 filterArgumentsDPTrs :: ArgFilter MarkedSymbol -> DPTrs a -> DPTrs a
-filterArgumentsDPTrs filter (DPTrs rules) = 
+filterArgumentsDPTrs filter (Trs rules) = 
   let goRule (Rule lhs rhs) = Rule (filterArgumentsDPTerm filter lhs) 
                                    (filterArgumentsDPTerm filter rhs)
   in
-    DPTrs (map (map goRule) rules)
+    Trs (map goRule rules)
 
 filterArgumentsDPTerm :: ArgFilter MarkedSymbol -> DPTerm a -> DPTerm a
 filterArgumentsDPTerm filter term = case term of
@@ -140,8 +139,8 @@ filterArgumentsDPTerm filter term = case term of
 
 -- * search precedence
 
-allRulesDecreasing :: DPTrs Label -> [FilterAndPrec MarkedSymbol Label] -> Bool
-allRulesDecreasing (DPTrs rules) filterAndPrecedences =
+allRulesDecreasing :: GroupedDPTrs Label -> [FilterAndPrec MarkedSymbol Label] -> Bool
+allRulesDecreasing (GroupedTrs rules) filterAndPrecedences =
   forall rules (all (isDecreasingRule filterAndPrecedences))
 
 isDecreasingRule :: [FilterAndPrec MarkedSymbol Label] -> DPRule Label -> Bool
@@ -153,8 +152,8 @@ isDecreasingRule filterAndPrecedences (Rule lhs rhs) =
       NGe -> False
   )
 
-existsStrongDecreasingRule :: DPTrs Label -> [FilterAndPrec MarkedSymbol Label] -> Bool
-existsStrongDecreasingRule (DPTrs rules) filterAndPrecedences =
+existsStrongDecreasingRule :: GroupedDPTrs Label -> [FilterAndPrec MarkedSymbol Label] -> Bool
+existsStrongDecreasingRule (GroupedTrs rules) filterAndPrecedences =
   exists rules (all (isMarkedStrongDecreasingRule filterAndPrecedences))
 
 isMarkedStrongDecreasingRule :: [FilterAndPrec MarkedSymbol Label] -> DPRule Label -> Bool

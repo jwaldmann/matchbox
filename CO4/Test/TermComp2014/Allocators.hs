@@ -8,25 +8,23 @@ import           CO4.Prelude (kList,uList,kList',kBool,kTuple2)
 import           CO4.PreludeNat (nat,kNat',uNat)
 import           CO4.Util (bitWidth)
 import           CO4.Test.TermComp2014.Standalone (Symbol,Domain,Trs(..),DPTrs(..),MarkedSymbol,Label)
-import           CO4.Test.TermComp2014.Util (nodeArities,dpToTrs)
+import           CO4.Test.TermComp2014.Util (nodeArities)
 import           CO4.Test.TermComp2014.Config
 
 allocator :: Config -> DPTrs () -> Allocator
 allocator config dpTrs = 
-  kTuple2 (modelAllocator config trs)
-          (kList (numPrecedences config) $ kTuple2 (filterAllocator trs)
-                                                   (precedenceAllocator config trs))
-  where
-    trs = dpToTrs dpTrs
+  kTuple2 (modelAllocator config dpTrs)
+          (kList (numPrecedences config) $ kTuple2 (filterAllocator dpTrs)
+                                                   (precedenceAllocator config dpTrs))
 
-filterAllocator :: Trs v MarkedSymbol () -> Allocator
+filterAllocator :: DPTrs () -> Allocator
 filterAllocator = kList' . map goArity . M.toList . nodeArities
   where
     goArity (s,arity) = kTuple2 (kMarkedSymbolAllocator s) (uList arity $ goIndex $ arity - 1)
     goIndex 0         = known 0 2 [ ]
     goIndex i         = constructors [ Just [], Just [ goIndex $ i - 1 ] ]
 
-modelAllocator :: Config -> Trs v MarkedSymbol () -> Allocator
+modelAllocator :: Config -> DPTrs () -> Allocator
 modelAllocator config = kList' . map goArity . M.toList . nodeArities
   where
     goArity (sym@(_,marked),arity) = kTuple2 (kMarkedSymbolAllocator sym) $
@@ -64,7 +62,7 @@ kPattern alloc = case alloc of
   Nothing -> known 0 2 []
   Just a  -> known 1 2 [ a ]
 
-precedenceAllocator :: Config -> Trs v MarkedSymbol () -> Allocator
+precedenceAllocator :: Config -> DPTrs () -> Allocator
 precedenceAllocator config trs = kList' $ concatMap goArity arities
   where
     arities                = M.toList $ nodeArities trs

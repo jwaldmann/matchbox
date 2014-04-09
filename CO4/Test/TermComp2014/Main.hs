@@ -14,7 +14,7 @@ import qualified Satchmo.Core.Decode
 import           CO4 hiding (Config)
 import           CO4.Prelude
 import           CO4.Test.TermComp2014.Util 
-  (SymbolMap,parseTrs,assignments,dpProblem,dpToTrs,removeStrongDecreasingRules,hasMarkedRule)
+  (SymbolMap,parseTrs,assignments,dpProblem,removeStrongDecreasingRules,hasMarkedRule,ungroupTrs)
 import           CO4.Test.TermComp2014.PPrint
 import           CO4.Test.TermComp2014.Allocators (allocator)
 import           CO4.Test.TermComp2014.Standalone
@@ -50,7 +50,7 @@ resultFile' config filePath = do
 
 iterate :: SymbolMap -> Int -> Config -> DPTrs () -> IO Bool
 iterate symbolMap i config dp = 
-  let sigmas    = assignments (modelBitWidth config) $ dpToTrs dp
+  let sigmas    = assignments (modelBitWidth config) dp
       parameter = (dp, sigmas)
       alloc     = allocator config dp
   in do
@@ -68,7 +68,7 @@ iterate symbolMap i config dp =
                   putStrLn $ pprintModel pprintMarkedSymbol symbolMap model
 
                   putStrLn $ "Labeled Trs:"
-                  putStrLn $ pprintDPTrs pprintLabel symbolMap labeledTrs
+                  putStrLn $ pprintDPTrs pprintLabel symbolMap $ ungroupTrs labeledTrs
 
                   forM_ (zip [1..] filterAndPrecedences) $ \(i,(filter,precedence)) -> do
 
@@ -77,7 +77,8 @@ iterate symbolMap i config dp =
 
                     putStrLn $ show i ++ ". Filtered Trs:"
                     putStrLn $ pprintDPTrs pprintLabel symbolMap 
-                             $ filterArgumentsDPTrs filter labeledTrs
+                             $ filterArgumentsDPTrs filter 
+                             $ ungroupTrs labeledTrs
 
                     putStrLn $ show i ++ ". Precedence:"
                     putStrLn $ pprintPrecedence pprintMarkedSymbol pprintLabel symbolMap precedence
