@@ -90,4 +90,4 @@ iterate symbolMap i config dp =
                where
                  (dp', delete) = removeStrongDecreasingRules dp labeledTrs filterAndPrecedences
 
-                 labeledTrs = makeLabeledTrs model dp sigmas
+                 (labeledTrs,True) = makeLabeledTrs model dp sigmas

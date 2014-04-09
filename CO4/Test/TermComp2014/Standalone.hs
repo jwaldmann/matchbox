@@ -64,40 +64,34 @@ constraint :: (DPTrs (), Assignments Symbol)
            -> (Model MarkedSymbol, [FilterAndPrec MarkedSymbol Label]) 
            -> Bool
 constraint (trs,assignments) (model, filterAndPrecedences) = 
-  let labeledTrs = makeLabeledTrs model trs assignments
-  in
-    and [ isModelForTrsUnderAllAssignments model trs assignments 
-        , allRulesDecreasing         labeledTrs filterAndPrecedences
-        , existsStrongDecreasingRule labeledTrs filterAndPrecedences
-        ]
+  case makeLabeledTrs model trs assignments of
+    (labeledTrs, isModel) ->
+      and [ isModel
+          , allRulesDecreasing         labeledTrs filterAndPrecedences
+          , existsStrongDecreasingRule labeledTrs filterAndPrecedences
+          ]
 
--- * make labeled TRS
+-- * make labeled TRS & search model
 
-makeLabeledTrs :: Model MarkedSymbol -> DPTrs () -> Assignments Symbol -> GroupedDPTrs Label
+makeLabeledTrs :: Model MarkedSymbol -> DPTrs () -> Assignments Symbol -> (GroupedDPTrs Label, Bool)
 makeLabeledTrs model (Trs rules) assignments = 
-  let goAssignments rule            = map (goRule rule) assignments
-      goRule  (Rule lhs rhs) sigma  = Rule (fst (goTerm lhs sigma)) (fst (goTerm rhs sigma))
-      goTerm  term           sigma  = case term of
-        Var s         -> (Var s, valueOfVar s sigma)
-        Node s l args -> case l of 
-          () -> case unzip (map (\t -> goTerm t sigma) args) of
-            (args', argsValues) -> (Node s argsValues args', valueOfFun s argsValues model)
+  case unzip (map (\r -> makeLabeledRule model r assignments) rules) of
+    (rules', equalities) -> (GroupedTrs rules', and equalities)
+
+makeLabeledRule :: Model MarkedSymbol -> DPRule () -> Assignments Symbol -> ([DPRule Label], Bool)
+makeLabeledRule model (Rule lhs rhs) assignments = 
+  let goRule sigma = case makeLabeledTerm model lhs sigma of
+        (lhs', lhsValue) -> case makeLabeledTerm model rhs sigma of
+          (rhs', rhsValue) -> (Rule lhs' rhs', eqValue lhsValue rhsValue)
   in
-    GroupedTrs (map goAssignments rules)
+    case unzip (map goRule assignments) of
+      (rules', equalities) -> (rules', and equalities)
 
--- * search model
-
-isModelForTrsUnderAllAssignments :: Model MarkedSymbol -> DPTrs () -> Assignments Symbol -> Bool
-isModelForTrsUnderAllAssignments model trs assignments =
-  all (isModelForTrs model trs) assignments
-
-isModelForTrs :: Model MarkedSymbol -> DPTrs () -> Sigma Symbol -> Bool
-isModelForTrs model (Trs rules) sigma = all (isModelForRule model sigma) rules
-
-isModelForRule :: Model MarkedSymbol -> Sigma Symbol -> DPRule () -> Bool
-isModelForRule model sigma (Rule lhs rhs) = 
-  eqValue (valueOfTerm model sigma lhs)
-          (valueOfTerm model sigma rhs)
+makeLabeledTerm :: Model MarkedSymbol -> DPTerm () -> Sigma Symbol -> (DPTerm Label, Domain)
+makeLabeledTerm model term sigma = case term of
+  Var s         -> (Var s, valueOfVar s sigma)
+  Node s _ args -> case unzip (map (\a -> makeLabeledTerm model a sigma) args) of
+    (args', argsValues) -> (Node s argsValues args', valueOfFun s argsValues model)
 
 valueOfTerm :: Model MarkedSymbol -> Sigma Symbol -> DPTerm () -> Domain
 valueOfTerm model sigma term = case term of
