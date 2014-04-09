@@ -18,11 +18,11 @@ done
 
 git clone  https://github.com/niklasso/minisat-haskell-bindings.git
 pushd minisat-haskell-bindings
-cabal install --extra-lib-dirs=/usr/local/lib --extra-include-dirs=/usr/local/include
+cabal install --extra-lib-dirs=/usr/local/lib64 --extra-include-dirs=/usr/local/include
 
 popd
 
-cabal install hmatrix-glpk --extra-lib-dirs=/usr/local/lib --extra-include-dirs=/usr/local/include
+cabal install hmatrix-glpk --extra-lib-dirs=/usr/local/lib64 --extra-include-dirs=/usr/local/include
 
 for arch in satchmo haskell-obdd smt-lib satchmo-smt haskell-tpdb transformer-combinators
 do

@@ -226,11 +226,10 @@ compareW del comp xs ys =
            True -> GreaterEquals
            False -> None
 
--- following hack makes eqSymbol monomorphic
--- so it can be used as argument for elemWith
-eqSymbol p q = (p == q ) && case p of
-    [] -> True ; x : xs -> case x of 
-         True -> True ; False -> True
+eqSymbol p q = (eqBoolList p q ) 
+
+eqBoolList xs ys = and ( zipWith eqBool xs ys )
+eqBool p q = case p of False -> not q ; True -> q
 
 eqWord xs ys = case xs of
     [] -> case ys of

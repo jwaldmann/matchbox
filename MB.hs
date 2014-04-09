@@ -24,7 +24,7 @@ import qualified MB.Label.SLPO
 
 import qualified MB.Matrix 
 import qualified Satchmo.SMT.Integer as I
-import qualified Satchmo.SMT.Arctic  as A
+import qualified Satchmo.SMT.Exotic.Arctic  as A
 import Satchmo.SMT.Dictionary (Domain(..))
 
 import qualified TPDB.DP
