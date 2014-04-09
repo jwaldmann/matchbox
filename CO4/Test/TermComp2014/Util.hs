@@ -24,10 +24,9 @@ import Debug.Trace
 type SymbolMap = M.Map Symbol String
 
 parseTrs :: FilePath -> IO (UnlabeledTrs, SymbolMap)
-parseTrs path = Input.get path >>= \case
-  Left trs -> do {-putStrLn (show $ pretty trs)-}
+parseTrs path = Input.get_trs path >>= \ trs -> 
+              do {-putStrLn (show $ pretty trs)-}
                  return $ goTrs trs
-  Right _  -> error "Util.parseTrs: SRS"
   where
     goTrs :: TPDB.TRS TPDB.Identifier TPDB.Identifier -> (UnlabeledTrs, SymbolMap)
     goTrs trs = (Trs rules', M.fromList $ map swap $ M.toList symbolMap)
