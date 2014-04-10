@@ -128,7 +128,7 @@ toDpTerm (Node s l args) = Node (s,False) l $ map toDpTerm args
 ungroupTrs :: GroupedTrs v n l -> Trs v n l
 ungroupTrs (GroupedTrs rules) = Trs $ concat rules
 
-removeStrongDecreasingRules :: DPTrs () -> GroupedDPTrs Label -> [FilterAndPrec MarkedSymbol Label]
+removeStrongDecreasingRules :: DPTrs () -> GroupedDPTrs Label -> [FilterAndPrec (MarkedSymbol,Label)]
                             -> (DPTrs (), [DPRule ()])
 removeStrongDecreasingRules (Trs rules) (GroupedTrs labeledRules) filterAndPrecedences = 
     assert (length rules == length labeledRules) 

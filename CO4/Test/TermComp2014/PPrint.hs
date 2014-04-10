@@ -29,10 +29,14 @@ pprintRule :: (SymbolMap -> v -> String) -> (SymbolMap -> n -> String) -> (l -> 
 pprintRule goV goN goL symbolMap (Rule l r) = concat [ goTerm l, " -> ", goTerm r ]
   where
     goTerm (Var v)         = goV symbolMap v
-    goTerm (Node s l args) = 
-      case goL l of
-        "" -> concat [ goN symbolMap s          ," (", intercalate ", " (map goTerm args), ")" ]
-        l' -> concat [ goN symbolMap s, "^", l' ," (", intercalate ", " (map goTerm args), ")" ]
+    goTerm (Node s l args) = pprintLabeledSymbol goN goL symbolMap (s,l)
+                         ++ (concat [ " (", intercalate ", " (map goTerm args), ")" ])
+
+pprintLabeledSymbol :: (SymbolMap -> n -> String) -> (l -> String) -> SymbolMap -> (n,l) -> String
+pprintLabeledSymbol goN goL symbolMap (s,l) = 
+  case goL l of
+    "" -> goN symbolMap s
+    l' -> concat [ goN symbolMap s, "^", l']
 
 pprintValue :: Domain -> String
 pprintValue = show . value
@@ -65,7 +69,7 @@ pprintLabel :: Label -> String
 pprintLabel vs = "[" ++ (intercalate ", " $ map pprintValue vs) ++ "]"
 
 pprintPrecedence :: (SymbolMap -> s -> String) -> (l -> String) -> SymbolMap 
-                 -> Precedence s l -> String
+                 -> Precedence (s,l) -> String
 pprintPrecedence goS goL symbolMap = intercalate " > "
                                    . map     (intercalate " = " . map fst)
                                    . groupBy ((==)    `on` snd)
@@ -73,11 +77,13 @@ pprintPrecedence goS goL symbolMap = intercalate " > "
                                    . sortBy  (compare `on` snd)
                                    . map     (\((s,l),n) -> (goS symbolMap s ++ "^" ++ goL l, value n))
 
-pprintArgFilter :: (SymbolMap -> s -> String) -> SymbolMap -> ArgFilter s -> String
-pprintArgFilter goS symbolMap = unlines . map go
+pprintArgFilter :: (SymbolMap -> s -> String) -> (l -> String) -> SymbolMap 
+                -> ArgFilter (s,l) -> String
+pprintArgFilter goS goL symbolMap = unlines . map go
   where
-    go (s,indices) = goS symbolMap s ++ (" [" ++ (intercalate ", " $ map (show . goIndex) indices)
-                                              ++ "]")
+    go ((s,l),indices) = pprintLabeledSymbol goS goL symbolMap (s,l)
+                      ++ (" [" ++ (intercalate ", " $ map (show . goIndex) indices) ++ "]")
+
     goIndex This     = 0
     goIndex (Next i) = 1 + (goIndex i)
 

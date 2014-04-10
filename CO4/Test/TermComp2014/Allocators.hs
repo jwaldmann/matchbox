@@ -18,12 +18,17 @@ allocator config dpTrs =
                                                    (precedenceAllocator config dpTrs))
 
 filterAllocator :: Config -> DPTrs () -> Allocator
-filterAllocator config = kList' . map goArity . M.toList . nodeArities
+filterAllocator config = kList' . concatMap goArity . M.toList . nodeArities
   where
-    goArity (s,arity) = kTuple2 (kMarkedSymbolAllocator s) $ 
-                         if bruteFilter config
-                         then kList' []
-                         else uList arity $ goIndex $ arity - 1
+    n                 = modelBitWidth config
+    height            = 2^n
+    labels            = map (nat n) [0..height-1]
+    goArity (s,arity) = do
+      args <- sequence $ replicate arity labels
+      return $ kTuple2 (kTuple2 (kMarkedSymbolAllocator s) (kLabelAllocator args))
+             $ if bruteFilter config
+               then kList' []
+               else uList arity $ goIndex $ arity - 1
 
     goIndex 0         = known 0 2 [ ]
     goIndex i         = constructors [ Just [], Just [ goIndex $ i - 1 ] ]

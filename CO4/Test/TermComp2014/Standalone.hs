@@ -52,16 +52,16 @@ type Assignments sym           = [Sigma sym]
 data Order                     = Gr | Eq | NGe
                                deriving (Eq,Show)
 
-type Precedence sym label      = Map (sym, label) Nat
+type Precedence key            = Map key Nat
 
 data Index                     = This | Next Index
 
-type ArgFilter sym             = Map sym [Index]
+type ArgFilter key             = Map key [Index]
 
-type FilterAndPrec sym label   = (ArgFilter sym, Precedence sym label)
+type FilterAndPrec key         = (ArgFilter key, Precedence key)
 
 constraint :: (DPTrs (), Assignments Symbol) 
-           -> (Model MarkedSymbol, [FilterAndPrec MarkedSymbol Label]) 
+           -> (Model MarkedSymbol, [FilterAndPrec (MarkedSymbol,Label)]) 
            -> Bool
 constraint (trs,assignments) (model, filterAndPrecedences) = 
   case makeLabeledTrs model trs assignments of
@@ -116,28 +116,28 @@ interpretation = lookup eqMarkedSymbol
 
 -- * filter arguments
 
-filterArgumentsDPTrs :: ArgFilter MarkedSymbol -> DPTrs a -> DPTrs a
+filterArgumentsDPTrs :: ArgFilter (MarkedSymbol,Label) -> DPTrs Label -> DPTrs Label
 filterArgumentsDPTrs filter (Trs rules) = 
   let goRule (Rule lhs rhs) = Rule (filterArgumentsDPTerm filter lhs) 
                                    (filterArgumentsDPTerm filter rhs)
   in
     Trs (map goRule rules)
 
-filterArgumentsDPTerm :: ArgFilter MarkedSymbol -> DPTerm a -> DPTerm a
+filterArgumentsDPTerm :: ArgFilter (MarkedSymbol,Label) -> DPTerm Label -> DPTerm Label
 filterArgumentsDPTerm filter term = case term of
   Var v         -> Var v
   Node s l args -> 
-    let indices = lookup eqMarkedSymbol s filter
+    let indices = lookup eqMarkedLabeledSymbol (s,l) filter
     in
       Node s l (map (\i -> filterArgumentsDPTerm filter (atIndex i args)) indices)
 
 -- * search precedence
 
-allRulesDecreasing :: GroupedDPTrs Label -> [FilterAndPrec MarkedSymbol Label] -> Bool
+allRulesDecreasing :: GroupedDPTrs Label -> [FilterAndPrec (MarkedSymbol,Label)] -> Bool
 allRulesDecreasing (GroupedTrs rules) filterAndPrecedences =
   forall rules (all (isDecreasingRule filterAndPrecedences))
 
-isDecreasingRule :: [FilterAndPrec MarkedSymbol Label] -> DPRule Label -> Bool
+isDecreasingRule :: [FilterAndPrec (MarkedSymbol,Label)] -> DPRule Label -> Bool
 isDecreasingRule filterAndPrecedences (Rule lhs rhs) = 
   forall filterAndPrecedences (\(f,p) ->
     case lpo (ord p) (filterArgumentsDPTerm f lhs) (filterArgumentsDPTerm f rhs) of
@@ -146,11 +146,11 @@ isDecreasingRule filterAndPrecedences (Rule lhs rhs) =
       NGe -> False
   )
 
-existsStrongDecreasingRule :: GroupedDPTrs Label -> [FilterAndPrec MarkedSymbol Label] -> Bool
+existsStrongDecreasingRule :: GroupedDPTrs Label -> [FilterAndPrec (MarkedSymbol,Label)] -> Bool
 existsStrongDecreasingRule (GroupedTrs rules) filterAndPrecedences =
   exists rules (all (isMarkedStrongDecreasingRule filterAndPrecedences))
 
-isMarkedStrongDecreasingRule :: [FilterAndPrec MarkedSymbol Label] -> DPRule Label -> Bool
+isMarkedStrongDecreasingRule :: [FilterAndPrec (MarkedSymbol,Label)] -> DPRule Label -> Bool
 isMarkedStrongDecreasingRule filterAndPrecedences (Rule lhs rhs) = 
   exists filterAndPrecedences (\(f,p) ->
        (isMarked lhs) 
@@ -186,12 +186,10 @@ lpo ord s t = case t of
                              True  -> lex (lpo ord) ss ts
                     NGe -> NGe
 
-ord :: Precedence MarkedSymbol Label -> (MarkedSymbol, Label) -> (MarkedSymbol, Label) -> Order
+ord :: Precedence (MarkedSymbol,Label) -> (MarkedSymbol, Label) -> (MarkedSymbol, Label) -> Order
 ord prec a b = 
-  let key (s,l) (s',l') = (eqMarkedSymbol s s') && (eqLabel l l')
-
-      pa = lookup key a prec
-      pb = lookup key b prec
+  let pa = lookup eqMarkedLabeledSymbol a prec
+      pb = lookup eqMarkedLabeledSymbol b prec
   in
     ordNat pa pb
 
@@ -232,6 +230,9 @@ lookup f k map = case map of
     (k',v) -> case f k k' of
       False -> lookup f k ms
       True  -> v
+
+eqMarkedLabeledSymbol :: (MarkedSymbol, Label) -> (MarkedSymbol, Label) -> Bool
+eqMarkedLabeledSymbol (s,l) (s',l') = (eqMarkedSymbol s s') && (eqLabel l l')
 
 eqLabeledDPTerm :: DPTerm Label -> DPTerm Label -> Bool
 eqLabeledDPTerm = eqTerm eqSymbol eqMarkedSymbol eqLabel

@@ -77,7 +77,7 @@ iterate symbolMap i config dp =
                   forM_ (zip [1..] filterAndPrecedences) $ \(i,(filter,precedence)) -> do
 
                     putStrLn $ show i ++ ". Argument Filter:"
-                    putStrLn $ pprintArgFilter pprintMarkedSymbol symbolMap filter
+                    putStrLn $ pprintArgFilter pprintMarkedSymbol pprintLabel symbolMap filter
 
                     putStrLn $ show i ++ ". Filtered Trs:"
                     putStrLn $ pprintDPTrs pprintLabel symbolMap 
