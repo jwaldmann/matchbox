@@ -1,22 +1,39 @@
 #!/bin/bash
 
-if [ $# -lt 6 ]
+if [ $# -lt 3 ]
 then
-  echo "Syntax: $0 CMD TIMEOUT UPPER_BITWIDTH NUM_PRECEDENCES NUM_PATTERNS PRECEDENCE_BITWIDTH [FILES] ..."
+  echo "Syntax: $0 CMD TIMEOUT UPPER_BITWIDTH [OPTIONS] -- [FILES]"
   exit 1
 fi
   
 CMD=$1
 TIMEOUT=$2
 UPPER_BITWIDTH=$3
-NUM_PRECEDENCES=$4
-NUM_PATTERNS=$5
-PRECEDENCE_BITWIDTH=$6
+OPTIONS=""
+
+shift 3
+
+while [ $# -gt 0 ]
+do
+  if [ $1 == "--" ]
+  then
+    shift 1
+    break
+  fi
+
+  OPTIONS="${OPTIONS} $1"
+
+  shift 1
+done
+
+if [ $# -eq 0 ]
+then
+  echo "$0: no input files found (did you forget \"--\")"
+  exit 1
+fi
 
 NUM_TERMINATES=0
 DONT_KNOW=""
-
-shift 6
 
 while [ $# -gt 0 ]
 do
@@ -25,7 +42,7 @@ do
 
   for BITWIDTH in $(seq 0 ${UPPER_BITWIDTH})
   do
-    CALL="${CMD} --model ${BITWIDTH} --precedences ${NUM_PRECEDENCES} --patterns ${NUM_PATTERNS} --precedence-domain ${PRECEDENCE_BITWIDTH} ${FILE}"
+    CALL="${CMD} --model ${BITWIDTH} ${OPTIONS} ${FILE}"
     echo Calling ${CALL}
 
     /usr/bin/timeout --signal=SIGKILL ${TIMEOUT} ${CALL} &> ${LOG_FILE}
