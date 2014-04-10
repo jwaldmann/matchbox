@@ -12,6 +12,7 @@ data Config = Config {
   , precedenceDomainBitWidth :: Int
   , bruteFilter              :: Bool
   }
+  deriving Show
 
 defaultConfig :: Config
 defaultConfig = Config 0 1 0 (-1) False

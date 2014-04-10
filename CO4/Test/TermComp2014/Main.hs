@@ -39,6 +39,9 @@ resultFile' :: Config -> FilePath -> IO ()
 resultFile' config filePath = do
   (trs, symbolMap) <- parseTrs filePath
 
+  putStrLn $ "Configuration:" 
+  putStrLn $ show config
+
   putStrLn $ "Parsed:" 
   putStrLn $ pprintUnlabeledTrs symbolMap trs
 
