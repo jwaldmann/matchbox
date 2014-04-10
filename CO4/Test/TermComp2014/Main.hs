@@ -67,14 +67,15 @@ iterate symbolMap i config dp =
       _     -> solveAndTestP parameter alloc encConstraint constraint
        >>= \case
              Nothing -> return False
-             Just (model,filterAndPrecedences) -> assert (not $ null delete) $ 
+             Just (model,orders) -> assert (not $ null delete) $ 
                do putStrLn $ "Model:"
                   putStrLn $ pprintModel pprintMarkedSymbol symbolMap model
 
                   putStrLn $ "Labeled Trs:"
                   putStrLn $ pprintDPTrs pprintLabel symbolMap $ ungroupTrs labeledTrs
 
-                  forM_ (zip [1..] filterAndPrecedences) $ \(i,(filter,precedence)) -> do
+                  forM_ (zip [1..] orders ) $ \ (i,order) -> case order of
+                   FilterAndPrec filter precedence -> do
 
                     putStrLn $ show i ++ ". Argument Filter:"
                     putStrLn $ pprintArgFilter pprintMarkedSymbol pprintLabel symbolMap filter
@@ -92,6 +93,6 @@ iterate symbolMap i config dp =
 
                   iterate symbolMap (i+1) config dp'
                where
-                 (dp', delete) = removeStrongDecreasingRules dp labeledTrs filterAndPrecedences
+                 (dp', delete) = removeStrongDecreasingRules dp labeledTrs orders
 
                  (labeledTrs,True) = makeLabeledTrs model dp sigmas
