@@ -4,7 +4,7 @@ where
 import           Control.Exception (assert)
 import qualified Data.Map as M
 import           CO4.AllocatorData (Allocator,constructors,known)
-import           CO4.Prelude (kList,uList,kList',kBool,kTuple2)
+import           CO4.Prelude (kList,uList,kList',kBool,uBool,kTuple2)
 import           CO4.PreludeNat (nat,kNat',uNat)
 import           CO4.Util (bitWidth)
 import           CO4.Test.TermComp2014.Standalone (Symbol,Domain,DPTrs,MarkedSymbol,Label)
@@ -17,8 +17,14 @@ allocator config dpTrs =
           (kList (numPrecedences config) $ orderAllocator config dpTrs )
 
 orderAllocator :: Config -> DPTrs () -> Allocator
-orderAllocator config dpTrs =
-  known 0 1 [ filterAllocator config dpTrs, precedenceAllocator config dpTrs ]
+orderAllocator config dpTrs = 
+    case (usePrecedence config, useInterpretation config) of
+        (True,False) -> 
+             known 0 2 [ filterAllocator config dpTrs, precedenceAllocator config dpTrs ]
+        (False,True) -> 
+             known 1 2 [ interpretationAllocator config dpTrs ]
+        (True,True) -> 
+             error "FIXME: have the solver choose the order type"
 
 filterAllocator :: Config -> DPTrs () -> Allocator
 filterAllocator config = kList' . concatMap goArity . M.toList . nodeArities
@@ -35,6 +41,27 @@ filterAllocator config = kList' . concatMap goArity . M.toList . nodeArities
 
     goIndex 0         = known 0 2 [ ]
     goIndex i         = constructors [ Just [], Just [ goIndex $ i - 1 ] ]
+
+interpretationAllocator :: Config -> DPTrs () -> Allocator
+interpretationAllocator config trs = kList' $ concatMap goArity arities
+  where
+    arities                = M.toList $ nodeArities trs
+    n                      = modelBitWidth config
+    height                 = 2^n
+    labels                 = map (nat n) [0..height-1]
+    absoluteCoefficientBitWidth    = 5 -- FIXME make configurable
+    -- NOTE: this bit width is also hardwired in Standalone.hs (function linearTerm)
+    linfun ar = known 0 1 [ uNat absoluteCoefficientBitWidth
+                          , kList' $ replicate ar uBool
+                          ]
+
+    goArity (symbol,arity) = do
+      args <- sequence $ replicate arity labels
+      return $ kTuple2 (kTuple2 (kMarkedSymbolAllocator symbol) 
+                                (kLabelAllocator args)
+                       ) 
+             $ linfun arity
+
 
 modelAllocator :: Config -> DPTrs () -> Allocator
 modelAllocator config = kList' . map goArity . M.toList . nodeArities

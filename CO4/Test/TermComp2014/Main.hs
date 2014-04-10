@@ -20,7 +20,7 @@ import           CO4.Test.TermComp2014.Allocators (allocator)
 import           CO4.Test.TermComp2014.Standalone
 import           CO4.Test.TermComp2014.Config
 
-$( compileFile [Cache,ImportPrelude] "tc/CO4/Test/TermComp2014/Standalone.hs" )
+$( compileFile [Cache, Dump "/tmp/tc", ImportPrelude] "tc/CO4/Test/TermComp2014/Standalone.hs" )
 
 main :: IO ()
 main = do
@@ -78,8 +78,11 @@ iterate symbolMap i config dp =
                   putStrLn $ pprintDPTrs pprintLabel symbolMap $ ungroupTrs labeledTrs
 
                   forM_ (zip [1..] orders ) $ \ (i,order) -> case order of
-                    FilterAndPrec filter precedence -> do
+                    LinearInt int -> do
+                      putStrLn $ show i ++ ". Linear Interpretation:"
+                      putStrLn $ show int -- FIXME needs prettyprinter
 
+                    FilterAndPrec filter precedence -> do
                       putStrLn $ show i ++ ". Argument Filter:"
                       putStrLn $ pprintArgFilter pprintMarkedSymbol pprintLabel symbolMap filter
 
