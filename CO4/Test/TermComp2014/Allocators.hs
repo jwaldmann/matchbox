@@ -14,13 +14,17 @@ import           CO4.Test.TermComp2014.Config
 allocator :: Config -> DPTrs () -> Allocator
 allocator config dpTrs = 
   kTuple2 (modelAllocator config dpTrs)
-          (kList (numPrecedences config) $ kTuple2 (filterAllocator dpTrs)
+          (kList (numPrecedences config) $ kTuple2 (filterAllocator     config dpTrs)
                                                    (precedenceAllocator config dpTrs))
 
-filterAllocator :: DPTrs () -> Allocator
-filterAllocator = kList' . map goArity . M.toList . nodeArities
+filterAllocator :: Config -> DPTrs () -> Allocator
+filterAllocator config = kList' . map goArity . M.toList . nodeArities
   where
-    goArity (s,arity) = kTuple2 (kMarkedSymbolAllocator s) (uList arity $ goIndex $ arity - 1)
+    goArity (s,arity) = kTuple2 (kMarkedSymbolAllocator s) $ 
+                         if bruteFilter config
+                         then kList' []
+                         else uList arity $ goIndex $ arity - 1
+
     goIndex 0         = known 0 2 [ ]
     goIndex i         = constructors [ Just [], Just [ goIndex $ i - 1 ] ]
 

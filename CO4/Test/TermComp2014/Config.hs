@@ -1,5 +1,5 @@
 module CO4.Test.TermComp2014.Config 
-  (Config (..), parseConfig)
+  (Config (..), defaultConfig, parseConfig)
 where
 
 import System.Console.GetOpt
@@ -10,10 +10,11 @@ data Config = Config {
   , numPrecedences           :: Int
   , numPatterns              :: Int
   , bitWidthPrecedenceDomain :: Int
+  , bruteFilter              :: Bool
   }
 
 defaultConfig :: Config
-defaultConfig = Config 0 1 0 (-1)
+defaultConfig = Config 0 1 0 (-1) False
 
 options :: [OptDescr (Config -> Config)]
 options =
@@ -28,6 +29,12 @@ options =
 
  , Option [   ] ["precedence-domain"] (ReqArg (\v c -> c { bitWidthPrecedenceDomain = read v }) "NUM") 
    "precedence domain bitwidth (if < 0, maximum necessary bitwidth is assumed) (default: -1)"
+
+ , Option [   ] ["precedence-domain"] (ReqArg (\v c -> c { bitWidthPrecedenceDomain = read v }) "NUM") 
+   "precedence domain bitwidth (if < 0, maximum necessary bitwidth is assumed) (default: -1)"
+
+ , Option [   ] ["brute-filter"] (NoArg (\c -> c { bruteFilter = True })) 
+   "use argument filter that deletes all children (default: false)"
  ]
 
 parseConfig :: IO (Config, String)

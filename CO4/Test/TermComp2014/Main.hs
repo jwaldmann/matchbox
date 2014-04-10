@@ -28,8 +28,12 @@ main = do
   resultFile' config filePath
 
 resultFile :: Int -> Int -> Int -> Int -> FilePath -> IO ()
-resultFile modelBitWidth numPrecedences numPatterns precedenceDomain = 
-  resultFile' $ Config modelBitWidth numPrecedences numPatterns precedenceDomain
+resultFile mBW numPrecs numPats pBW = 
+  resultFile' $ defaultConfig { modelBitWidth  = mBW
+                              , numPrecedences = numPrecs
+                              , numPatterns    = numPats
+                              , bitWidthPrecedenceDomain = pBW
+                              }
 
 resultFile' :: Config -> FilePath -> IO ()
 resultFile' config filePath = do
