@@ -18,11 +18,7 @@ allocator config dpTrs =
 
 orderAllocator :: Config -> DPTrs () -> Allocator
 orderAllocator config dpTrs =
-    known 0 1 [
-                   kTuple2 (filterAllocator     config dpTrs)
-                                                   (precedenceAllocator config dpTrs)
-              ]
-
+  known 0 1 [ filterAllocator config dpTrs, precedenceAllocator config dpTrs ]
 
 filterAllocator :: Config -> DPTrs () -> Allocator
 filterAllocator config = kList' . concatMap goArity . M.toList . nodeArities

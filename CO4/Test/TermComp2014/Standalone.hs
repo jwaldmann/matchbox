@@ -58,7 +58,7 @@ data Index                     = This | Next Index
 
 type ArgFilter key             = Map key [Index]
 
-data TerminationOrder key         = FilterAndPrec (ArgFilter key) (Precedence key)
+data TerminationOrder key      = FilterAndPrec (ArgFilter key) (Precedence key)
 
 type MSL = (MarkedSymbol,Label) 
 
@@ -118,14 +118,14 @@ interpretation = lookup eqMarkedSymbol
 
 -- * filter arguments
 
-filterArgumentsDPTrs :: ArgFilter (MarkedSymbol,Label) -> DPTrs Label -> DPTrs Label
+filterArgumentsDPTrs :: ArgFilter MSL -> DPTrs Label -> DPTrs Label
 filterArgumentsDPTrs filter (Trs rules) = 
   let goRule (Rule lhs rhs) = Rule (filterArgumentsDPTerm filter lhs) 
                                    (filterArgumentsDPTerm filter rhs)
   in
     Trs (map goRule rules)
 
-filterArgumentsDPTerm :: ArgFilter (MarkedSymbol,Label) -> DPTerm Label -> DPTerm Label
+filterArgumentsDPTerm :: ArgFilter MSL -> DPTerm Label -> DPTerm Label
 filterArgumentsDPTerm filter term = case term of
   Var v         -> Var v
   Node s l args -> 
@@ -167,8 +167,7 @@ isMarked term = case term of
   Var _          -> False
   Node (_,m) _ _ -> m
 
-lpo :: ((MarkedSymbol, Label) -> (MarkedSymbol, Label) -> Order) 
-    -> DPTerm Label -> DPTerm Label -> Order
+lpo :: (MSL -> MSL -> Order) -> DPTerm Label -> DPTerm Label -> Order
 lpo ord s t = case t of
   Var x -> case eqLabeledDPTerm s t of 
     False -> case varOccurs x s of
@@ -190,7 +189,7 @@ lpo ord s t = case t of
                              True  -> lex (lpo ord) ss ts
                     NGe -> NGe
 
-ord :: Precedence (MarkedSymbol,Label) -> (MarkedSymbol, Label) -> (MarkedSymbol, Label) -> Order
+ord :: Precedence MSL -> MSL -> MSL -> Order
 ord prec a b = 
   let pa = lookup eqMarkedLabeledSymbol a prec
       pb = lookup eqMarkedLabeledSymbol b prec
@@ -235,7 +234,7 @@ lookup f k map = case map of
       False -> lookup f k ms
       True  -> v
 
-eqMarkedLabeledSymbol :: (MarkedSymbol, Label) -> (MarkedSymbol, Label) -> Bool
+eqMarkedLabeledSymbol :: MSL -> MSL -> Bool
 eqMarkedLabeledSymbol (s,l) (s',l') = (eqMarkedSymbol s s') && (eqLabel l l')
 
 eqLabeledDPTerm :: DPTerm Label -> DPTerm Label -> Bool

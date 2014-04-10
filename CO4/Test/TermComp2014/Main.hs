@@ -78,18 +78,18 @@ iterate symbolMap i config dp =
                   putStrLn $ pprintDPTrs pprintLabel symbolMap $ ungroupTrs labeledTrs
 
                   forM_ (zip [1..] orders ) $ \ (i,order) -> case order of
-                   FilterAndPrec filter precedence -> do
+                    FilterAndPrec filter precedence -> do
 
-                    putStrLn $ show i ++ ". Argument Filter:"
-                    putStrLn $ pprintArgFilter pprintMarkedSymbol pprintLabel symbolMap filter
+                      putStrLn $ show i ++ ". Argument Filter:"
+                      putStrLn $ pprintArgFilter pprintMarkedSymbol pprintLabel symbolMap filter
 
-                    putStrLn $ show i ++ ". Filtered Trs:"
-                    putStrLn $ pprintDPTrs pprintLabel symbolMap 
-                             $ filterArgumentsDPTrs filter 
-                             $ ungroupTrs labeledTrs
+                      putStrLn $ show i ++ ". Filtered Trs:"
+                      putStrLn $ pprintDPTrs pprintLabel symbolMap 
+                               $ filterArgumentsDPTrs filter 
+                               $ ungroupTrs labeledTrs
 
-                    putStrLn $ show i ++ ". Precedence:"
-                    putStrLn $ pprintPrecedence pprintMarkedSymbol pprintLabel symbolMap precedence
+                      putStrLn $ show i ++ ". Precedence:"
+                      putStrLn $ pprintPrecedence pprintMarkedSymbol pprintLabel symbolMap precedence
 
                   putStrLn $ "\nDeleted:"
                   putStrLn $ unlines $ map (pprintDPRule (const "") symbolMap) delete
