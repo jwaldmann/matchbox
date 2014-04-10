@@ -143,7 +143,7 @@ isDecreasingRule :: [TerminationOrder MSL] -> DPRule Label -> Bool
 isDecreasingRule orders (Rule lhs rhs) = 
   forall orders (\ o -> case o of
    FilterAndPrec f p ->
-    case lpo (ord p) (filterArgumentsDPTerm f lhs) (filterArgumentsDPTerm f rhs) of
+    case lpo p (filterArgumentsDPTerm f lhs) (filterArgumentsDPTerm f rhs) of
       Gr  -> True
       Eq  -> True
       NGe -> False
@@ -158,8 +158,8 @@ isMarkedStrongDecreasingRule orders (Rule lhs rhs) =
   exists orders (\ o -> case o of
    FilterAndPrec f p ->
        (isMarked lhs) 
-    && (eqOrder (lpo (ord p) (filterArgumentsDPTerm f lhs) 
-                             (filterArgumentsDPTerm f rhs)) Gr)
+    && (eqOrder (lpo p (filterArgumentsDPTerm f lhs) 
+                       (filterArgumentsDPTerm f rhs)) Gr)
   )
 
 isMarked :: DPTerm label -> Bool
@@ -167,8 +167,8 @@ isMarked term = case term of
   Var _          -> False
   Node (_,m) _ _ -> m
 
-lpo :: (MSL -> MSL -> Order) -> DPTerm Label -> DPTerm Label -> Order
-lpo ord s t = case t of
+lpo :: Precedence MSL -> DPTerm Label -> DPTerm Label -> Order
+lpo precedence s t = case t of
   Var x -> case eqLabeledDPTerm s t of 
     False -> case varOccurs x s of
                 False -> NGe
@@ -178,15 +178,15 @@ lpo ord s t = case t of
   Node g lg ts  -> case s of
     Var _     -> NGe
     Node f lf ss -> 
-      case all (\si -> eqOrder (lpo ord si t) NGe) ss of
+      case all (\si -> eqOrder (lpo precedence si t) NGe) ss of
         False -> Gr
-        True  -> case ord (f,lf) (g,lg) of
-                    Gr  -> case all (\ti -> eqOrder (lpo ord s ti) Gr) ts of
+        True  -> case ord precedence (f,lf) (g,lg) of
+                    Gr  -> case all (\ti -> eqOrder (lpo precedence s ti) Gr) ts of
                              False -> NGe
                              True  -> Gr
-                    Eq  -> case all (\ti -> eqOrder (lpo ord s ti) Gr) ts of
+                    Eq  -> case all (\ti -> eqOrder (lpo precedence s ti) Gr) ts of
                              False -> NGe
-                             True  -> lex (lpo ord) ss ts
+                             True  -> lex (lpo precedence) ss ts
                     NGe -> NGe
 
 ord :: Precedence MSL -> MSL -> MSL -> Order
