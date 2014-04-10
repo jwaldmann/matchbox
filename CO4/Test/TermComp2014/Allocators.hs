@@ -17,11 +17,14 @@ allocator config dpTrs =
           (kList (numPrecedences config) $ orderAllocator config dpTrs )
 
 orderAllocator :: Config -> DPTrs () -> Allocator
--- FIXME: make this configurable. Three choices:
--- a) always use precedence, b) always use interpretation, c) let the solver choose
-orderAllocator config dpTrs =
-   -- known 0 2 [ filterAllocator config dpTrs, precedenceAllocator config dpTrs ]
-   known 1 2 [ interpretationAllocator config dpTrs ]
+orderAllocator config dpTrs = 
+    case (usePrecedence config, useInterpretation config) of
+        (True,False) -> 
+             known 0 2 [ filterAllocator config dpTrs, precedenceAllocator config dpTrs ]
+        (False,True) -> 
+             known 1 2 [ interpretationAllocator config dpTrs ]
+        (True,True) -> 
+             error "FIXME: have the solver choose the order type"
 
 
 filterAllocator :: Config -> DPTrs () -> Allocator
