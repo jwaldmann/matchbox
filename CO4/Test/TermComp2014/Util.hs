@@ -128,16 +128,16 @@ toDpTerm (Node s l args) = Node (s,False) l $ map toDpTerm args
 ungroupTrs :: GroupedTrs v n l -> Trs v n l
 ungroupTrs (GroupedTrs rules) = Trs $ concat rules
 
-removeStrongDecreasingRules :: DPTrs () -> GroupedDPTrs Label -> [FilterAndPrec (MarkedSymbol,Label)]
+removeStrongDecreasingRules :: DPTrs () -> GroupedDPTrs Label -> [TerminationOrder MSL]
                             -> (DPTrs (), [DPRule ()])
-removeStrongDecreasingRules (Trs rules) (GroupedTrs labeledRules) filterAndPrecedences = 
+removeStrongDecreasingRules (Trs rules) (GroupedTrs labeledRules) orders = 
     assert (length rules == length labeledRules) 
   $ (Trs keep, delete)
   where
     (delete, keep) = partitionEithers $ zipWith check rules labeledRules
   
     check rule labeledRules = 
-      if all (isMarkedStrongDecreasingRule filterAndPrecedences) labeledRules
+      if all (isMarkedStrongDecreasingRule orders) labeledRules
       then Left  rule
       else Right rule
 

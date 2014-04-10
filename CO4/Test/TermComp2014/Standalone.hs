@@ -58,17 +58,19 @@ data Index                     = This | Next Index
 
 type ArgFilter key             = Map key [Index]
 
-type FilterAndPrec key         = (ArgFilter key, Precedence key)
+data TerminationOrder key         = FilterAndPrec (ArgFilter key) (Precedence key)
+
+type MSL = (MarkedSymbol,Label) 
 
 constraint :: (DPTrs (), Assignments Symbol) 
-           -> (Model MarkedSymbol, [FilterAndPrec (MarkedSymbol,Label)]) 
+           -> (Model MarkedSymbol, [ TerminationOrder MSL]) 
            -> Bool
-constraint (trs,assignments) (model, filterAndPrecedences) = 
+constraint (trs,assignments) (model, orders) = 
   case makeLabeledTrs model trs assignments of
     (labeledTrs, isModel) ->
       and [ isModel
-          , allRulesDecreasing         labeledTrs filterAndPrecedences
-          , existsStrongDecreasingRule labeledTrs filterAndPrecedences
+          , allRulesDecreasing         labeledTrs orders
+          , existsStrongDecreasingRule labeledTrs orders
           ]
 
 -- * make labeled TRS & search model
@@ -133,26 +135,28 @@ filterArgumentsDPTerm filter term = case term of
 
 -- * search precedence
 
-allRulesDecreasing :: GroupedDPTrs Label -> [FilterAndPrec (MarkedSymbol,Label)] -> Bool
-allRulesDecreasing (GroupedTrs rules) filterAndPrecedences =
-  forall rules (all (isDecreasingRule filterAndPrecedences))
+allRulesDecreasing :: GroupedDPTrs Label -> [TerminationOrder MSL] -> Bool
+allRulesDecreasing (GroupedTrs rules) orders =
+  forall rules (all (isDecreasingRule orders))
 
-isDecreasingRule :: [FilterAndPrec (MarkedSymbol,Label)] -> DPRule Label -> Bool
-isDecreasingRule filterAndPrecedences (Rule lhs rhs) = 
-  forall filterAndPrecedences (\(f,p) ->
+isDecreasingRule :: [TerminationOrder MSL] -> DPRule Label -> Bool
+isDecreasingRule orders (Rule lhs rhs) = 
+  forall orders (\ o -> case o of
+   FilterAndPrec f p ->
     case lpo (ord p) (filterArgumentsDPTerm f lhs) (filterArgumentsDPTerm f rhs) of
       Gr  -> True
       Eq  -> True
       NGe -> False
   )
 
-existsStrongDecreasingRule :: GroupedDPTrs Label -> [FilterAndPrec (MarkedSymbol,Label)] -> Bool
-existsStrongDecreasingRule (GroupedTrs rules) filterAndPrecedences =
-  exists rules (all (isMarkedStrongDecreasingRule filterAndPrecedences))
+existsStrongDecreasingRule :: GroupedDPTrs Label -> [TerminationOrder MSL] -> Bool
+existsStrongDecreasingRule (GroupedTrs rules) orders =
+  exists rules (all (isMarkedStrongDecreasingRule orders))
 
-isMarkedStrongDecreasingRule :: [FilterAndPrec (MarkedSymbol,Label)] -> DPRule Label -> Bool
-isMarkedStrongDecreasingRule filterAndPrecedences (Rule lhs rhs) = 
-  exists filterAndPrecedences (\(f,p) ->
+isMarkedStrongDecreasingRule :: [TerminationOrder MSL] -> DPRule Label -> Bool
+isMarkedStrongDecreasingRule orders (Rule lhs rhs) = 
+  exists orders (\ o -> case o of
+   FilterAndPrec f p ->
        (isMarked lhs) 
     && (eqOrder (lpo (ord p) (filterArgumentsDPTerm f lhs) 
                              (filterArgumentsDPTerm f rhs)) Gr)
