@@ -55,10 +55,24 @@ data Order                     = Gr | Eq | NGe
 type Precedence key            = Map key Nat
 
 data Index                     = This | Next Index
+    deriving (Eq, Show)
 
 type ArgFilter key             = Map key [Index]
 
+type Variable = Symbol
+
+-- data LinearFunction = LinearFunction Nat [Nat] 
+
+-- restricted linear functions (linear coefficients are zero or one)
+data LinearFunction = LinearFunction Nat [Bool] 
+    deriving (Eq, Show)
+
+type LinearInterpretation key = Map key LinearFunction
+
+
 data TerminationOrder key         = FilterAndPrec (ArgFilter key) (Precedence key)
+                                  | LinearInt (LinearInterpretation key)
+    deriving (Eq, Show)
 
 type MSL = (MarkedSymbol,Label) 
 
@@ -141,9 +155,12 @@ allRulesDecreasing (GroupedTrs rules) orders =
 
 isDecreasingRule :: [TerminationOrder MSL] -> DPRule Label -> Bool
 isDecreasingRule orders (Rule lhs rhs) = 
-  forall orders (\ o -> case o of
-   FilterAndPrec f p ->
-    case lpo (ord p) (filterArgumentsDPTerm f lhs) (filterArgumentsDPTerm f rhs) of
+  forall orders (\ o -> 
+   let cmp = case o of
+         LinearInt int -> linearRule int (Rule lhs rhs) 
+         FilterAndPrec f p ->
+             lpo (ord p) (filterArgumentsDPTerm f lhs) (filterArgumentsDPTerm f rhs) 
+   in case cmp of
       Gr  -> True
       Eq  -> True
       NGe -> False
@@ -156,6 +173,9 @@ existsStrongDecreasingRule (GroupedTrs rules) orders =
 isMarkedStrongDecreasingRule :: [TerminationOrder MSL] -> DPRule Label -> Bool
 isMarkedStrongDecreasingRule orders (Rule lhs rhs) = 
   exists orders (\ o -> case o of
+   LinearInt int ->
+       (isMarked lhs)
+    && (eqOrder (linearRule int (Rule lhs rhs)) Gr)
    FilterAndPrec f p ->
        (isMarked lhs) 
     && (eqOrder (lpo (ord p) (filterArgumentsDPTerm f lhs) 
@@ -166,6 +186,55 @@ isMarked :: DPTerm label -> Bool
 isMarked term = case term of 
   Var _          -> False
   Node (_,m) _ _ -> m
+
+-- * order from linear interpretation
+-- FIXME: at the moment, this handles only unary functions (enough for SRS)
+-- FIXME: bit width (3) is hardwired (in linearTerm below)
+
+linearRule :: LinearInterpretation MSL -> DPRule Label -> Order
+linearRule int (Rule lhs rhs) = 
+    case linearTerm int lhs of
+        LinearFunction labs llins -> 
+            case linearTerm int rhs of
+                LinearFunction rabs rlins -> 
+                    case geNat labs rabs && and ( zipWith geBool llins rlins) of
+                        False -> NGe
+                        True  -> 
+                            -- FIXME: co4 should translate "if" to "case" 
+                            -- if gtNat labs rabs then Gr else Eq
+                            case gtNat labs rabs of
+                                True -> Gr ; False -> Eq
+
+-- FIXME: this should be in CO4.Prelude, 
+-- for consistency with CO4.PreludeNat.geNat ?
+geBool x y = x || not y
+
+linearTerm :: LinearInterpretation MSL -> DPTerm Label -> LinearFunction
+linearTerm int t = case t of
+    Var x ->  LinearFunction (nat 5 0) [ True ] 
+    Node f lf args -> 
+        let int_f = lookup eqMarkedLabeledSymbol (f, lf) int
+            values = map ( linearTerm int ) args
+        in  substitute int_f values
+
+substitute :: LinearFunction -> [ LinearFunction ] -> LinearFunction
+substitute f gs = case f of 
+    LinearFunction fabs flins -> 
+       let flin = head flins 
+       in case gs of
+           [] -> undefined
+           g : rest -> case g of
+                   LinearFunction gabs glins -> 
+                    let glin = head glins 
+                    in  LinearFunction (plusNat fabs (timesBoolNat flin gabs)) 
+                                       [ flin && glin ]
+
+
+timesBoolNat b n = case b of
+    False -> nat 5 0 -- FIXME bitwidth
+    True  -> n
+
+-- * path orders
 
 lpo :: ((MarkedSymbol, Label) -> (MarkedSymbol, Label) -> Order) 
     -> DPTerm Label -> DPTerm Label -> Order

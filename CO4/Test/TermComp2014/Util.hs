@@ -15,6 +15,8 @@ import           CO4.Util (toBinary)
 import           CO4.PreludeNat (nat)
 import           CO4.Test.TermComp2014.Standalone hiding (ord)
 
+import qualified TPDB.Mirror
+
 {-
 import TPDB.Plain.Write ()
 import TPDB.Pretty (pretty)
@@ -26,6 +28,10 @@ type SymbolMap = M.Map Symbol String
 parseTrs :: FilePath -> IO (UnlabeledTrs, SymbolMap)
 parseTrs path = Input.get_trs path >>= \ trs -> 
               do {-putStrLn (show $ pretty trs)-}
+
+                 -- FIXME this is just for testing
+                 -- Just trs <- return $ TPDB.Mirror.mirror trs 
+
                  return $ goTrs trs
   where
     goTrs :: TPDB.TRS TPDB.Identifier TPDB.Identifier -> (UnlabeledTrs, SymbolMap)
