@@ -29,10 +29,10 @@ main = do
 
 resultFile :: Int -> Int -> Int -> Int -> FilePath -> IO ()
 resultFile mBW numPrecs numPats pBW = 
-  resultFile' $ defaultConfig { modelBitWidth  = mBW
-                              , numPrecedences = numPrecs
-                              , numPatterns    = numPats
-                              , bitWidthPrecedenceDomain = pBW
+  resultFile' $ defaultConfig { modelBitWidth            = mBW
+                              , numPrecedences           = numPrecs
+                              , numPatterns              = numPats
+                              , precedenceDomainBitWidth = pBW
                               }
 
 resultFile' :: Config -> FilePath -> IO ()

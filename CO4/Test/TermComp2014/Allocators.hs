@@ -74,9 +74,9 @@ precedenceAllocator config trs = kList' $ concatMap goArity arities
     height                 = 2^n
     labels                 = map (nat n) [0..height-1]
     precedenceBitWidth     =
-      if bitWidthPrecedenceDomain config < 0
+      if precedenceDomainBitWidth config < 0
       then bitWidth $ sum $ map (\(_,arity) -> height^arity) arities
-      else bitWidthPrecedenceDomain config
+      else precedenceDomainBitWidth config
 
     goArity (symbol,arity) = do
       args <- sequence $ replicate arity labels

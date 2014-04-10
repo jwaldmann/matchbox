@@ -9,7 +9,7 @@ data Config = Config {
     modelBitWidth            :: Int
   , numPrecedences           :: Int
   , numPatterns              :: Int
-  , bitWidthPrecedenceDomain :: Int
+  , precedenceDomainBitWidth :: Int
   , bruteFilter              :: Bool
   }
 
@@ -27,10 +27,7 @@ options =
  , Option ['p'] ["patterns"] (ReqArg (\v c -> c { numPatterns    = read v }) "NUM") 
    "number of patterns (if <= 0, all patterns are generated) (default: 0)"
 
- , Option [   ] ["precedence-domain"] (ReqArg (\v c -> c { bitWidthPrecedenceDomain = read v }) "NUM") 
-   "precedence domain bitwidth (if < 0, maximum necessary bitwidth is assumed) (default: -1)"
-
- , Option [   ] ["precedence-domain"] (ReqArg (\v c -> c { bitWidthPrecedenceDomain = read v }) "NUM") 
+ , Option [   ] ["precedence-domain"] (ReqArg (\v c -> c { precedenceDomainBitWidth = read v }) "NUM") 
    "precedence domain bitwidth (if < 0, maximum necessary bitwidth is assumed) (default: -1)"
 
  , Option [   ] ["brute-filter"] (NoArg (\c -> c { bruteFilter = True })) 
