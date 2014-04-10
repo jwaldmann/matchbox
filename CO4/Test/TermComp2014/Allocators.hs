@@ -7,7 +7,7 @@ import           CO4.AllocatorData (Allocator,constructors,known)
 import           CO4.Prelude (kList,uList,kList',kBool,kTuple2)
 import           CO4.PreludeNat (nat,kNat',uNat)
 import           CO4.Util (bitWidth)
-import           CO4.Test.TermComp2014.Standalone (Symbol,Domain,Trs(..),DPTrs(..),MarkedSymbol,Label)
+import           CO4.Test.TermComp2014.Standalone (Symbol,Domain,DPTrs,MarkedSymbol,Label)
 import           CO4.Test.TermComp2014.Util (nodeArities)
 import           CO4.Test.TermComp2014.Config
 
@@ -69,8 +69,8 @@ precedenceAllocator config trs = kList' $ concatMap goArity arities
     n                      = modelBitWidth config
     height                 = 2^n
     labels                 = map (nat n) [0..height-1]
-    precedenceBitWidth     = 
-      if bitWidthPrecedenceDomain config <= 0
+    precedenceBitWidth     =
+      if bitWidthPrecedenceDomain config < 0
       then bitWidth $ sum $ map (\(_,arity) -> height^arity) arities
       else bitWidthPrecedenceDomain config
 

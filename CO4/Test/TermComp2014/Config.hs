@@ -13,7 +13,7 @@ data Config = Config {
   }
 
 defaultConfig :: Config
-defaultConfig = Config 0 1 0 0
+defaultConfig = Config 0 1 0 (-1)
 
 options :: [OptDescr (Config -> Config)]
 options =
@@ -27,7 +27,7 @@ options =
    "number of patterns (if <= 0, all patterns are generated) (default: 0)"
 
  , Option [   ] ["precedence-domain"] (ReqArg (\v c -> c { bitWidthPrecedenceDomain = read v }) "NUM") 
-   "precedence domain bitwidth (if <= 0, maximum necessary bitwidth is assumed) (default: 0)"
+   "precedence domain bitwidth (if < 0, maximum necessary bitwidth is assumed) (default: -1)"
  ]
 
 parseConfig :: IO (Config, String)
