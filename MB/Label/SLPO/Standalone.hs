@@ -1,4 +1,4 @@
-module CO4.Test.SLPO where
+module MB.Label.SLPO.Standalone where
 
 import CO4.Prelude
 import CO4.PreludeNat

@@ -2,13 +2,13 @@
 
 # get prerequisites (not from hackage, but current versions from github):
 
-box=$(pwd)
+box=$(pwd)/sand
 
 cabal sandbox init --sandbox $box
 
 rm -rf build ; mkdir build ; pushd build
 
-for arch in satchmo haskell-obdd smt-lib satchmo-smt haskell-tpdb transformer-combinators
+for arch in minisat-haskell-bindings satchmo haskell-obdd smt-lib satchmo-smt haskell-tpdb transformer-combinators
 do
     git clone  https://github.com/jwaldmann/$arch.git
     pushd $arch
@@ -31,4 +31,4 @@ popd
 
 # this uses mb.cabal and builds into sandbox
 
-cabal clean && cabal configure && cabal build
+cabal configure && cabal build

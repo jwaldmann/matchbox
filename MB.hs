@@ -25,6 +25,7 @@ import qualified MB.Label.SLPO
 import qualified MB.Matrix 
 import qualified Satchmo.SMT.Integer as I
 import qualified Satchmo.SMT.Exotic.Arctic  as A
+import qualified Satchmo.SMT.Exotic.Semiring.Arctic  as SA
 import Satchmo.SMT.Dictionary (Domain(..))
 
 import qualified TPDB.DP
@@ -167,7 +168,7 @@ matrix_natural_dp opts =
                  
 matrix_arctic_dp opts = 
       remover_arctic "matrix_arctic_dp" CC.expand_all_trs
-    $ MB.Matrix.handle_dp A.unary_fixed A.direct opts
+    $ MB.Matrix.handle_dp A.dict (error "missing SA.direct") opts
                  
 
 cmatrix opts = 

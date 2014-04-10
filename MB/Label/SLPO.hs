@@ -34,6 +34,8 @@ import TPDB.Convert (srs2trs, trs2srs)
 import qualified Compress.Common as CC
 import qualified MB.Options as O
 
+import MB.Label.SLPO.Standalone
+
 import qualified Text.PrettyPrint.Leijen.Text as PP
 import Prelude hiding ( print )
 import System.IO (stderr)
@@ -44,7 +46,7 @@ $( compileFile [ ImportPrelude
                -- , DumpAll "/tmp/sl" 
                -- , Profile
                , Cache
-               ] "MB/Label/SLPO.standalone.hs" )
+               ] "MB/Label/SLPO/Standalone.hs")
 
 
 uTree bits leaf = 
