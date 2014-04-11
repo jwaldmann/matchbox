@@ -59,7 +59,11 @@ data Precedence key            = EmptyPrecedence
 data Index                     = This | Next Index
     deriving (Eq, Show)
 
-type ArgFilter key             = Map key [Index]
+data Filter = Selection [ Index ]
+            | Projection Index
+    deriving (Eq, Show )
+
+type ArgFilter key             = Map key Filter
 
 type Variable = Symbol
 
@@ -145,9 +149,12 @@ filterArgumentsDPTerm :: ArgFilter MSL -> DPTerm Label -> DPTerm Label
 filterArgumentsDPTerm filter term = case term of
   Var v         -> Var v
   Node s l args -> 
-    let indices = lookup eqMarkedLabeledSymbol (s,l) filter
-    in
+    let flt = lookup eqMarkedLabeledSymbol (s,l) filter
+    in  case flt of
+     Selection indices -> 
       Node s l (map (\i -> filterArgumentsDPTerm filter (atIndex i args)) indices)
+     Projection i -> 
+      filterArgumentsDPTerm filter (atIndex i args)
 
 -- * search precedence
 

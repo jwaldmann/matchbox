@@ -84,9 +84,12 @@ pprintArgFilter :: (SymbolMap -> s -> String) -> (l -> String) -> SymbolMap
                 -> ArgFilter (s,l) -> String
 pprintArgFilter goS goL symbolMap = unlines . map go
   where
-    go ((s,l),indices) = pprintLabeledSymbol goS goL symbolMap (s,l)
-                      ++ (" [" ++ (intercalate ", " $ map (show . goIndex) indices) ++ "]")
-
+    go ((s,l),filt) = pprintLabeledSymbol goS goL symbolMap (s,l) ++ goFilter filt
+    goFilter filt = case filt of
+        Selection indices -> 
+           (" select [" ++ (intercalate ", " $ map (show . goIndex) indices) ++ "]")
+        Projection i -> 
+           (" project " ++ (show . goIndex) i )
     goIndex This     = 0 :: Int
     goIndex (Next i) = 1 + (goIndex i)
 

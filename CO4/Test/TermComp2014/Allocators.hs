@@ -14,12 +14,14 @@ import           CO4.Test.TermComp2014.Config
 allocator :: Config -> DPTrs () -> Allocator
 allocator config dpTrs = 
   kTuple2 (modelAllocator config dpTrs)
-          -- (kList (numPrecedences config) $ orderAllocator config dpTrs )
+          (kList (numPrecedences config) $ orderAllocator config dpTrs )
+{-
          $ kList' 
          $  [ known 0 2 [ filterAllocator config dpTrs, precedenceAllocator config dpTrs ]
             | usePrecedence config ]
          ++ [ known 1 2 [ interpretationAllocator config dpTrs ]
             | useInterpretation config ]
+-}
 
 orderAllocator :: Config -> DPTrs () -> Allocator
 orderAllocator config dpTrs = 
@@ -39,11 +41,14 @@ filterAllocator config = kList' . concatMap goArity . M.toList . nodeArities
     labels            = map (nat n) [0..height-1]
     goArity (s,arity) = do
       args <- sequence $ replicate arity labels
-      return $ kTuple2 (kTuple2 (kMarkedSymbolAllocator s) (kLabelAllocator args))
-             $ if bruteFilter config
+      let selection = 
+               if bruteFilter config
                then kList' []
                else uList arity $ goIndex $ arity - 1
-
+          projection = goIndex $ arity - 1
+      return $ kTuple2 (kTuple2 (kMarkedSymbolAllocator s) (kLabelAllocator args))
+             $ constructors [ Just [selection] , Just [projection] ]
+             -- $ known 0 2 [ selection ]
     goIndex 0         = known 0 2 [ ]
     goIndex i         = constructors [ Just [], Just [ goIndex $ i - 1 ] ]
 
