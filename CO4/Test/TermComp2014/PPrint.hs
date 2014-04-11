@@ -70,12 +70,15 @@ pprintLabel vs = "[" ++ (intercalate ", " $ map pprintValue vs) ++ "]"
 
 pprintPrecedence :: (SymbolMap -> s -> String) -> (l -> String) -> SymbolMap 
                  -> Precedence (s,l) -> String
-pprintPrecedence goS goL symbolMap = intercalate " > "
+pprintPrecedence goS goL symbolMap precedence = case precedence of 
+    EmptyPrecedence -> "empty precedence"
+    Precedence prec -> intercalate " > "
                                    . map     (intercalate " = " . map fst)
                                    . groupBy ((==)    `on` snd)
                                    . reverse
                                    . sortBy  (compare `on` snd)
                                    . map     (\((s,l),n) -> (goS symbolMap s ++ "^" ++ goL l, value n))
+                                   $ prec
 
 pprintArgFilter :: (SymbolMap -> s -> String) -> (l -> String) -> SymbolMap 
                 -> ArgFilter (s,l) -> String

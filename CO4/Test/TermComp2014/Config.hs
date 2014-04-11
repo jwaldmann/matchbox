@@ -12,6 +12,7 @@ data Config = Config {
   , precedenceDomainBitWidth :: Int
   , bruteFilter              :: Bool
   , usePrecedence :: Bool
+  , emptyPrecedence :: Bool
   , useInterpretation :: Bool
   }
   deriving Show
@@ -24,6 +25,7 @@ defaultConfig = Config
   , precedenceDomainBitWidth = (-1)
   , bruteFilter              = False
   , usePrecedence            = False
+  , emptyPrecedence          = False
   , useInterpretation        = False
   }
 
@@ -54,6 +56,8 @@ options =
    "use linear interpretations (with linear coefficients in {0,1})"
  , Option [ 'r' ] ["rpo"] (NoArg (\c -> c{usePrecedence=True}))
    "use RPO (for the moment, LPO with permuting argument filter)"
+ , Option [ 'e' ] ["empty-precedence" ] (NoArg (\c -> c{usePrecedence=True,emptyPrecedence=True}))
+   "use RPO with empty precedence (that is, argument-filtered subterm relation)"
  ]
 
 parseConfig :: IO (Config, String)

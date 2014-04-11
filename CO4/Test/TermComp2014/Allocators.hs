@@ -107,7 +107,10 @@ kPattern alloc = case alloc of
   Just a  -> known 1 2 [ a ]
 
 precedenceAllocator :: Config -> DPTrs () -> Allocator
-precedenceAllocator config trs = kList' $ concatMap goArity arities
+precedenceAllocator config trs = 
+    if emptyPrecedence config 
+    then known 0 2 []
+    else known 1 2 [ kList' $ concatMap goArity arities ]
   where
     arities                = M.toList $ nodeArities trs
     n                      = modelBitWidth config
