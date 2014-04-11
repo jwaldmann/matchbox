@@ -80,7 +80,7 @@ iterate symbolMap i config dp =
                   forM_ (zip [1..] orders ) $ \ (i,order) -> case order of
                     LinearInt int -> do
                       putStrLn $ show i ++ ". Linear Interpretation:"
-                      putStrLn $ show int -- FIXME needs prettyprinter
+                      putStrLn $ pprintLinearInt pprintMarkedSymbol pprintLabel symbolMap int
 
                     FilterAndPrec filter precedence -> do
                       putStrLn $ show i ++ ". Argument Filter:"

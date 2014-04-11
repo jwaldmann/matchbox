@@ -84,6 +84,16 @@ pprintArgFilter goS goL symbolMap = unlines . map go
     go ((s,l),indices) = pprintLabeledSymbol goS goL symbolMap (s,l)
                       ++ (" [" ++ (intercalate ", " $ map (show . goIndex) indices) ++ "]")
 
-    goIndex This     = 0
+    goIndex This     = 0 :: Int
     goIndex (Next i) = 1 + (goIndex i)
 
+pprintLinearInt :: (SymbolMap -> s -> String) -> (l -> String) -> SymbolMap 
+                -> LinearInterpretation (s,l) -> String
+pprintLinearInt  goS goL symbolMap = unlines . map go
+  where
+    go ((s,l),func) = pprintLabeledSymbol goS goL symbolMap (s,l)
+                      ++ " : " ++ goFunc func
+
+    goFunc (LinearFunction abs lins) = unwords $ intersperse " + "
+        $ show (value abs) : map ( \(c,i) -> "x_" ++ show i ) 
+                         (filter (\(c,i) -> c) $ zip lins [1..])
