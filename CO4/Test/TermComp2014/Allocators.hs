@@ -14,7 +14,12 @@ import           CO4.Test.TermComp2014.Config
 allocator :: Config -> DPTrs () -> Allocator
 allocator config dpTrs = 
   kTuple2 (modelAllocator config dpTrs)
-          (kList (numPrecedences config) $ orderAllocator config dpTrs )
+          -- (kList (numPrecedences config) $ orderAllocator config dpTrs )
+         $ kList' 
+         $  [ known 0 2 [ filterAllocator config dpTrs, precedenceAllocator config dpTrs ]
+            | usePrecedence config ]
+         ++ [ known 1 2 [ interpretationAllocator config dpTrs ]
+            | useInterpretation config ]
 
 orderAllocator :: Config -> DPTrs () -> Allocator
 orderAllocator config dpTrs = 
