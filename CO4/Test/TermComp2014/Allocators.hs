@@ -46,9 +46,14 @@ filterAllocator config = kList' . concatMap goArity . M.toList . nodeArities
                then kList' []
                else uList arity $ goIndex $ arity - 1
           projection = goIndex $ arity - 1
+
       return $ kTuple2 (kTuple2 (kMarkedSymbolAllocator s) (kLabelAllocator args))
-             $ constructors [ Just [selection] , Just [projection] ]
-             -- $ known 0 2 [ selection ]
+             $ case args of
+                [] -> known 0 2 [ kList' [] ]
+                _  -> (constructors [ Just [selection] , Just [projection] ])
+                       -- known 0 2 [ selection ]
+
+    goIndex i | i < 0 = error "TermComp2014.Allocators.filterAllocator.goIndex"
     goIndex 0         = known 0 2 [ ]
     goIndex i         = constructors [ Just [], Just [ goIndex $ i - 1 ] ]
 
