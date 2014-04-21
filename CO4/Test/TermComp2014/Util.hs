@@ -15,8 +15,6 @@ import           CO4.PreludeNat (nat)
 import           CO4.Util (bitWidth)
 import           CO4.Test.TermComp2014.Standalone hiding (ord)
 
-import qualified TPDB.Mirror
-
 {-
 import TPDB.Plain.Write ()
 import TPDB.Pretty (pretty)

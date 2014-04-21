@@ -101,5 +101,5 @@ pprintLinearInt  goS goL symbolMap = unlines . map go
                       ++ " : " ++ goFunc func
 
     goFunc (LinearFunction abs lins) = unwords $ intersperse " + "
-        $ show (value abs) : map ( \(c,i) -> "x_" ++ show i ) 
-                         (filter (\(c,i) -> c) $ zip lins [1..])
+        $ show (value abs) : map (\(_,i) -> "x_" ++ show i ) 
+                         (filter (\(c,_) -> c) $ zip lins [1..])
