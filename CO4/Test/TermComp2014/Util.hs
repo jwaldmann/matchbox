@@ -11,8 +11,8 @@ import           Data.Tuple (swap)
 import qualified Data.Map as M
 import qualified TPDB.Data as TPDB
 import qualified TPDB.Input as Input
-import           CO4.Util (toBinary)
 import           CO4.PreludeNat (nat)
+import           CO4.Util (bitWidth)
 import           CO4.Test.TermComp2014.Standalone hiding (ord)
 
 import qualified TPDB.Mirror
@@ -37,24 +37,31 @@ parseTrs path = Input.get_trs path >>= \ trs ->
     goTrs :: TPDB.TRS TPDB.Identifier TPDB.Identifier -> (UnlabeledTrs, SymbolMap)
     goTrs trs = (Trs rules', M.fromList $ map swap $ M.toList symbolMap)
       where
+        numIds              = numIdentifiers trs
         (rules', symbolMap) = runState (mapM goRule $ TPDB.rules trs) M.empty
 
-    goRule rule = 
-      return Rule `ap` (goTerm $ TPDB.lhs rule) `ap` (goTerm $ TPDB.rhs rule)
+        goRule rule = 
+          return Rule `ap` (goTerm $ TPDB.lhs rule) `ap` (goTerm $ TPDB.rhs rule)
 
-    goTerm (TPDB.Var v) = 
-      return Var `ap` goIdentifier v
+        goTerm (TPDB.Var v) = 
+          return Var `ap` goIdentifier v
 
-    goTerm (TPDB.Node v args) = 
-      return Node `ap` goIdentifier v `ap` return () `ap` mapM goTerm args
+        goTerm (TPDB.Node v args) = 
+          return Node `ap` goIdentifier v `ap` return () `ap` mapM goTerm args
 
-    goIdentifier i = gets (M.lookup (TPDB.name i)) >>= \case
-      Nothing -> do n <- gets M.size
-                    let sym = toBinary Nothing n
-                    modify $ M.insert (TPDB.name i) sym
-                    return sym
+        goIdentifier i = gets (M.lookup (TPDB.name i)) >>= \case
+          Nothing -> do n <- gets M.size
+                        let sym = assert (n < numIds)
+                                $ nat (bitWidth numIds) $ fromIntegral n
+                        modify $ M.insert (TPDB.name i) sym
+                        return sym
 
-      Just sym -> return sym
+          Just sym -> return sym
+
+    numIdentifiers = length . nub . concatMap goRule . TPDB.rules
+      where
+        goRule rule = (goTerm $ TPDB.lhs rule) ++ (goTerm $ TPDB.rhs rule)
+        goTerm term = (TPDB.lvars term) ++ (TPDB.lsyms term)
 
 assignments :: Eq var => Int -> Trs var n l -> Assignments var
 assignments n trs = do 

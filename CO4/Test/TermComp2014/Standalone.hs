@@ -11,7 +11,7 @@ data Pattern p                 = Any
                                | Exactly p
                                deriving (Eq,Show)
 
-type Symbol                    = [Bool]
+type Symbol                    = Nat
 
 type Domain                    = Nat
 
@@ -345,7 +345,7 @@ eqMarkedSymbol :: MarkedSymbol -> MarkedSymbol -> Bool
 eqMarkedSymbol (sym,m) (sym',m') = (eqSymbol sym sym') && (eqBool m m')
 
 eqSymbol :: Symbol -> Symbol -> Bool
-eqSymbol = eqList eqBool
+eqSymbol = eqNat
 
 eqValue :: Domain -> Domain -> Bool
 eqValue = eqNat

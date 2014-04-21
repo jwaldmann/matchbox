@@ -145,7 +145,7 @@ uValueAllocator :: Int -> Allocator
 uValueAllocator = uNat
 
 kSymbolAllocator :: Symbol -> Allocator
-kSymbolAllocator s = assert (not $ null s) $ kList' $ map kBool s
+kSymbolAllocator = kNat'
 
 kMarkedSymbolAllocator :: MarkedSymbol -> Allocator
 kMarkedSymbolAllocator (s,m) = kTuple2 (kSymbolAllocator s) (kBool m)
