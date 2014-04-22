@@ -2,6 +2,7 @@ module CO4.Test.TermComp2014.Standalone
 where
 
 import Prelude hiding (lex,lookup,length)
+import CO4.Prelude (assertKnown)
 import CO4.PreludeNat
 import CO4.PreludeBool (xor2)
 
@@ -32,9 +33,11 @@ data GroupedTrs var node label = GroupedTrs [[Rule var node label]]
 
 
 -- | the tag says whether the rule should be considered for weak compatibility.
--- All input tags are True.  An output tag is set to False iff:
--- For marked rules: the interpretation is strictly decreasing;
+-- A Tag is false:
 -- For unmarked rules: the rule is not usable (w.r.t. to the marked rules in the input)
+-- For marked rules: the rule was already removed because it was strictly compatible
+-- with some earlier ordering
+
 
 data TaggedGroupedTrs var node label = TaggedGroupedTrs [[(Bool,Rule var node label)]]
     deriving ( Eq, Show )
@@ -139,10 +142,12 @@ step
      -> (Map MSL Bool, TerminationOrder MSL)
      -> TaggedGroupedTrs Symbol MarkedSymbol Label
 step trs (usable,order) = case usableOK trs usable of
-        False -> undefined
-        True  -> case weaklyCompatibleOK trs order of
-            False -> undefined
-            True  -> untagStrictlyCompatible trs order
+    False -> undefined
+    True -> 
+        let utrs = tagUsable trs usable 
+        in  case weaklyCompatibleOK utrs order of
+                False -> undefined
+                True  -> untagStrictlyCompatible utrs order
 
 weaklyCompatibleOK
   :: TaggedGroupedTrs Symbol MarkedSymbol Label
@@ -161,6 +166,16 @@ untagStrictlyCompatible ( TaggedGroupedTrs rss ) order =
              (tag,rule) -> ( tag && not ( isStrictlyCompatible order rule ), rule)  )))
 
 -- * Usable rules
+
+-- | tag all unmarked rules that are 
+tagUsable (TaggedGroupedTrs rss) usable = TaggedGroupedTrs (
+    for rss ( \ rs -> for rs ( \ ( tag, rule ) -> 
+      case assertKnown ( isMarkedRule rule ) of
+        True -> ( tag, rule ) -- keep the previous tag (rule might already be removed)
+        False -> case rule of
+            Rule lhs rhs -> case assertKnown lhs of 
+                Var v -> undefined -- cannot happen (at top of lhs)
+                Node sym lab ts -> ( lookup eqMSL (sym,lab) usable, rule ) ) ) )
 
 -- | check that the usable (unmarked) rules are tagged
 
@@ -452,7 +467,7 @@ eqPattern f x y = case x of
     Any        -> True
     Exactly y' -> f x' y'
 
-forallSubterms t p = p t && case t of
+forallSubterms t p = p t && case assertKnown t of
     Var v -> True
     Node sym lab ts -> forall ts ( \ t -> forallSubterms t p )
 
