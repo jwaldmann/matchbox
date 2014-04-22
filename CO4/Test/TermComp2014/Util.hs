@@ -35,7 +35,6 @@ parseTrs path = Input.get_trs path >>= \ trs ->
     goTrs :: TPDB.TRS TPDB.Identifier TPDB.Identifier -> (UnlabeledTrs, SymbolMap)
     goTrs trs = (Trs rules', M.fromList $ map swap $ M.toList symbolMap)
       where
-        numIds              = numIdentifiers trs
         (rules', symbolMap) = runState (mapM goRule $ TPDB.rules trs) M.empty
 
         goRule rule = 
@@ -49,17 +48,11 @@ parseTrs path = Input.get_trs path >>= \ trs ->
 
         goIdentifier i = gets (M.lookup (TPDB.name i)) >>= \case
           Nothing -> do n <- gets M.size
-                        let sym = assert (n < numIds)
-                                $ nat (bitWidth numIds) $ fromIntegral n
+                        let sym = nat (bitWidth $ n + 1) $ fromIntegral n
                         modify $ M.insert (TPDB.name i) sym
                         return sym
 
           Just sym -> return sym
-
-    numIdentifiers = length . nub . concatMap goRule . TPDB.rules
-      where
-        goRule rule = (goTerm $ TPDB.lhs rule) ++ (goTerm $ TPDB.rhs rule)
-        goTerm term = (TPDB.lvars term) ++ (TPDB.lsyms term)
 
 assignments :: Eq var => Int -> Trs var n l -> Assignments var
 assignments n trs = do 
