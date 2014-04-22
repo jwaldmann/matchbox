@@ -14,7 +14,7 @@ import           CO4.Test.TermComp2014.Config
 allocator :: Config -> DPTrs () -> Allocator
 allocator config dpTrs = 
   kTuple2 (modelAllocator config dpTrs)
-          (kList (numPrecedences config) $ orderAllocator config dpTrs )
+          (kList (numPrecedences config) $ usableOrderAllocator config dpTrs )
 {-
          $ kList' 
          $  [ known 0 2 [ filterAllocator config dpTrs, precedenceAllocator config dpTrs ]
@@ -22,6 +22,34 @@ allocator config dpTrs =
          ++ [ known 1 2 [ interpretationAllocator config dpTrs ]
             | useInterpretation config ]
 -}
+
+usableOrderAllocator :: Config -> DPTrs () -> Allocator
+usableOrderAllocator config dpTrs =
+    known 0 1 [ usableMapAllocator config dpTrs
+              , orderAllocator config dpTrs
+              ]
+
+usableMapAllocator :: Config -> DPTrs () -> Allocator
+usableMapAllocator config = kList' . concatMap goArity . M.toList . nodeArities
+  where
+    n                 = modelBitWidth config
+    height            = 2^n
+    labels            = map (nat n) [0..height-1]
+    goArity (s,arity) = do
+      args <- sequence $ replicate arity labels
+      let selection = 
+               if bruteFilter config
+               then kList' []
+               else uList arity $ goIndex $ arity - 1
+          projection = goIndex $ arity - 1
+
+      return $ kTuple2 (kTuple2 (kMarkedSymbolAllocator s) (kLabelAllocator args))
+             $ uBool
+
+    goIndex i | i < 0 = error "TermComp2014.Allocators.usableMapAllocator.goIndex"
+    goIndex 0         = known 0 2 [ ]
+    goIndex i         = constructors [ Just [], Just [ goIndex $ i - 1 ] ]
+    
 
 orderAllocator :: Config -> DPTrs () -> Allocator
 orderAllocator config dpTrs = 

@@ -77,7 +77,10 @@ iterate symbolMap i config dp =
                   putStrLn $ "Labeled Trs:"
                   putStrLn $ pprintDPTrs pprintLabel symbolMap $ ungroupTrs labeledTrs
 
-                  forM_ (zip [1..] orders ) $ \ (i,order) -> case order of
+                  forM_ (zip [1..] orders ) $ \ (i,(usable,order)) -> do
+                   putStrLn $ show i ++ ". Usable Symbols:"
+                   putStrLn $ show usable
+                   case order of
                     LinearInt int -> do
                       putStrLn $ show i ++ ". Linear Interpretation:"
                       putStrLn $ pprintLinearInt pprintMarkedSymbol pprintLabel symbolMap int

@@ -132,7 +132,7 @@ toDpTerm (Node s l args) = Node (s,False) l $ map toDpTerm args
 ungroupTrs :: GroupedTrs v n l -> Trs v n l
 ungroupTrs (GroupedTrs rules) = Trs $ concat rules
 
-removeStrongDecreasingRules :: DPTrs () -> GroupedDPTrs Label -> [TerminationOrder MSL]
+removeStrongDecreasingRules :: DPTrs () -> GroupedDPTrs Label -> [UsableOrder MSL]
                             -> (DPTrs (), [DPRule ()])
 removeStrongDecreasingRules (Trs rules) (GroupedTrs labeledRules) orders = 
     assert (length rules == length labeledRules) 

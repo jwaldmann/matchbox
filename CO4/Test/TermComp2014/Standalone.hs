@@ -80,10 +80,14 @@ data TerminationOrder key         = FilterAndPrec (ArgFilter key) (Precedence ke
                                   | LinearInt (LinearInterpretation key)
     deriving (Eq, Show)
 
+type UsableSymbol key = Map key Bool
+
 type MSL = (MarkedSymbol,Label) 
 
+type UsableOrder key =  (UsableSymbol key, TerminationOrder key)
+
 constraint :: (DPTrs (), Assignments Symbol) 
-           -> (Model MarkedSymbol, [ TerminationOrder MSL]) 
+           -> (Model MarkedSymbol, [ UsableOrder MSL ]) 
            -> Bool
 constraint (trs,assignments) (model, orders) = 
   case makeLabeledTrs model trs assignments of
@@ -158,13 +162,13 @@ filterArgumentsDPTerm filter term = case term of
 
 -- * search precedence
 
-allRulesDecreasing :: GroupedDPTrs Label -> [TerminationOrder MSL] -> Bool
+allRulesDecreasing :: GroupedDPTrs Label -> [ UsableOrder MSL] -> Bool
 allRulesDecreasing (GroupedTrs rules) orders =
   forall rules (all (isDecreasingRule orders))
 
-isDecreasingRule :: [TerminationOrder MSL] -> DPRule Label -> Bool
+isDecreasingRule :: [ UsableOrder MSL ] -> DPRule Label -> Bool
 isDecreasingRule orders (Rule lhs rhs) = 
-  forall orders (\ o -> 
+  forall orders (\ (u,o) -> 
    let cmp = case o of
          LinearInt int -> linearRule int (Rule lhs rhs) 
          FilterAndPrec f p ->
@@ -175,13 +179,13 @@ isDecreasingRule orders (Rule lhs rhs) =
       NGe -> False
   )
 
-existsStrongDecreasingRule :: GroupedDPTrs Label -> [TerminationOrder MSL] -> Bool
+existsStrongDecreasingRule :: GroupedDPTrs Label -> [ UsableOrder MSL ] -> Bool
 existsStrongDecreasingRule (GroupedTrs rules) orders =
   exists rules (all (isMarkedStrongDecreasingRule orders))
 
-isMarkedStrongDecreasingRule :: [TerminationOrder MSL] -> DPRule Label -> Bool
+isMarkedStrongDecreasingRule :: [ UsableOrder MSL ] -> DPRule Label -> Bool
 isMarkedStrongDecreasingRule orders (Rule lhs rhs) = 
-  exists orders (\ o -> case o of
+  exists orders (\ (u, o) -> case o of
    LinearInt int ->
        (isMarked lhs)
     && (eqOrder (linearRule int (Rule lhs rhs)) Gr)
