@@ -70,7 +70,7 @@ iterate symbolMap i config dp =
       _     -> solveAndTestP parameter alloc encConstraint constraint
        >>= \case
              Nothing -> return False
-             Just (model,orders) -> assert (not $ null delete) $ 
+             Just (Proof model orders) -> assert (not $ null delete) $ 
                do putStrLn $ "Model:"
                   putStrLn $ pprintModel pprintMarkedSymbol symbolMap model
 
@@ -102,6 +102,6 @@ iterate symbolMap i config dp =
 
                   iterate symbolMap (i+1) config dp'
                where
-                 (dp', delete) = removeStrongDecreasingRules dp labeledTrs orders
+                 (dp', delete) = removeStrongDecreasingRules dp (tagAll labeledTrs) orders
 
                  (labeledTrs,True) = makeLabeledTrs model dp sigmas
