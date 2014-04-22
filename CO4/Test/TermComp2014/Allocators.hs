@@ -25,7 +25,7 @@ aTuple2 :: Talloc a -> Talloc b -> Talloc (a,b)
 aTuple2 a1 a2 = known 0 1 [ a1, a2 ]
 
 aList :: Int -> Talloc a -> Talloc [a]
-aList k a = uList k a
+aList k a = kList k a
 
 allocator :: Config -> DPTrs () -> Talloc Proof
 allocator config dpTrs = 
@@ -53,19 +53,8 @@ usableMapAllocator config = kList' . concatMap goArity . M.toList . nodeArities
     labels            = map (nat n) [0..height-1]
     goArity (s,arity) = do
       args <- sequence $ replicate arity labels
-      let selection = 
-               if bruteFilter config
-               then kList' []
-               else uList arity $ goIndex $ arity - 1
-          projection = goIndex $ arity - 1
-
       return $ kTuple2 (kTuple2 (kMarkedSymbolAllocator s) (kLabelAllocator args))
              $ uBool
-
-    goIndex i | i < 0 = error "TermComp2014.Allocators.usableMapAllocator.goIndex"
-    goIndex 0         = known 0 2 [ ]
-    goIndex i         = constructors [ Just [], Just [ goIndex $ i - 1 ] ]
-    
 
 orderAllocator :: Config -> DPTrs () -> Allocator
 orderAllocator config dpTrs = 
@@ -108,7 +97,7 @@ interpretationAllocator config trs = kList' $ concatMap goArity arities
     n                      = modelBitWidth config
     height                 = 2^n
     labels                 = map (nat n) [0..height-1]
-    absoluteCoefficientBitWidth    = 5 -- FIXME make configurable
+    absoluteCoefficientBitWidth    = 3 -- FIXME make configurable
     -- NOTE: this bit width is also hardwired in Standalone.hs (function linearTerm)
     linfun ar = known 0 1 [ uNat absoluteCoefficientBitWidth
                           , kList' $ replicate ar uBool

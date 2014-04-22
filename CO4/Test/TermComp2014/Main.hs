@@ -14,7 +14,7 @@ import qualified Satchmo.Core.Decode
 import           CO4 hiding (Config)
 import           CO4.Prelude
 import           CO4.Test.TermComp2014.Util 
-  (SymbolMap,parseTrs,assignments,dpProblem,removeStrongDecreasingRules,hasMarkedRule,ungroupTrs)
+  (SymbolMap,parseTrs,assignments,dpProblem,intermediates,removeMarkedUntagged,hasMarkedRule,ungroupTrs)
 import           CO4.Test.TermComp2014.PPrint
 import           CO4.Test.TermComp2014.Allocators (allocator)
 import           CO4.Test.TermComp2014.Standalone
@@ -78,8 +78,6 @@ iterate symbolMap i config dp =
                   putStrLn $ pprintDPTrs pprintLabel symbolMap $ ungroupTrs labeledTrs
 
                   forM_ (zip [1..] orders ) $ \ (i,(usable,order)) -> do
-                   putStrLn $ show i ++ ". Usable Symbols:"
-                   putStrLn $ show usable
                    case order of
                     LinearInt int -> do
                       putStrLn $ show i ++ ". Linear Interpretation:"
@@ -100,8 +98,14 @@ iterate symbolMap i config dp =
                   putStrLn $ "\nDeleted:"
                   putStrLn $ unlines $ map (pprintDPRule (const "") symbolMap) delete
 
+                  -- FIXME: print information about intermediates
+                  forM_ ints $ \ int -> do
+                      putStrLn $ "\nIntermediate system:"
+                      putStrLn $ pprintTaggedDPTrs pprintLabel symbolMap int
+
                   iterate symbolMap (i+1) config dp'
                where
-                 (dp', delete) = removeStrongDecreasingRules dp (tagAll labeledTrs) orders
+                 ints = intermediates dp labeledTrs orders
+                 (dp', delete) = removeMarkedUntagged dp $ last ints
 
                  (labeledTrs,True) = makeLabeledTrs model dp sigmas

@@ -167,18 +167,19 @@ untagStrictlyCompatible ( TaggedGroupedTrs rss ) order =
 
 -- * Usable rules
 
--- | tag all unmarked rules that are 
+-- | tag all unmarked rules that are usable (according to table)
+-- keep tags for marked rules.
 tagUsable (TaggedGroupedTrs rss) usable = TaggedGroupedTrs (
     for rss ( \ rs -> for rs ( \ ( tag, rule ) -> 
-      case assertKnown ( isMarkedRule rule ) of
+      case {- assertKnown -} ( isMarkedRule rule ) of
         True -> ( tag, rule ) -- keep the previous tag (rule might already be removed)
         False -> case rule of
-            Rule lhs rhs -> case assertKnown lhs of 
+            Rule lhs rhs -> case {- assertKnown -} lhs of 
                 Var v -> undefined -- cannot happen (at top of lhs)
                 Node sym lab ts -> ( lookup eqMSL (sym,lab) usable, rule ) ) ) )
 
--- | check that the usable (unmarked) rules are tagged
 
+-- | check that the usable (unmarked) rules are tagged in the table
 usableOK
   :: TaggedGroupedTrs Symbol MarkedSymbol Label
      -> Map MSL Bool -> Bool
@@ -186,13 +187,17 @@ usableOK (TaggedGroupedTrs rss) usable = forall rss ( \ rs -> forall rs ( \ (tag
     case rule of 
       Rule lhs rhs -> 
         let -- for marked rules, left top symbol must be usable 
-            left_ok = not (isMarked lhs) || case lhs of
+            left_ok = implies (isMarked lhs && tag) ( case lhs of
                 Var v -> undefined -- should not happen (no lhs can be Var)
-                Node sym lab ts -> lookup eqMSL (sym,lab) usable 
+                Node sym lab ts -> lookup eqMSL (sym,lab) usable  )
             -- if left top symbol is usable, then all syms in rhs must be usable
-            right_ok = forallSubterms rhs ( \ s -> case s of
-                Var v -> True
-                Node sym lab ts -> lookup eqMSL (sym,lab) usable )
+            right_ok = case lhs of 
+                Var v -> undefined
+                Node sym lab ts -> 
+                    implies (lookup eqMSL (sym,lab) usable)
+                        ( forallSubterms rhs ( \ s -> case s of
+                             Var v -> True
+                             Node sym lab ts -> lookup eqMSL (sym,lab) usable ))
         in  left_ok && right_ok  ) )
 
 
@@ -317,7 +322,7 @@ geBool x y = x || not y
 
 linearTerm :: LinearInterpretation MSL -> DPTerm Label -> LinearFunction
 linearTerm int t = case t of
-    Var x ->  LinearFunction (nat 5 0) [ True ] 
+    Var x ->  LinearFunction (nat 3 0) [ True ] 
     Node f lf args -> 
         let int_f = lookup eqMarkedLabeledSymbol (f, lf) int
             values = map ( linearTerm int ) args
@@ -460,6 +465,8 @@ eqList f xs ys = case xs of
 eqBool :: Bool -> Bool -> Bool
 eqBool x y = not (xor2 x y)
 
+implies p q = not p || q
+
 eqPattern :: (k -> k -> Bool) -> Pattern k -> Pattern k -> Bool
 eqPattern f x y = case x of
   Any        -> True
@@ -467,7 +474,7 @@ eqPattern f x y = case x of
     Any        -> True
     Exactly y' -> f x' y'
 
-forallSubterms t p = p t && case assertKnown t of
+forallSubterms t p = p t && case {- assertKnown -} t of
     Var v -> True
     Node sym lab ts -> forall ts ( \ t -> forallSubterms t p )
 
