@@ -30,6 +30,17 @@ data Trs var node label        = Trs [Rule var node label]
 data GroupedTrs var node label = GroupedTrs [[Rule var node label]]
                                deriving (Eq,Show)
 
+
+-- | the tag says whether the rule should be considered for weak compatibility.
+-- All input tags are True.  An output tag is set to False iff:
+-- For marked rules: the interpretation is strictly decreasing;
+-- For unmarked rules: the rule is not usable (w.r.t. to the marked rules in the input)
+
+data TaggedGroupedTrs var node label = TaggedGroupedTrs [[(Bool,Rule var node label)]]
+    deriving ( Eq, Show )
+
+
+
 type UnlabeledTerm             = Term Symbol Symbol ()
 type UnlabeledRule             = Rule Symbol Symbol ()
 type UnlabeledTrs              = Trs  Symbol Symbol ()
@@ -40,6 +51,8 @@ type DPTerm       label        = Term Symbol MarkedSymbol label
 type DPRule       label        = Rule Symbol MarkedSymbol label
 type DPTrs        label        = Trs  Symbol MarkedSymbol label
 type GroupedDPTrs label        = GroupedTrs Symbol MarkedSymbol label
+
+type TaggedGroupedDPTrs label        = TaggedGroupedTrs Symbol MarkedSymbol label
 
 type Interpretation            = Map [Pattern Domain] Domain
 
@@ -84,18 +97,89 @@ type UsableSymbol key = Map key Bool
 
 type MSL = (MarkedSymbol,Label) 
 
+
 type UsableOrder key =  (UsableSymbol key, TerminationOrder key)
 
+data Proof = Proof (Model MarkedSymbol) [UsableOrder MSL]
+
+
 constraint :: (DPTrs (), Assignments Symbol) 
-           -> (Model MarkedSymbol, [ UsableOrder MSL ]) 
+           -> Proof
            -> Bool
-constraint (trs,assignments) (model, orders) = 
-  case makeLabeledTrs model trs assignments of
-    (labeledTrs, isModel) ->
-      and [ isModel
-          , allRulesDecreasing         labeledTrs orders
-          , existsStrongDecreasingRule labeledTrs orders
-          ]
+constraint (trs,assignments) (Proof model orders) = 
+    case makeLabeledTrs model trs assignments of
+        (labeledTrs, isModel) -> isModel &&
+            couldDeleteOneRule ( steps ( tagAll labeledTrs ) orders )
+
+couldDeleteOneRule
+  :: TaggedGroupedTrs Symbol MarkedSymbol label -> Bool
+couldDeleteOneRule trs = case trs of
+    TaggedGroupedTrs rss -> exists rss ( \ rs -> 
+        forall rs ( \ r -> case r of (tag,rule) -> not tag && isMarkedRule rule ) )
+
+tagAll
+  :: GroupedTrs var node label -> TaggedGroupedTrs var node label
+tagAll trs = case trs of 
+    GroupedTrs rss -> 
+        TaggedGroupedTrs (map (map ( \ rule -> (True,rule))) rss)
+
+steps
+  :: TaggedGroupedTrs Symbol MarkedSymbol Label
+     -> [(Map MSL Bool, TerminationOrder MSL)]
+     -> TaggedGroupedTrs Symbol MarkedSymbol Label
+steps trs orders = foldl step trs orders 
+
+-- | check that all usable rules are tagged (if not, raise exception).
+-- check that all (marked and unmarked) tagged rules 
+-- are weakly compatible with order (if not, raise exception).
+-- then untag the marked rules that are strictly compatible.
+
+step
+  :: TaggedGroupedTrs Symbol MarkedSymbol Label
+     -> (Map MSL Bool, TerminationOrder MSL)
+     -> TaggedGroupedTrs Symbol MarkedSymbol Label
+step trs (usable,order) = case usableOK trs usable of
+        False -> undefined
+        True  -> case weaklyCompatibleOK trs order of
+            False -> undefined
+            True  -> untagStrictlyCompatible trs order
+
+weaklyCompatibleOK
+  :: TaggedGroupedTrs Symbol MarkedSymbol Label
+     -> TerminationOrder MSL -> Bool
+weaklyCompatibleOK (TaggedGroupedTrs rss) order = 
+    forall rss ( \ rs -> forall rs ( \ r -> case r of 
+        ( tag, rule ) -> not tag || isWeaklyCompatible order rule  ) )
+    
+untagStrictlyCompatible
+  :: TaggedGroupedTrs Symbol MarkedSymbol Label
+     -> TerminationOrder MSL
+     -> TaggedGroupedTrs Symbol MarkedSymbol Label
+untagStrictlyCompatible ( TaggedGroupedTrs rss ) order = 
+    TaggedGroupedTrs 
+        ( for rss ( \ rs -> for rs ( \ r -> case r of
+             (tag,rule) -> ( tag && not ( isStrictlyCompatible order rule ), rule)  )))
+
+-- * Usable rules
+
+-- | check that the usable (unmarked) rules are tagged
+
+usableOK
+  :: TaggedGroupedTrs Symbol MarkedSymbol Label
+     -> Map MSL Bool -> Bool
+usableOK (TaggedGroupedTrs rss) usable = forall rss ( \ rs -> forall rs ( \ (tag,rule) -> 
+    case rule of 
+      Rule lhs rhs -> 
+        let -- for marked rules, left top symbol must be usable 
+            left_ok = not (isMarked lhs) || case lhs of
+                Var v -> undefined -- should not happen (no lhs can be Var)
+                Node sym lab ts -> lookup eqMSL (sym,lab) usable 
+            -- if left top symbol is usable, then all syms in rhs must be usable
+            right_ok = forallSubterms rhs ( \ s -> case s of
+                Var v -> True
+                Node sym lab ts -> lookup eqMSL (sym,lab) usable )
+        in  left_ok && right_ok  ) )
+
 
 -- * make labeled TRS & search model
 
@@ -160,40 +244,34 @@ filterArgumentsDPTerm filter term = case term of
      Projection i -> 
       filterArgumentsDPTerm filter (atIndex i args)
 
--- * search precedence
+-- * check compatibility with order
 
-allRulesDecreasing :: GroupedDPTrs Label -> [ UsableOrder MSL] -> Bool
-allRulesDecreasing (GroupedTrs rules) orders =
-  forall rules (all (isDecreasingRule orders))
+isWeaklyCompatible
+  :: TerminationOrder MSL -> Rule Symbol MarkedSymbol Label -> Bool
+isWeaklyCompatible order (Rule lhs rhs) = 
+       let cmp = case order of
+             LinearInt int -> linearRule int (Rule lhs rhs) 
+             FilterAndPrec f p ->
+                 lpo p (filterArgumentsDPTerm f lhs) (filterArgumentsDPTerm f rhs) 
+       in case cmp of
+              Gr  -> True
+              Eq  -> True
+              NGe -> False
 
-isDecreasingRule :: [ UsableOrder MSL ] -> DPRule Label -> Bool
-isDecreasingRule orders (Rule lhs rhs) = 
-  forall orders (\ (u,o) -> 
-   let cmp = case o of
-         LinearInt int -> linearRule int (Rule lhs rhs) 
-         FilterAndPrec f p ->
-             lpo p (filterArgumentsDPTerm f lhs) (filterArgumentsDPTerm f rhs) 
-   in case cmp of
-      Gr  -> True
-      Eq  -> True
-      NGe -> False
-  )
+isStrictlyCompatible
+  :: TerminationOrder MSL -> Rule Symbol MarkedSymbol Label -> Bool
+isStrictlyCompatible order (Rule lhs rhs) = isMarked lhs &&
+       let cmp = case order of
+             LinearInt int -> linearRule int (Rule lhs rhs) 
+             FilterAndPrec f p ->
+                 lpo p (filterArgumentsDPTerm f lhs) (filterArgumentsDPTerm f rhs) 
+       in case cmp of
+              Gr  -> True
+              Eq  -> False
+              NGe -> False
 
-existsStrongDecreasingRule :: GroupedDPTrs Label -> [ UsableOrder MSL ] -> Bool
-existsStrongDecreasingRule (GroupedTrs rules) orders =
-  exists rules (all (isMarkedStrongDecreasingRule orders))
-
-isMarkedStrongDecreasingRule :: [ UsableOrder MSL ] -> DPRule Label -> Bool
-isMarkedStrongDecreasingRule orders (Rule lhs rhs) = 
-  exists orders (\ (u, o) -> case o of
-   LinearInt int ->
-       (isMarked lhs)
-    && (eqOrder (linearRule int (Rule lhs rhs)) Gr)
-   FilterAndPrec f p ->
-       (isMarked lhs) 
-    && (eqOrder (lpo p (filterArgumentsDPTerm f lhs) 
-                       (filterArgumentsDPTerm f rhs)) Gr)
-  )
+isMarkedRule :: Rule Symbol MarkedSymbol label -> Bool
+isMarkedRule (Rule lhs rhs) = isMarked lhs
 
 isMarked :: DPTerm label -> Bool
 isMarked term = case term of 
@@ -323,6 +401,9 @@ lookup f k map = case map of
 eqMarkedLabeledSymbol :: MSL -> MSL -> Bool
 eqMarkedLabeledSymbol (s,l) (s',l') = (eqMarkedSymbol s s') && (eqLabel l l')
 
+eqMSL :: MSL -> MSL -> Bool
+eqMSL = eqMarkedLabeledSymbol 
+
 eqLabeledDPTerm :: DPTerm Label -> DPTerm Label -> Bool
 eqLabeledDPTerm = eqTerm eqSymbol eqMarkedSymbol eqLabel
 
@@ -371,8 +452,16 @@ eqPattern f x y = case x of
     Any        -> True
     Exactly y' -> f x' y'
 
+forallSubterms t p = p t && case t of
+    Var v -> True
+    Node sym lab ts -> forall ts ( \ t -> forallSubterms t p )
+
 exists :: [a] -> (a -> Bool) -> Bool
 exists xs f = any f xs
 
 forall :: [a] -> (a -> Bool) -> Bool
 forall xs f = all f xs
+
+for :: [a] -> (a -> b) -> [b]
+for xs f = map f xs
+
