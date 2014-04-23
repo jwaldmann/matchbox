@@ -92,6 +92,9 @@ isSubterm subterm = go
     go t@(Var _)       = t == subterm
     go t@(Node _ _ ts) = (t == subterm) || (any go ts)
 
+isStrictSubterm :: (Eq v, Eq n, Eq l) => Term v n l -> Term v n l -> Bool
+isStrictSubterm subterm term = (term /= subterm) && (isSubterm subterm term)
+
 subterms :: Term v n l -> [Term v n l]
 subterms = go
   where
@@ -118,8 +121,9 @@ dependencyPairs (Trs rules) = Trs $ concatMap goRule rules
       where
         us = do s@(Node f l _) <- filter (not . isVar) $ subterms rhs
                 guard $ (f,l) `elem` defined
-                guard $ not $ isSubterm s lhs
+                guard $ not $ isStrictSubterm s lhs
                 return s
+
 
 dpProblem :: UnlabeledTrs -> DPTrs ()
 dpProblem trs = Trs $ original ++ dp
