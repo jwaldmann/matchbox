@@ -7,14 +7,30 @@ import           CO4.AllocatorData (Allocator,constructors,known)
 import           CO4.Prelude (kList,uList,kList',kBool,uBool,kTuple2)
 import           CO4.PreludeNat (nat,kNat',uNat)
 import           CO4.Util (bitWidth)
-import           CO4.Test.TermComp2014.Standalone (Symbol,Domain,DPTrs,MarkedSymbol,Label)
+import           CO4.Test.TermComp2014.Standalone (Symbol,Domain,DPTrs,MarkedSymbol,Label,Model,UsableOrder,MSL,Proof)
 import           CO4.Test.TermComp2014.Util (nodeArities)
 import           CO4.Test.TermComp2014.Config
 
-allocator :: Config -> DPTrs () -> Allocator
+type Talloc t = Allocator -- with phantom type
+
+
+-- type UsableOrder key =  (UsableSymbol key, TerminationOrder key)
+
+-- data Proof = Proof (Model MarkedSymbol) [UsableOrder MSL]
+
+aProof :: Talloc (Model MarkedSymbol) -> Talloc [UsableOrder MSL] -> Talloc Proof
+aProof mod orders = known 0 1 [ mod, orders ]
+
+aTuple2 :: Talloc a -> Talloc b -> Talloc (a,b)
+aTuple2 a1 a2 = known 0 1 [ a1, a2 ]
+
+aList :: Int -> Talloc a -> Talloc [a]
+aList k a = kList k a
+
+allocator :: Config -> DPTrs () -> Talloc Proof
 allocator config dpTrs = 
-  kTuple2 (modelAllocator config dpTrs)
-          (kList (numPrecedences config) $ orderAllocator config dpTrs )
+  aProof (modelAllocator config dpTrs)
+          (aList (numPrecedences config) $ usableOrderAllocator config dpTrs )
 {-
          $ kList' 
          $  [ known 0 2 [ filterAllocator config dpTrs, precedenceAllocator config dpTrs ]
@@ -22,6 +38,23 @@ allocator config dpTrs =
          ++ [ known 1 2 [ interpretationAllocator config dpTrs ]
             | useInterpretation config ]
 -}
+
+usableOrderAllocator :: Config -> DPTrs () -> Allocator
+usableOrderAllocator config dpTrs =
+    known 0 1 [ usableMapAllocator config dpTrs
+              , orderAllocator config dpTrs
+              ]
+
+usableMapAllocator :: Config -> DPTrs () -> Allocator
+usableMapAllocator config = kList' . concatMap goArity . M.toList . nodeArities
+  where
+    n                 = modelBitWidth config
+    height            = 2^n
+    labels            = map (nat n) [0..height-1]
+    goArity (s,arity) = do
+      args <- sequence $ replicate arity labels
+      return $ kTuple2 (kTuple2 (kMarkedSymbolAllocator s) (kLabelAllocator args))
+             $ uBool
 
 orderAllocator :: Config -> DPTrs () -> Allocator
 orderAllocator config dpTrs = 
@@ -64,7 +97,7 @@ interpretationAllocator config trs = kList' $ concatMap goArity arities
     n                      = modelBitWidth config
     height                 = 2^n
     labels                 = map (nat n) [0..height-1]
-    absoluteCoefficientBitWidth    = 5 -- FIXME make configurable
+    absoluteCoefficientBitWidth    = 3 -- FIXME make configurable
     -- NOTE: this bit width is also hardwired in Standalone.hs (function linearTerm)
     linfun ar = known 0 1 [ uNat absoluteCoefficientBitWidth
                           , kList' $ replicate ar uBool
