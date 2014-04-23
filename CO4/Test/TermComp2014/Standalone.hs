@@ -2,6 +2,7 @@ module CO4.Test.TermComp2014.Standalone
 where
 
 import Prelude hiding (lex,lookup,length)
+import CO4.Prelude (assertKnown)
 import CO4.PreludeNat
 import CO4.PreludeBool (xor2)
 
@@ -30,6 +31,19 @@ data Trs var node label        = Trs [Rule var node label]
 data GroupedTrs var node label = GroupedTrs [[Rule var node label]]
                                deriving (Eq,Show)
 
+
+-- | the tag says whether the rule should be considered for weak compatibility.
+-- A Tag is false:
+-- For unmarked rules: the rule is not usable (w.r.t. to the marked rules in the input)
+-- For marked rules: the rule was already removed because it was strictly compatible
+-- with some earlier ordering
+
+
+data TaggedGroupedTrs var node label = TaggedGroupedTrs [[(Bool,Rule var node label)]]
+    deriving ( Eq, Show )
+
+
+
 type UnlabeledTerm             = Term Symbol Symbol ()
 type UnlabeledRule             = Rule Symbol Symbol ()
 type UnlabeledTrs              = Trs  Symbol Symbol ()
@@ -40,6 +54,8 @@ type DPTerm       label        = Term Symbol MarkedSymbol label
 type DPRule       label        = Rule Symbol MarkedSymbol label
 type DPTrs        label        = Trs  Symbol MarkedSymbol label
 type GroupedDPTrs label        = GroupedTrs Symbol MarkedSymbol label
+
+type TaggedGroupedDPTrs label        = TaggedGroupedTrs Symbol MarkedSymbol label
 
 type Interpretation            = Map [Pattern Domain] Domain
 
@@ -80,18 +96,110 @@ data TerminationOrder key         = FilterAndPrec (ArgFilter key) (Precedence ke
                                   | LinearInt (LinearInterpretation key)
     deriving (Eq, Show)
 
+type UsableSymbol key = Map key Bool
+
 type MSL = (MarkedSymbol,Label) 
 
+
+type UsableOrder key =  (UsableSymbol key, TerminationOrder key)
+
+data Proof = Proof (Model MarkedSymbol) [UsableOrder MSL]
+
+
 constraint :: (DPTrs (), Assignments Symbol) 
-           -> (Model MarkedSymbol, [ TerminationOrder MSL]) 
+           -> Proof
            -> Bool
-constraint (trs,assignments) (model, orders) = 
-  case makeLabeledTrs model trs assignments of
-    (labeledTrs, isModel) ->
-      and [ isModel
-          , allRulesDecreasing         labeledTrs orders
-          , existsStrongDecreasingRule labeledTrs orders
-          ]
+constraint (trs,assignments) (Proof model orders) = 
+    case makeLabeledTrs model trs assignments of
+        (labeledTrs, isModel) -> isModel &&
+            couldDeleteOneRule ( steps ( tagAll labeledTrs ) orders )
+
+couldDeleteOneRule
+  :: TaggedGroupedTrs Symbol MarkedSymbol label -> Bool
+couldDeleteOneRule trs = case trs of
+    TaggedGroupedTrs rss -> exists rss ( \ rs -> 
+        forall rs ( \ r -> case r of (tag,rule) -> not tag && isMarkedRule rule ) )
+
+tagAll
+  :: GroupedTrs var node label -> TaggedGroupedTrs var node label
+tagAll trs = case trs of 
+    GroupedTrs rss -> 
+        TaggedGroupedTrs (map (map ( \ rule -> (True,rule))) rss)
+
+steps
+  :: TaggedGroupedTrs Symbol MarkedSymbol Label
+     -> [(Map MSL Bool, TerminationOrder MSL)]
+     -> TaggedGroupedTrs Symbol MarkedSymbol Label
+steps trs orders = foldl step trs orders 
+
+-- | check that all usable rules are tagged (if not, raise exception).
+-- check that all (marked and unmarked) tagged rules 
+-- are weakly compatible with order (if not, raise exception).
+-- then untag the marked rules that are strictly compatible.
+
+step
+  :: TaggedGroupedTrs Symbol MarkedSymbol Label
+     -> (Map MSL Bool, TerminationOrder MSL)
+     -> TaggedGroupedTrs Symbol MarkedSymbol Label
+step trs (usable,order) = case usableOK trs usable of
+    False -> undefined
+    True -> 
+        let utrs = tagUsable trs usable 
+        in  case weaklyCompatibleOK utrs order of
+                False -> undefined
+                True  -> untagStrictlyCompatible utrs order
+
+weaklyCompatibleOK
+  :: TaggedGroupedTrs Symbol MarkedSymbol Label
+     -> TerminationOrder MSL -> Bool
+weaklyCompatibleOK (TaggedGroupedTrs rss) order = 
+    forall rss ( \ rs -> forall rs ( \ r -> case r of 
+        ( tag, rule ) -> not tag || isWeaklyCompatible order rule  ) )
+    
+untagStrictlyCompatible
+  :: TaggedGroupedTrs Symbol MarkedSymbol Label
+     -> TerminationOrder MSL
+     -> TaggedGroupedTrs Symbol MarkedSymbol Label
+untagStrictlyCompatible ( TaggedGroupedTrs rss ) order = 
+    TaggedGroupedTrs 
+        ( for rss ( \ rs -> for rs ( \ r -> case r of
+             (tag,rule) -> ( tag && not ( isStrictlyCompatible order rule ), rule)  )))
+
+-- * Usable rules
+
+-- | tag all unmarked rules that are usable (according to table)
+-- keep tags for marked rules.
+tagUsable (TaggedGroupedTrs rss) usable = TaggedGroupedTrs (
+    for rss ( \ rs -> for rs ( \ ( tag, rule ) -> 
+      case {- assertKnown -} ( isMarkedRule rule ) of
+        True -> ( tag, rule ) -- keep the previous tag (rule might already be removed)
+        False -> case rule of
+            Rule lhs rhs -> case {- assertKnown -} lhs of 
+                Var v -> undefined -- cannot happen (at top of lhs)
+                Node sym lab ts -> ( lookup eqMSL (sym,lab) usable, rule ) ) ) )
+
+
+-- | check that the usable (unmarked) rules are tagged in the table
+usableOK
+  :: TaggedGroupedTrs Symbol MarkedSymbol Label
+     -> Map MSL Bool -> Bool
+usableOK (TaggedGroupedTrs rss) usable = forall rss ( \ rs -> forall rs ( \ (tag,rule) -> 
+    case rule of 
+      Rule lhs rhs -> 
+        let -- for marked rules, left top symbol must be usable 
+            left_ok = implies (isMarked lhs && tag) ( case lhs of
+                Var v -> undefined -- should not happen (no lhs can be Var)
+                Node sym lab ts -> lookup eqMSL (sym,lab) usable  )
+            -- if left top symbol is usable, then all syms in rhs must be usable
+            right_ok = case lhs of 
+                Var v -> undefined
+                Node sym lab ts -> 
+                    implies (lookup eqMSL (sym,lab) usable)
+                        ( forallSubterms rhs ( \ s -> case s of
+                             Var v -> True
+                             Node sym lab ts -> lookup eqMSL (sym,lab) usable ))
+        in  left_ok && right_ok  ) )
+
 
 -- * make labeled TRS & search model
 
@@ -156,40 +264,34 @@ filterArgumentsDPTerm filter term = case term of
      Projection i -> 
       filterArgumentsDPTerm filter (atIndex i args)
 
--- * search precedence
+-- * check compatibility with order
 
-allRulesDecreasing :: GroupedDPTrs Label -> [TerminationOrder MSL] -> Bool
-allRulesDecreasing (GroupedTrs rules) orders =
-  forall rules (all (isDecreasingRule orders))
+isWeaklyCompatible
+  :: TerminationOrder MSL -> Rule Symbol MarkedSymbol Label -> Bool
+isWeaklyCompatible order (Rule lhs rhs) = 
+       let cmp = case order of
+             LinearInt int -> linearRule int (Rule lhs rhs) 
+             FilterAndPrec f p ->
+                 lpo p (filterArgumentsDPTerm f lhs) (filterArgumentsDPTerm f rhs) 
+       in case cmp of
+              Gr  -> True
+              Eq  -> True
+              NGe -> False
 
-isDecreasingRule :: [TerminationOrder MSL] -> DPRule Label -> Bool
-isDecreasingRule orders (Rule lhs rhs) = 
-  forall orders (\ o -> 
-   let cmp = case o of
-         LinearInt int -> linearRule int (Rule lhs rhs) 
-         FilterAndPrec f p ->
-             lpo p (filterArgumentsDPTerm f lhs) (filterArgumentsDPTerm f rhs) 
-   in case cmp of
-      Gr  -> True
-      Eq  -> True
-      NGe -> False
-  )
+isStrictlyCompatible
+  :: TerminationOrder MSL -> Rule Symbol MarkedSymbol Label -> Bool
+isStrictlyCompatible order (Rule lhs rhs) = isMarked lhs &&
+       let cmp = case order of
+             LinearInt int -> linearRule int (Rule lhs rhs) 
+             FilterAndPrec f p ->
+                 lpo p (filterArgumentsDPTerm f lhs) (filterArgumentsDPTerm f rhs) 
+       in case cmp of
+              Gr  -> True
+              Eq  -> False
+              NGe -> False
 
-existsStrongDecreasingRule :: GroupedDPTrs Label -> [TerminationOrder MSL] -> Bool
-existsStrongDecreasingRule (GroupedTrs rules) orders =
-  exists rules (all (isMarkedStrongDecreasingRule orders))
-
-isMarkedStrongDecreasingRule :: [TerminationOrder MSL] -> DPRule Label -> Bool
-isMarkedStrongDecreasingRule orders (Rule lhs rhs) = 
-  exists orders (\ o -> case o of
-   LinearInt int ->
-       (isMarked lhs)
-    && (eqOrder (linearRule int (Rule lhs rhs)) Gr)
-   FilterAndPrec f p ->
-       (isMarked lhs) 
-    && (eqOrder (lpo p (filterArgumentsDPTerm f lhs) 
-                       (filterArgumentsDPTerm f rhs)) Gr)
-  )
+isMarkedRule :: Rule Symbol MarkedSymbol label -> Bool
+isMarkedRule (Rule lhs rhs) = isMarked lhs
 
 isMarked :: DPTerm label -> Bool
 isMarked term = case term of 
@@ -220,7 +322,7 @@ geBool x y = x || not y
 
 linearTerm :: LinearInterpretation MSL -> DPTerm Label -> LinearFunction
 linearTerm int t = case t of
-    Var x ->  LinearFunction (nat 5 0) [ True ] 
+    Var x ->  LinearFunction (nat 3 0) [ True ] 
     Node f lf args -> 
         let int_f = lookup eqMarkedLabeledSymbol (f, lf) int
             values = map ( linearTerm int ) args
@@ -319,6 +421,9 @@ lookup f k map = case map of
 eqMarkedLabeledSymbol :: MSL -> MSL -> Bool
 eqMarkedLabeledSymbol (s,l) (s',l') = (eqMarkedSymbol s s') && (eqLabel l l')
 
+eqMSL :: MSL -> MSL -> Bool
+eqMSL = eqMarkedLabeledSymbol 
+
 eqLabeledDPTerm :: DPTerm Label -> DPTerm Label -> Bool
 eqLabeledDPTerm = eqTerm eqSymbol eqMarkedSymbol eqLabel
 
@@ -360,6 +465,8 @@ eqList f xs ys = case xs of
 eqBool :: Bool -> Bool -> Bool
 eqBool x y = not (xor2 x y)
 
+implies p q = not p || q
+
 eqPattern :: (k -> k -> Bool) -> Pattern k -> Pattern k -> Bool
 eqPattern f x y = case x of
   Any        -> True
@@ -367,8 +474,16 @@ eqPattern f x y = case x of
     Any        -> True
     Exactly y' -> f x' y'
 
+forallSubterms t p = p t && case {- assertKnown -} t of
+    Var v -> True
+    Node sym lab ts -> forall ts ( \ t -> forallSubterms t p )
+
 exists :: [a] -> (a -> Bool) -> Bool
 exists xs f = any f xs
 
 forall :: [a] -> (a -> Bool) -> Bool
 forall xs f = all f xs
+
+for :: [a] -> (a -> b) -> [b]
+for xs f = map f xs
+

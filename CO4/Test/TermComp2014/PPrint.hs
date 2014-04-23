@@ -17,12 +17,29 @@ pprintLabeledTrs = pprintTrs pprintSymbol pprintSymbol
 pprintDPTrs :: (l -> String) -> SymbolMap -> DPTrs l -> String
 pprintDPTrs goL symbolMap = pprintTrs pprintSymbol pprintMarkedSymbol goL symbolMap
 
+-- pprintTaggedDPTrs :: (l -> String) -> SymbolMap -> TaggedDPTrs l -> String
+pprintTaggedDPTrs goL symbolMap = pprintTaggedTrs pprintSymbol pprintMarkedSymbol goL symbolMap
+
 pprintDPRule :: (l -> String) -> SymbolMap -> DPRule l -> String
 pprintDPRule = pprintRule pprintSymbol pprintMarkedSymbol
 
 pprintTrs :: (SymbolMap -> v -> String) -> (SymbolMap -> n -> String) -> (l -> String) 
           -> SymbolMap -> Trs v n l -> String 
 pprintTrs goV goN goL symbolMap (Trs rules) = unlines $ map (pprintRule goV goN goL symbolMap) rules
+
+pprintTaggedTrs goV goN goL symbolMap (TaggedGroupedTrs ruless) = 
+    unlines $ map (pprintTaggedRule goV goN goL symbolMap) $ concat ruless
+
+pprintTaggedRule goV goN goL symbolMap (tag, Rule l r) = 
+     unwords [ desc, goTerm l, "->", goTerm r ]
+  where
+    desc = case isMarked l of
+        True -> if tag then "keep" else "delete"
+        False -> if tag then "usable" else "unusable"
+    goTerm (Var v)         = goV symbolMap v
+    goTerm (Node s l args) = pprintLabeledSymbol goN goL symbolMap (s,l)
+                         ++ (concat [ " (", intercalate ", " (map goTerm args), ")" ])
+
 
 pprintRule :: (SymbolMap -> v -> String) -> (SymbolMap -> n -> String) -> (l -> String) 
            -> SymbolMap -> Rule v n l -> String 
@@ -102,4 +119,4 @@ pprintLinearInt  goS goL symbolMap = unlines . map go
 
     goFunc (LinearFunction abs lins) = unwords $ intersperse " + "
         $ show (value abs) : map (\(_,i) -> "x_" ++ show i ) 
-                         (filter (\(c,_) -> c) $ zip lins [1..])
+                         (filter (\(c,_) -> c) $ zip lins [1 :: Int ..])
