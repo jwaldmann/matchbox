@@ -14,7 +14,6 @@ import qualified Satchmo.Core.Decode
 import           CO4 hiding (Config)
 import           CO4.Prelude
 import           CO4.Test.TermComp2014.Util 
-  (SymbolMap,parseTrs,assignments,dpProblem,intermediates,removeMarkedUntagged,hasMarkedRule,ungroupTrs)
 import           CO4.Test.TermComp2014.PPrint
 import           CO4.Test.TermComp2014.Allocators (allocator)
 import           CO4.Test.TermComp2014.Standalone
@@ -45,15 +44,18 @@ resultFile' config filePath = do
   putStrLn $ "Parsed:" 
   putStrLn $ pprintUnlabeledTrs symbolMap trs
 
-  putStrLn $ "DP-TRS:"
-  putStrLn $ pprintDPTrs (const "") symbolMap (dpProblem trs)
+  if not (isValidTrs trs)
+    then putStrLn "invalid trs" >> exitFailure
+    else do
+      putStrLn $ "DP-TRS:"
+      putStrLn $ pprintDPTrs (const "") symbolMap (dpProblem trs)
 
-  putStrLn $ "Symbol Map:"
-  putStrLn $ show symbolMap
+      putStrLn $ "Symbol Map:"
+      putStrLn $ show symbolMap
 
-  iterate symbolMap 1 config (dpProblem trs) >>= \case
-    False -> putStrLn "don't know" >> exitFailure
-    True  -> putStrLn "terminates" >> exitSuccess
+      iterate symbolMap 1 config (dpProblem trs) >>= \case
+        False -> putStrLn "don't know" >> exitFailure
+        True  -> putStrLn "terminates" >> exitSuccess
 
 iterate :: SymbolMap -> Int -> Config -> DPTrs () -> IO Bool
 iterate symbolMap i config dp = 

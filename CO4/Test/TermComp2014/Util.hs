@@ -9,6 +9,7 @@ import           Data.Maybe (mapMaybe)
 import           Data.Either (partitionEithers)
 import           Data.Tuple (swap)
 import qualified Data.Map as M
+import qualified Data.Set as S
 import qualified TPDB.Data as TPDB
 import qualified TPDB.Input as Input
 import           CO4.PreludeNat (nat)
@@ -61,18 +62,22 @@ parseTrs path = Input.get_trs path >>= \ trs ->
         goRule rule = (goTerm $ TPDB.lhs rule) ++ (goTerm $ TPDB.rhs rule)
         goTerm term = (TPDB.lvars term) ++ (TPDB.lsyms term)
 
-assignments :: Eq var => Int -> Trs var n l -> Assignments var
+assignments :: Ord var => Int -> Trs var n l -> Assignments var
 assignments n trs = do 
   values <- sequence $ replicate (length vars) [0..(2^n)-1]
   return $ zipWith goMapping vars values
   where
-    vars                    = goTrs trs
-    goTrs (Trs rules)       = nub $ concatMap goRule rules
-    goRule (Rule l r)       = goTerm l ++ (goTerm r)
-    goTerm (Var v)          = [v]
-    goTerm (Node _  _ args) = concatMap goTerm args
-
+    vars              = S.toList $ variableSet trs
     goMapping v value = (v, nat n value)
+
+variableSet :: Ord v => Trs v s l -> S.Set v
+variableSet (Trs rules) = S.unions $ map goRule rules
+  where
+    goRule (Rule l r) = variableSet' l `S.union` (variableSet' r)
+
+variableSet' :: Ord v => Term v s l -> S.Set v
+variableSet' (Var v)          = S.singleton v
+variableSet' (Node _  _ args) = S.unions $ map variableSet' args
 
 nodeArities :: Ord node => Trs v node l -> M.Map node Int
 nodeArities (Trs rules) = M.fromListWith (\a b -> assert (a == b) a) 
@@ -124,7 +129,6 @@ dependencyPairs (Trs rules) = Trs $ concatMap goRule rules
                 guard $ not $ isStrictSubterm s lhs
                 return s
 
-
 dpProblem :: UnlabeledTrs -> DPTrs ()
 dpProblem trs = Trs $ original ++ dp
   where
@@ -159,3 +163,9 @@ hasMarkedRule :: DPTrs label -> Bool
 hasMarkedRule (Trs rules) = any goRule rules
   where
     goRule (Rule lhs _) = isMarked lhs
+
+isValidTrs :: Ord v => Trs v s l -> Bool
+isValidTrs (Trs rules) = all isValidRule rules
+  where
+    isValidRule (Rule lhs rhs) = (not $ isVar lhs) 
+                              && (variableSet' rhs `S.isSubsetOf` (variableSet' lhs))
