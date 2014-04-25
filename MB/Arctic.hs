@@ -19,11 +19,9 @@ import qualified Satchmo.SMT.Exotic.Arctic  as A
 import qualified Satchmo.SMT.Arctic  as SA
 import Satchmo.SMT.Dictionary (Domain(..))
 
-import Control.Concurrent.Combine.Computer
--- import Control.Concurrent.Combine.Lifter
-import qualified Control.Concurrent.Combine as C
+import Control.Monad.Trans.Cont
+import Control.Monad.Trans.Maybe
 
-import qualified Control.Concurrent.Combine.Action as A
 import Data.Hashable
 import Control.Monad (when)
 
@@ -43,8 +41,8 @@ remover_arctic :: ( )
         -> ( TRS v s -> IO (Maybe (Interpretation u (A.Arctic Integer), TRS v t)))
         -> Lifter (TRS v s) (TRS v t) (Proof v u)
 -}
-remover_arctic msg unpack h = \ sys -> do
-    (m, sys') <- A.io $ h sys
+remover_arctic msg unpack h = \ sys -> ContT $ \ later -> do
+    (m, sys') <- MaybeT $ h sys
     when (length ( rules sys) == length (rules sys')) 
          $ error "huh"
     return $ \ k -> do
