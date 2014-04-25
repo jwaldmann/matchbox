@@ -19,7 +19,7 @@ import           CO4.Test.TermComp2014.Allocators (allocator)
 import           CO4.Test.TermComp2014.Standalone
 import           CO4.Test.TermComp2014.Config
 
-$( compileFile [Cache, Dump "/tmp/tc", ImportPrelude] "tc/CO4/Test/TermComp2014/Standalone.hs" )
+$( compileFile [Cache, ImportPrelude] "tc/CO4/Test/TermComp2014/Standalone.hs" )
 
 main :: IO ()
 main = do
