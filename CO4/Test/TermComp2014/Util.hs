@@ -9,6 +9,7 @@ import           Data.Maybe (mapMaybe)
 import           Data.Either (partitionEithers)
 import           Data.Tuple (swap)
 import qualified Data.Map as M
+import qualified Data.Set as S
 import qualified TPDB.Data as TPDB
 import qualified TPDB.Input as Input
 import           CO4.PreludeNat (nat)
@@ -35,6 +36,7 @@ parseTrs path = Input.get_trs path >>= \ trs ->
     goTrs :: TPDB.TRS TPDB.Identifier TPDB.Identifier -> (UnlabeledTrs, SymbolMap)
     goTrs trs = (Trs rules', M.fromList $ map swap $ M.toList symbolMap)
       where
+        numIds              = numIdentifiers trs
         (rules', symbolMap) = runState (mapM goRule $ TPDB.rules trs) M.empty
 
         goRule rule = 
@@ -48,24 +50,34 @@ parseTrs path = Input.get_trs path >>= \ trs ->
 
         goIdentifier i = gets (M.lookup (TPDB.name i)) >>= \case
           Nothing -> do n <- gets M.size
-                        let sym = nat (bitWidth $ n + 1) $ fromIntegral n
+                        let sym = assert (n < numIds)
+                                $ nat (bitWidth numIds) $ fromIntegral n
                         modify $ M.insert (TPDB.name i) sym
                         return sym
 
           Just sym -> return sym
 
-assignments :: Eq var => Int -> Trs var n l -> Assignments var
+    numIdentifiers = length . nub . concatMap goRule . TPDB.rules
+      where
+        goRule rule = (goTerm $ TPDB.lhs rule) ++ (goTerm $ TPDB.rhs rule)
+        goTerm term = (TPDB.lvars term) ++ (TPDB.lsyms term)
+
+assignments :: Ord var => Int -> Trs var n l -> Assignments var
 assignments n trs = do 
   values <- sequence $ replicate (length vars) [0..(2^n)-1]
   return $ zipWith goMapping vars values
   where
-    vars                    = goTrs trs
-    goTrs (Trs rules)       = nub $ concatMap goRule rules
-    goRule (Rule l r)       = goTerm l ++ (goTerm r)
-    goTerm (Var v)          = [v]
-    goTerm (Node _  _ args) = concatMap goTerm args
-
+    vars              = S.toList $ variableSet trs
     goMapping v value = (v, nat n value)
+
+variableSet :: Ord v => Trs v s l -> S.Set v
+variableSet (Trs rules) = S.unions $ map goRule rules
+  where
+    goRule (Rule l r) = variableSet' l `S.union` (variableSet' r)
+
+variableSet' :: Ord v => Term v s l -> S.Set v
+variableSet' (Var v)          = S.singleton v
+variableSet' (Node _  _ args) = S.unions $ map variableSet' args
 
 nodeArities :: Ord node => Trs v node l -> M.Map node Int
 nodeArities (Trs rules) = M.fromListWith (\a b -> assert (a == b) a) 
@@ -84,6 +96,9 @@ isSubterm subterm = go
   where
     go t@(Var _)       = t == subterm
     go t@(Node _ _ ts) = (t == subterm) || (any go ts)
+
+isStrictSubterm :: (Eq v, Eq n, Eq l) => Term v n l -> Term v n l -> Bool
+isStrictSubterm subterm term = (term /= subterm) && (isSubterm subterm term)
 
 subterms :: Term v n l -> [Term v n l]
 subterms = go
@@ -111,7 +126,7 @@ dependencyPairs (Trs rules) = Trs $ concatMap goRule rules
       where
         us = do s@(Node f l _) <- filter (not . isVar) $ subterms rhs
                 guard $ (f,l) `elem` defined
-                guard $ not $ isSubterm s lhs
+                guard $ not $ isStrictSubterm s lhs
                 return s
 
 dpProblem :: UnlabeledTrs -> DPTrs ()
@@ -148,3 +163,9 @@ hasMarkedRule :: DPTrs label -> Bool
 hasMarkedRule (Trs rules) = any goRule rules
   where
     goRule (Rule lhs _) = isMarked lhs
+
+isValidTrs :: Ord v => Trs v s l -> Bool
+isValidTrs (Trs rules) = all isValidRule rules
+  where
+    isValidRule (Rule lhs rhs) = (not $ isVar lhs) 
+                              && (variableSet' rhs `S.isSubsetOf` (variableSet' lhs))
