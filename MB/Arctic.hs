@@ -8,7 +8,8 @@ import TPDB.Pretty
 
 import qualified MB.Options as O
 import qualified MB.Matrix 
-import MB.Strategy
+-- import MB.Strategy
+import MB.Work
 import MB.Proof
 import qualified MB.Proof as P
 
@@ -26,6 +27,7 @@ import Data.Hashable
 import Control.Monad (when)
 
 
+-- matrix_arctic_dp :: Int -> Int -> TRS v c -> Work (TRS v x) Doc
 matrix_arctic_dp dim bits = original_matrix_arctic_dp
       ( O.options0 { O.dim = dim, O.bits = bits, O.compression = O.Simple, O.dp = True })
 
@@ -45,9 +47,8 @@ remover_arctic msg unpack h = \ sys -> ContT $ \ later -> do
     (m, sys') <- MaybeT $ h sys
     when (length ( rules sys) == length (rules sys')) 
          $ error "huh"
-    return $ \ k -> do
-        out <- k sys'
-        return $ "Arctic" <+> vcat [ "sys:" <+> pretty sys , pretty m, out ]
+    out <- later sys'
+    return $ "Arctic" <+> vcat [ "sys:" <+> pretty sys , pretty m, out ]
 {-
         return $ Proof 
                { input = unpack sys

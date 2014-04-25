@@ -1,9 +1,8 @@
 {-# language NoMonomorphismRestriction #-}
 {-# language StandaloneDeriving #-}
 {-# language ScopedTypeVariables #-}
-{-# language LambdaCase #-}
 
-module MB.Strategy where
+module MB.Work where
 
 import qualified MB.Proof as P
 import qualified Control.Concurrent.Combine as C
@@ -27,10 +26,10 @@ import qualified MB.Options as O
 import System.IO
 import Data.Hashable
 
-type Work a r =  ContT (Maybe r) (MaybeT IO) a 
+type Work a r =  ContT r (MaybeT IO) a 
 
--- work :: (a -> Work b b) ->  a -> IO (Maybe b)
-work w x = runMaybeT $ runContT (w x) (return . Just)
+work :: (a -> Work b b) ->  a -> IO (Maybe b)
+work w x = runMaybeT $ runContT (w x) return
 
 assert :: Bool -> Work () r
 assert f = if f then return () else reject 
@@ -44,20 +43,16 @@ andthen p q = \ x -> p x >>= q
 
 orelse :: (a -> Work b r) -> (a -> Work b r) -> ( a -> Work b r )
 orelse p q = \  x -> ContT $ \ later -> MaybeT $ do
-    out <- runMaybeT $ runContT (p x) later
+    out <- runMaybeT $ runContT ( p x ) later
     case out of 
-        Nothing -> runMaybeT $ runContT (q x) later
+        Nothing -> runMaybeT $ runContT  ( q x ) later
         Just res -> return out
 
-orelse_andthen :: (a -> Work b r) -> (b -> Work c r) -> (a -> Work c r) -> (a -> Work c r)
-orelse_andthen p q r x = wrap (p x) >>= \ case 
-        Nothing -> r x
-        Just res -> q res
+committed :: (a -> Work b r) -> (b -> Work c r) -> (a -> Work c r) -> (a -> Work c r)
+committed foo bar baz = orelse (andthen foo bar) baz
 
--- wrap :: Work a r ->  Work (Maybe a) r
-wrap w = mapContT 
-    ( \ a -> MaybeT $ do x <- runMaybeT a ; case x of Nothing -> return $ Just Nothing ) w
 
+        
 transformer :: (a -> Maybe b) -> (a -> r ->  r)
             -> a -> Work b r 
 transformer fore back = \ sys -> ContT $ \ later -> 

@@ -7,7 +7,8 @@
 import           CO4.Test.TermComp2014.Config
 
 import MB.Arctic
-import MB.Strategy
+-- import MB.Strategy
+import MB.Work
 import qualified MB.Options as O
 
 import qualified Compress.Common as CC
@@ -33,27 +34,33 @@ main = do
     trs <- TPDB.Input.get_trs filePath
     out <- work strategy trs 
     case out of
-        Just proof -> do
-            putStrLn "YES"
-            print $ pretty proof    
+        Nothing -> do putStrLn "MAYBE"
+        Just proof -> do  putStrLn "YES" ; print $ pretty proof    
 
-strategy trs = do 
-    dp <- dptransform trs ; handle_sccs dp
+strategy = andthen dptransform handle_sccs
 
--- | on the compressed signature
-matrices_compressed = foldr1 orelse 
-         [  matrix_arctic_dp 1 8 
-         ,  matrix_arctic_dp 2 6 
-         , matrix_arctic_dp 3 4
-         , matrix_arctic_dp 4 3
-         ]
+orelse_andthen p q r = 
+    orelse (andthen p q) r
 
-matrices =
-      andthen  ( compressor O.Paper )
-    $ andthen matrices_compressed
+
+handle_sccs  = traced "handle_scc"
+    $ orelse nomarkedrules 
+    $ andthen ( orelse usablerules pass )
+    $ orelse_andthen decompose  handle_sccs
+    $ orelse_andthen matrices handle_sccs
+    $ const reject
+
+matrices = traced "matrices"
+    $ foldr1 orelse 
+    $ for [(1,8),(2,6),(3,4),(4,3) ] $ \(dim,bits) -> matrix_arc dim bits
+
+for = flip map
+
+matrix_arc dim bits = 
+      traced (unwords [ "matrices", show dim, show bits] )
+    $ andthen (compressor O.Paper)
+    $ andthen ( matrix_arctic_dp dim bits )
     $ transformer  ( \ sys -> return $ CC.expand_all_trs sys ) ( \ sys p -> p ) 
-
-
 
 -- | this is the connection to tc/CO4/Test/TermComp2014/Main
 
@@ -71,27 +78,18 @@ semanticlab = \ sys -> ContT $ \ later -> do
                                       , info, out ]
 -}
 
-handle_sccs = orelse nomarkedrules
-    $ andthen ( orelse usablerules pass )
-    $ committed decompose handle_sccs
---    $ committed matrices handle_sccs 
---    $ andthen semanticlab  
-    $ handle_sccs
 
-nomarkedrules = \ sys -> ContT $ \ later -> do
-    MaybeT $ do
-        hPutStrLn stderr $ show $ "call: nomarkedrules" <+> pretty sys
-        if null $ filter strict $ rules sys
-             then return $ Just "has no marked rules"
-             else return Nothing
+nomarkedrules = traced "nomarkedrules" $ \ sys -> do
+    assert $ null $ filter strict $ rules sys
+    return "has no marked rules"
 
-dptransform = transformer
+dptransform = traced "dptransform" $ transformer
     ( \ sys -> return $ TPDB.DP.Transform.dp sys )
     ( \ sys proof -> vcat [ "DP transformation", "sys:" <+> pretty sys , "proof:" <+> proof ] )
 
 -- | restrict to usable rules.
 -- this transformer fails if all rules are usable
-usablerules = transformer
+usablerules = traced "usablerules" $ transformer
     ( \ sys -> do
           let re = TPDB.DP.Usable.restrict sys 
           guard $ length (rules re) < length (rules sys)
@@ -101,7 +99,7 @@ usablerules = transformer
 
 -- | compute EDG, split in components
 -- | this transformer fails if the problem IS the single SCC
-decompose = transformers
+decompose = traced "decompose" $ transformers
     ( \ sys -> case TPDB.DP.Graph.components sys of
                    [ sys' ] | length (rules sys') == length (rules sys) -> Nothing
                    cs -> return cs )
