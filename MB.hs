@@ -22,8 +22,8 @@ import TPDB.DP.Transform
 import TPDB.DP.Usable
 import TPDB.DP.Graph
 
-import Control.Monad ( guard )
-
+import Control.Monad ( guard, when )
+import System.IO
 
 -- https://github.com/apunktbau/co4/issues/81#issuecomment-41269315
 type Proof = Doc 
@@ -40,22 +40,39 @@ main = do
 
 strategy = C.apply dptransform handle_sccs
 
-removerules = foldr1 C.orelse 
+-- | on the compressed signatur
+matrices_compressed = foldr1 C.orelse 
          [  matrix_arctic_dp 1 8 
          ,  matrix_arctic_dp 2 6 
          , matrix_arctic_dp 3 4
          , matrix_arctic_dp 4 3
          ]
 
+matrices next = 
+      C.apply ( compressor O.Paper )
+    $ C.apply matrices_compressed
+    $ C.apply ( transformer  ( \ sys -> return $ CC.expand_all_trs sys ) ( \ sys p -> p ) )
+    $ next
+
+
+-- | this is the connection to tc/CO4/Test/TermComp2014/Main
+semanticlab = \ sys -> do
+    (sys', info) <- A.io $ do
+        hPutStrLn stderr "send @sys@ to external prover of type  DP -> IO (Maybe (DP, Proof))"        
+        return $ Just ( sys, "(dummy implemetation)"  )
+    when (length ( rules sys) == length (rules sys')) $ error "huh"
+    return $ \ k -> do
+        out <- k sys'
+        return $ "Sem. Lab." <+> vcat [ "sys:" <+> pretty sys 
+                                      , "sys':" <+> pretty sys' 
+                                      , info, out ]
+
 handle_sccs = C.orelse nomarkedrules
     $ C.apply ( C.orelse usablerules pass )
-    -- $ C.orelse ( C.apply decompose  handle_sccs )
     $ committed decompose handle_sccs
-    $ C.apply ( compressor O.Paper )
-    $ C.apply removerules 
-    $ C.apply ( transformer  ( \ sys -> return $ CC.expand_all_trs sys ) 
-                ( \ sys p -> p ) )
-    $ handle_sccs
+
+    -- $ C.apply ( C.orelse  matrices semanticlab ) 
+    $ matrices handle_sccs 
 
 nomarkedrules = \ sys -> 
     if null $ filter strict $ rules sys
