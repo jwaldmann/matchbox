@@ -24,18 +24,10 @@ $( compileFile [Cache, ImportPrelude] "tc/CO4/Test/TermComp2014/Standalone.hs" )
 main :: IO ()
 main = do
   (config,filePath) <- parseConfig
-  resultFile' config filePath
+  runFile config filePath
 
-resultFile :: Int -> Int -> Int -> Int -> FilePath -> IO ()
-resultFile mBW numPrecs numPats pBW = 
-  resultFile' $ defaultConfig { modelBitWidth            = mBW
-                              , numPrecedences           = numPrecs
-                              , numPatterns              = numPats
-                              , precedenceDomainBitWidth = pBW
-                              }
-
-resultFile' :: Config -> FilePath -> IO ()
-resultFile' config filePath = do
+runFile :: Config -> FilePath -> IO ()
+runFile config filePath = do
   (trs, symbolMap) <- parseTrs filePath
 
   putStrLn $ "Configuration:" 
@@ -53,25 +45,30 @@ resultFile' config filePath = do
       putStrLn $ "Symbol Map:"
       putStrLn $ show symbolMap
 
-      iterate symbolMap 1 config (dpProblem trs) >>= \case
+      runN symbolMap config (dpProblem trs) >>= \case
         False -> putStrLn "don't know" >> exitFailure
         True  -> putStrLn "terminates" >> exitSuccess
 
-iterate :: SymbolMap -> Int -> Config -> DPTrs () -> IO Bool
-iterate symbolMap i config dp = 
+runN :: SymbolMap -> Config -> DPTrs () -> IO Bool
+runN symbolMap config dp = run1 symbolMap config dp >>= \case 
+  Left dp' -> runN symbolMap config dp'
+  Right r  -> return r
+
+run1 :: SymbolMap -> Config -> DPTrs () -> IO (Either (DPTrs ()) Bool)
+run1 symbolMap config dp =
   let sigmas    = assignments (modelBitWidth config) dp
       parameter = (dp, sigmas)
       alloc     = allocator config dp
   in do
-    putStrLn $ "\n## " ++ show i ++ ". Iteration ##########################\n"
+    putStrLn $ "\n#######################################\n"
     putStrLn $ "TRS:"
     putStrLn $ pprintDPTrs (const "") symbolMap dp
 
     case hasMarkedRule dp of
-      False -> return True
+      False -> return $ Right True
       _     -> solveAndTestP parameter alloc encConstraint constraint
        >>= \case
-             Nothing -> return False
+             Nothing -> return $ Right False
              Just (Proof model orders) -> assert (not $ null delete) $ 
                do putStrLn $ "Model:"
                   putStrLn $ pprintModel pprintMarkedSymbol symbolMap model
@@ -105,7 +102,7 @@ iterate symbolMap i config dp =
                       putStrLn $ "\nIntermediate system:"
                       putStrLn $ pprintTaggedDPTrs pprintLabel symbolMap int
 
-                  iterate symbolMap (i+1) config dp'
+                  return $ Left dp'
                where
                  ints = intermediates dp labeledTrs orders
                  (dp', delete) = removeMarkedUntagged dp $ last ints
