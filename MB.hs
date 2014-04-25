@@ -39,9 +39,13 @@ main = do
 
 strategy = andthen dptransform handle_sccs
 
-orelse_andthen p q r = 
-    orelse (andthen p q) r
 
+-- this creates too much backtracking:
+orelse_andthen p q r = orelse (andthen p q) r
+-- TODO: the actual semantics we want is:
+-- if p succeeds, then enter q (but never return to r)
+-- this is similar to Parsec's behaviour
+-- (if consume one letter, then must succeed)
 
 handle_sccs  = traced "handle_scc"
     $ orelse nomarkedrules 
