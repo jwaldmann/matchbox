@@ -41,22 +41,28 @@ strategy = andthen dptransform handle_sccs
 
 
 -- this creates too much backtracking:
-orelse_andthen p q r = orelse (andthen p q) r
+-- orelse_andthen p q r = orelse (andthen p q) r
+
 -- TODO: the actual semantics we want is:
 -- if p succeeds, then enter q (but never return to r)
 -- this is similar to Parsec's behaviour
 -- (if consume one letter, then must succeed)
 
+orelse_andthen :: (a -> Work b r) -> (b -> Work c r) -> (a -> Work c r) -> (a -> Work c r)
+orelse_andthen p q r = \ x -> getC $ \ top -> 
+    orelse (andthen p (withC q top)) r x
+
 handle_sccs  = traced "handle_scc"
     $ orelse nomarkedrules 
     $ andthen ( orelse usablerules pass )
-    $ orelse_andthen decompose  handle_sccs
-    $ orelse_andthen matrices handle_sccs
-    $ const reject
+    $ orelse_andthen decompose handle_sccs
+    $ matrices handle_sccs
 
-matrices = traced "matrices"
-    $ foldr1 orelse 
-    $ for [(1,8),(2,6),(3,4),(4,3) ] $ \(dim,bits) -> matrix_arc dim bits
+matrices cont = traced "matrices" $ 
+    let go [] = const reject
+        go ((dim,bits):dbs) = 
+           orelse_andthen ( matrix_arc dim bits ) cont (go dbs)
+    in  go  [(1,8),(2,6),(3,4),(4,3) ] 
 
 for = flip map
 

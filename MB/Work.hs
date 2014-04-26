@@ -38,6 +38,9 @@ reject = ContT $ \ later -> MaybeT $ return Nothing
 
 traced s w = \ x -> do liftIO $ hPutStrLn stderr s ; w x
 
+getC p = ContT $ \ k -> runContT (p k) k
+withC p k = \ x -> ContT $ \ k' -> runContT (p x) k
+
 andthen :: (a -> Work b r) -> ( b -> Work c r ) -> ( a -> Work c r )
 andthen p q = \ x -> p x >>= q
 

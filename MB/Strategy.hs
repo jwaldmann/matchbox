@@ -39,7 +39,6 @@ reject = ContT $ \ later -> MaybeT $ return Nothing
 
 traced s w = \ x -> do liftIO $ hPutStrLn stderr s ; w x
 
-
 andthen :: (a -> Work b r) -> ( b -> Work c r ) -> ( a -> Work c r )
 andthen p q = \ x -> p x >>= q
 
