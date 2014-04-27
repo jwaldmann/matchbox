@@ -8,8 +8,7 @@ import TPDB.Pretty
 
 import qualified MB.Options as O
 import qualified MB.Matrix 
--- import MB.Strategy
-import MB.Work
+
 import MB.Proof
 import qualified MB.Proof as P
 
@@ -44,7 +43,7 @@ remover_arctic :: ( )
         -> Lifter (TRS v s) (TRS v t) (Proof v u)
 -}
 
-remover_arctic msg unpack h = mkWork $ \ sys -> do
+remover_arctic msg unpack h  sys = do
     out <- h sys
     return $ case out of 
         Nothing -> Nothing

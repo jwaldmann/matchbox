@@ -69,25 +69,16 @@ for = flip map
 matrix_arc dim bits = 
       traced (unwords [ "matrices", show dim, show bits] )
     $ andthen (compressor O.Paper)
-    $ andthen ( matrix_arctic_dp dim bits )
+    $ andthen ( mkWork $ matrix_arctic_dp dim bits )
     $ transformer  ( \ sys -> return $ CC.expand_all_trs sys ) ( \ sys p -> p ) 
 
 -- | this is the connection to tc/CO4/Test/TermComp2014/Main
 
-semanticlab = \ sys -> ContT $ \ later -> do
-    (sys', info) <- MaybeT $ do
-        hPutStrLn stderr "send @sys@ to external prover of type  DP -> IO (Maybe (DP, Proof))"        
-        return $ Just ( sys, "(dummy implemetation)" :: Doc )
-    when (length ( rules sys) == length (rules sys')) $ error "huh"
-    later sys'
-{-
-\ k -> do
-        out <- k sys'
-        return $ "Sem. Lab." <+> vcat [ "sys:" <+> pretty sys 
-                                      , "sys':" <+> pretty sys' 
-                                      , info, out ]
--}
-
+semanticlab = mkWork $ \ sys -> do
+    hPutStrLn stderr "send @sys@ to external prover of type  DP -> IO (Maybe (DP, Proof))"        
+    return $ Just ( sys
+                  , \ p -> "SL" <+> vcat [ "(dummy implemetation)", p ]
+                  )
 
 nomarkedrules = traced "nomarkedrules" $ \ sys -> do
     assert $ null $ filter strict $ rules sys
