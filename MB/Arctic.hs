@@ -43,12 +43,36 @@ remover_arctic :: ( )
         -> ( TRS v s -> IO (Maybe (Interpretation u (A.Arctic Integer), TRS v t)))
         -> Lifter (TRS v s) (TRS v t) (Proof v u)
 -}
-remover_arctic msg unpack h = \ sys -> ContT $ \ later -> do
+
+remover_arctic msg unpack h = mkWork $ \ sys -> do
+    out <- h sys
+    return $ case out of 
+        Nothing -> Nothing
+        Just (m, sys') -> do
+            when (length ( rules sys) == length (rules sys')) 
+                 $ error "huh"
+            return ( sys'
+                   , \ out ->  "Arctic" <+> vcat [ "sys:" <+> pretty sys , pretty m, out ]
+                   )
+
+
+{-
+        return $ Proof 
+               { input = unpack sys
+               , claim = Top_Termination
+               , reason = Matrix_Interpretation_Arctic m out
+               }
+-}
+
+{-
+ContT $ \ later -> do
     (m, sys') <- MaybeT $ h sys
     when (length ( rules sys) == length (rules sys')) 
          $ error "huh"
     out <- later sys'
     return $ "Arctic" <+> vcat [ "sys:" <+> pretty sys , pretty m, out ]
+-}
+
 {-
         return $ Proof 
                { input = unpack sys

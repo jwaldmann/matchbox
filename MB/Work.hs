@@ -28,6 +28,11 @@ import Data.Hashable
 
 type Work a r =  ContT r (MaybeT IO) a 
 
+mkWork f = \ x -> ContT $ \ later -> do
+    (y, g) <- MaybeT $ f x
+    out <- later y
+    return $ g out
+
 work :: (a -> Work b b) ->  a -> IO (Maybe b)
 work w x = runMaybeT $ runContT (w x) return
 
