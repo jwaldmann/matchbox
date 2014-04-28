@@ -4,27 +4,13 @@
 
 module MB.Work where
 
-import qualified MB.Proof as P
-import qualified Control.Concurrent.Combine as C
-import qualified Control.Concurrent.Combine.Lifter as L
-import qualified Control.Concurrent.Combine.Action as A
 
 import Control.Monad.Trans
 import Control.Monad.Trans.Cont
 import Control.Monad.Trans.Maybe
 import Control.Applicative
 
-import TPDB.Data
-import TPDB.Pretty
-
-import qualified Compress.Common as CC
-import qualified Compress.Simple as CS
-import qualified Compress.PaperIter as CPI
-import qualified Compress.Paper as CP
-
-import qualified MB.Options as O
 import System.IO
-import Data.Hashable
 
 type Work a r =  ContT r (MaybeT IO) a 
 
@@ -56,10 +42,17 @@ orelse p q = \  x -> ContT $ \ later -> MaybeT $ do
         Nothing -> runMaybeT $ runContT  ( q x ) later
         Just res -> return out
 
-committed :: (a -> Work b r) -> (b -> Work c r) -> (a -> Work c r) -> (a -> Work c r)
-committed foo bar baz = orelse (andthen foo bar) baz
+-- this creates too much backtracking:
+-- orelse_andthen p q r = orelse (andthen p q) r
 
+-- TODO: the actual semantics we want is:
+-- if p succeeds, then enter q (but never return to r)
+-- this is similar to Parsec's behaviour
+-- (if consume one letter, then must succeed)
 
+orelse_andthen :: (a -> Work b r) -> (b -> Work c r) -> (a -> Work c r) -> (a -> Work c r)
+orelse_andthen p q r = \ x -> getC $ \ top -> 
+    orelse (andthen p (withC q top)) r x
         
 transformer :: (a -> Maybe b) -> (a -> r ->  r)
             -> a -> Work b r 
@@ -81,34 +74,6 @@ transformers fore back = \ sys -> ContT $ \ later ->
             return $ back sys outs
 
 
-{-
-\ sys -> do
-    mk <- foo sys
-    case mk of
-        Nothing -> baz sys
-        Just k -> k bar
--}
 
 
-pass = transformer ( \ sys -> return sys ) ( \ sys proof -> proof )
-
-compressor c = transformer 
-    ( \ sys -> let (cost, rs) = ( case c of
-                       O.None -> CS.nocompress 
-                       O.Simple -> CS.compress 
-                       O.Paper -> CP.compress CP.Simple
-                       O.PaperIter -> CP.compress CP.Iterative
-                     ) $ rules sys
-               in  return $ RS { rules = CC.roots rs
-                               , separate = separate sys }
-    )
-    ( \ sys proof -> proof )
-{-
-    ( \ sys proof -> P.Proof
-         { P.input = sys
-         , P.claim = P.Termination
-         , P.reason = 
-              P.Equivalent (text $ show c) proof
-         } )
--}
 
