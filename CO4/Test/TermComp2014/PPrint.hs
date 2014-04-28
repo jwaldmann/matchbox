@@ -4,6 +4,8 @@ where
 import           Data.List (intercalate,intersperse,sortBy,groupBy)
 import           Data.Function (on)
 import qualified Data.Map as M
+import qualified TPDB.Data as TPDB
+import qualified TPDB.DP as TPDB
 import           CO4.PreludeNat (value)
 import           CO4.Test.TermComp2014.Standalone 
 import           CO4.Test.TermComp2014.Util (SymbolMap)
@@ -15,13 +17,13 @@ pprintLabeledTrs :: (label -> String) -> SymbolMap -> Trs Symbol Symbol label ->
 pprintLabeledTrs = pprintTrs pprintSymbol pprintSymbol
 
 pprintDPTrs :: (l -> String) -> SymbolMap -> DPTrs l -> String
-pprintDPTrs goL symbolMap = pprintTrs pprintSymbol pprintMarkedSymbol goL symbolMap
+pprintDPTrs goL symbolMap = pprintTrs pprintSymbol pprintSymbol goL symbolMap
 
 -- pprintTaggedDPTrs :: (l -> String) -> SymbolMap -> TaggedDPTrs l -> String
-pprintTaggedDPTrs goL symbolMap = pprintTaggedTrs pprintSymbol pprintMarkedSymbol goL symbolMap
+pprintTaggedDPTrs goL symbolMap = pprintTaggedTrs pprintSymbol pprintSymbol goL symbolMap
 
 pprintDPRule :: (l -> String) -> SymbolMap -> DPRule l -> String
-pprintDPRule = pprintRule pprintSymbol pprintMarkedSymbol
+pprintDPRule = pprintRule pprintSymbol pprintSymbol
 
 pprintTrs :: (SymbolMap -> v -> String) -> (SymbolMap -> n -> String) -> (l -> String) 
           -> SymbolMap -> Trs v n l -> String 
@@ -30,10 +32,10 @@ pprintTrs goV goN goL symbolMap (Trs rules) = unlines $ map (pprintRule goV goN 
 pprintTaggedTrs goV goN goL symbolMap (TaggedGroupedTrs ruless) = 
     unlines $ map (pprintTaggedRule goV goN goL symbolMap) $ concat ruless
 
-pprintTaggedRule goV goN goL symbolMap (tag, Rule l r) = 
+pprintTaggedRule goV goN goL symbolMap (tag, Rule isMarked l r) = 
      unwords [ desc, goTerm l, "->", goTerm r ]
   where
-    desc = case isMarked l of
+    desc = case isMarked of
         True -> if tag then "keep" else "delete"
         False -> if tag then "usable" else "unusable"
     goTerm (Var v)         = goV symbolMap v
@@ -43,11 +45,15 @@ pprintTaggedRule goV goN goL symbolMap (tag, Rule l r) =
 
 pprintRule :: (SymbolMap -> v -> String) -> (SymbolMap -> n -> String) -> (l -> String) 
            -> SymbolMap -> Rule v n l -> String 
-pprintRule goV goN goL symbolMap (Rule l r) = concat [ goTerm l, " -> ", goTerm r ]
+pprintRule goV goN goL symbolMap (Rule isMarked l r) = 
+  concat [ goTerm True l, " -> ", goTerm False r ]
   where
-    goTerm (Var v)         = goV symbolMap v
-    goTerm (Node s l args) = pprintLabeledSymbol goN goL symbolMap (s,l)
-                         ++ (concat [ " (", intercalate ", " (map goTerm args), ")" ])
+    goTerm _ (Var v) = goV symbolMap v
+    goTerm topLeft (Node s l args) = 
+      concat [ pprintLabeledSymbol goN goL symbolMap (s,l)
+             , if isMarked && topLeft then "#" else ""
+             , concat [ " (", intercalate ", " (map (goTerm False) args), ")" ]
+             ]
 
 pprintLabeledSymbol :: (SymbolMap -> n -> String) -> (l -> String) -> SymbolMap -> (n,l) -> String
 pprintLabeledSymbol goN goL symbolMap (s,l) = 
@@ -60,13 +66,10 @@ pprintValue = show . value
 
 pprintSymbol :: SymbolMap -> Symbol -> String
 pprintSymbol map symbol = case M.lookup symbol map of
-  Nothing -> error "PPrint.pprintSymbol"
-  Just s  -> s
-
-pprintMarkedSymbol :: SymbolMap -> MarkedSymbol -> String
-pprintMarkedSymbol symbolMap (s,b) = case b of
-  False -> pprintSymbol symbolMap s
-  True  -> pprintSymbol symbolMap s ++ "#"
+  Nothing                        -> error "PPrint.pprintSymbol"
+  Just (Left s)                  -> TPDB.name s
+  Just (Right (TPDB.Original s)) -> TPDB.name s
+  Just (Right (TPDB.Marked   s)) -> TPDB.name s
 
 pprintModel :: (SymbolMap -> s -> String) -> SymbolMap -> Model s -> String
 pprintModel f symbolMap = unlines . intersperse "" . map pprintInterpretation

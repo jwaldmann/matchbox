@@ -11,9 +11,10 @@ data Config = Config {
   , numPatterns              :: Int
   , precedenceDomainBitWidth :: Int
   , bruteFilter              :: Bool
-  , usePrecedence :: Bool
-  , emptyPrecedence :: Bool
-  , useInterpretation :: Bool
+  , usePrecedence            :: Bool
+  , emptyPrecedence          :: Bool
+  , useInterpretation        :: Bool
+  , beVerbose                :: Bool
   }
   deriving Show
 
@@ -27,6 +28,7 @@ defaultConfig = Config
   , usePrecedence            = True
   , emptyPrecedence          = False
   , useInterpretation        = False
+  , beVerbose                = False
   }
 
 repairConfig :: Config -> Config
@@ -53,11 +55,16 @@ options =
    "use argument filter that deletes all children (default: false)"
 
  , Option [ 'l' ] ["linear-interpretation"] (NoArg (\c -> c { useInterpretation=True }))
-   "use linear interpretations (with linear coefficients in {0,1})"
- , Option [ 'r' ] ["rpo"] (NoArg (\c -> c{usePrecedence=True}))
-   "use RPO (for the moment, LPO with permuting argument filter)"
- , Option [ 'e' ] ["empty-precedence" ] (NoArg (\c -> c{usePrecedence=True,emptyPrecedence=True}))
-   "use RPO with empty precedence (that is, argument-filtered subterm relation)"
+   "use linear interpretations (with linear coefficients in {0,1}) (default: false)"
+
+ , Option [ 'r' ] ["rpo"] (NoArg (\c -> c {usePrecedence=True}))
+   "use RPO (for the moment, LPO with permuting argument filter) (default: true)"
+
+ , Option [ 'e' ] ["empty-precedence" ] (NoArg (\c -> c {usePrecedence=True,emptyPrecedence=True}))
+   "use RPO with empty precedence (that is, argument-filtered subterm relation) (default: false)"
+
+ , Option [ 'v' ] ["verbose" ] (NoArg (\c -> c {beVerbose=True}))
+   "be verbose (default: false)"
  ]
 
 parseConfig :: IO (Config, String)

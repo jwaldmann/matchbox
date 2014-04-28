@@ -34,7 +34,7 @@ import Control.Monad.Trans.Cont
 import Control.Monad.Trans.Maybe
 
 import CO4.Test.TermComp2014.Run (run1)
-import CO4.Test.TermComp2014.Config (defaultConfig)
+import CO4.Test.TermComp2014.Config 
 
 -- https://github.com/apunktbau/co4/issues/81#issuecomment-41269315
 type Proof = Doc 
@@ -58,7 +58,7 @@ handle_scc  = orelse nomarkedrules
             $ usablerules
             $ decomp handle_scc 
             $ orelse_andthen matrices (apply handle_scc) 
-            $ orelse_andthen semanticlab (apply handle_scc)
+            $ orelse_andthen semanticlabs (apply handle_scc)
             $ const reject
 
 apply h =  \ (sys,f) -> do p <- h sys ; return $ f p 
@@ -106,6 +106,8 @@ matrix_arc dim bits sys = do
 
 -- | this is the connection to tc/CO4/Test/TermComp2014/Main
 
-semanticlab = mkWork $ \ sys -> run1 defaultConfig sys
-    -- return $ Just ( sys' , \ p -> vcat [ "Semantic labelling", p] )
+semanticlabs = capture $ foldr1 orelse
+    $ map (\(b,n) -> semanticlab $ defaultConfig { modelBitWidth = b, numPrecedences = n, beVerbose = True }) [ (0,1), (1,2), (2,2) ] 
 
+semanticlab config = mkWork $ \ sys -> run1 config sys
+    -- return $ Just ( sys' , \ p -> vcat [ "Semantic labelling", p] )

@@ -5,49 +5,27 @@ where
 import           Control.Exception (assert)
 import           Control.Monad.State
 import           Data.List (nub)
-import           Data.Maybe (mapMaybe)
 import           Data.Either (partitionEithers)
 import           Data.Tuple (swap)
 import qualified Data.Map as M
 import qualified Data.Set as S
 import qualified TPDB.Data as TPDB
 import qualified TPDB.DP as TPDB
-import qualified TPDB.Input as Input
 import           CO4.PreludeNat (nat)
 import           CO4.Util (bitWidth)
 import           CO4.Test.TermComp2014.Standalone hiding (ord)
 
-{-
-import TPDB.Plain.Write ()
-import TPDB.Pretty (pretty)
-import Debug.Trace
--}
-
 type SymbolMap = M.Map Symbol (Either TPDB.Identifier (TPDB.Marked TPDB.Identifier))
 
-parseTrs :: FilePath -> IO (UnlabeledTrs, SymbolMap)
-parseTrs path = undefined
-
-  {- -- zuerst DP transformieren !!!!!
-  Input.get_trs path >>= \ trs -> 
-              do {-putStrLn (show $ pretty trs)-}
-
-                 -- FIXME this is just for testing
-                 -- Just trs <- return $ TPDB.Mirror.mirror trs 
-
-                 return $ transformTrs trs
-                 -}
-
-transformTrs :: TPDB.TRS TPDB.Identifier (TPDB.Marked TPDB.Identifier) 
-             -> (UnlabeledTrs, SymbolMap)
-transformTrs trs = (Trs rules', M.fromList $ map swap $ M.toList symbolMap)
+fromTPDBTrs :: TPDB.TRS TPDB.Identifier (TPDB.Marked TPDB.Identifier) -> (UnlabeledTrs, SymbolMap)
+fromTPDBTrs trs = (Trs rules', M.fromList $ map swap $ M.toList symbolMap)
   where
     numIds              = numIdentifiers trs
     (rules', symbolMap) = runState (mapM goRule $ TPDB.rules trs) M.empty
 
     goRule rule = 
       let isMarked = case TPDB.lhs rule of
-                      TPDB.Node (TPDB.Marked s) _ -> True
+                      TPDB.Node (TPDB.Marked _) _ -> True
                       _                           -> False
       in
         return (Rule isMarked) `ap` (goTerm $ TPDB.lhs rule) 
@@ -72,6 +50,13 @@ transformTrs trs = (Trs rules', M.fromList $ map swap $ M.toList symbolMap)
       where
         goRule rule = (goTerm $ TPDB.lhs rule) ++ (goTerm $ TPDB.rhs rule)
         goTerm term = (map Left $ TPDB.lvars term) ++ (map Right $ TPDB.lsyms term)
+
+{-
+toTPDBRules :: SymbolMap -> DPTrs () -> [TPDB.Rule (TPDB.Term TPDB.Identifier (TPDB.Marked TPDB.Identifier)]
+toTPDBRules symbolMap (Trs rules) = map goRule rules
+  where
+    goRule (Rule isMarked lhs rhs) = 
+    -}
 
 assignments :: Ord var => Int -> Trs var n l -> Assignments var
 assignments n trs = do 
@@ -116,46 +101,6 @@ subterms = go
   where
     go t@(Var _)       = [t]
     go t@(Node _ _ ts) = t : (concatMap go ts)
-
-{-
-definedSymbols :: Trs v node label -> [(node, label)]
-definedSymbols (Trs rules) = mapMaybe goRule rules
-  where
-    goRule (Rule lhs _) = goTerm lhs
-    goTerm (Var _)      = Nothing
-    goTerm (Node s l _) = Just (s,l)
-
-dependencyPairs :: UnlabeledTrs -> DPTrs ()
-dependencyPairs (Trs rules) = Trs $ concatMap goRule rules
-  where
-    defined = definedSymbols $ Trs rules
-
-    goRule (Rule _   (Var _)          _  ) = []
-    goRule (Rule False lhs@(Node ls ll lts) rhs) = do
-      (Node us ul uts) <- us
-      return $ Rule True (Node ls ll $ map toDpTerm lts)
-                         (Node us ul $ map toDpTerm uts)
-      where
-        us = do s@(Node f l _) <- filter (not . isVar) $ subterms rhs
-                guard $ (f,l) `elem` defined
-                guard $ not $ isStrictSubterm s lhs
-                return s
-
-dpProblem :: UnlabeledTrs -> DPTrs ()
-dpProblem trs = Trs $ original ++ dp
-  where
-    Trs original = trsToDp trs
-    Trs dp       = dependencyPairs trs
-
-trsToDp :: Trs Symbol Symbol label -> DPTrs label
-trsToDp (Trs rules) = Trs $ map goRule rules
-  where
-    goRule (Rule isMarked lhs rhs)  = Rule isMarked (toDpTerm lhs) (toDpTerm rhs)
-
-toDpTerm :: Term v n l -> Term v (n,Bool) l
-toDpTerm (Var v)         = Var v
-toDpTerm (Node s l args) = Node (s,False) l $ map toDpTerm args
-    -}
 
 ungroupTrs :: GroupedTrs v n l -> Trs v n l
 ungroupTrs (GroupedTrs rules) = Trs $ concat rules
