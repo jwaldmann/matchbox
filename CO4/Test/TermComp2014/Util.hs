@@ -11,6 +11,7 @@ import           Data.Tuple (swap)
 import qualified Data.Map as M
 import qualified Data.Set as S
 import qualified TPDB.Data as TPDB
+import qualified TPDB.DP as TPDB
 import qualified TPDB.Input as Input
 import           CO4.PreludeNat (nat)
 import           CO4.Util (bitWidth)
@@ -22,45 +23,55 @@ import TPDB.Pretty (pretty)
 import Debug.Trace
 -}
 
-type SymbolMap = M.Map Symbol String
+type SymbolMap = M.Map Symbol (Either TPDB.Identifier (TPDB.Marked TPDB.Identifier))
 
 parseTrs :: FilePath -> IO (UnlabeledTrs, SymbolMap)
-parseTrs path = Input.get_trs path >>= \ trs -> 
+parseTrs path = undefined
+
+  {- -- zuerst DP transformieren !!!!!
+  Input.get_trs path >>= \ trs -> 
               do {-putStrLn (show $ pretty trs)-}
 
                  -- FIXME this is just for testing
                  -- Just trs <- return $ TPDB.Mirror.mirror trs 
 
-                 return $ goTrs trs
+                 return $ transformTrs trs
+                 -}
+
+transformTrs :: TPDB.TRS TPDB.Identifier (TPDB.Marked TPDB.Identifier) 
+             -> (UnlabeledTrs, SymbolMap)
+transformTrs trs = (Trs rules', M.fromList $ map swap $ M.toList symbolMap)
   where
-    goTrs :: TPDB.TRS TPDB.Identifier TPDB.Identifier -> (UnlabeledTrs, SymbolMap)
-    goTrs trs = (Trs rules', M.fromList $ map swap $ M.toList symbolMap)
-      where
-        numIds              = numIdentifiers trs
-        (rules', symbolMap) = runState (mapM goRule $ TPDB.rules trs) M.empty
+    numIds              = numIdentifiers trs
+    (rules', symbolMap) = runState (mapM goRule $ TPDB.rules trs) M.empty
 
-        goRule rule = 
-          return Rule `ap` (goTerm $ TPDB.lhs rule) `ap` (goTerm $ TPDB.rhs rule)
+    goRule rule = 
+      let isMarked = case TPDB.lhs rule of
+                      TPDB.Node (TPDB.Marked s) _ -> True
+                      _                           -> False
+      in
+        return (Rule isMarked) `ap` (goTerm $ TPDB.lhs rule) 
+                               `ap` (goTerm $ TPDB.rhs rule)
 
-        goTerm (TPDB.Var v) = 
-          return Var `ap` goIdentifier v
+    goTerm (TPDB.Var v) = 
+      return Var `ap` goSymbol (Left v)
 
-        goTerm (TPDB.Node v args) = 
-          return Node `ap` goIdentifier v `ap` return () `ap` mapM goTerm args
+    goTerm (TPDB.Node v args) = 
+      return Node `ap` goSymbol (Right v) `ap` return () `ap` mapM goTerm args
 
-        goIdentifier i = gets (M.lookup (TPDB.name i)) >>= \case
-          Nothing -> do n <- gets M.size
-                        let sym = assert (n < numIds)
-                                $ nat (bitWidth numIds) $ fromIntegral n
-                        modify $ M.insert (TPDB.name i) sym
-                        return sym
+    goSymbol i = gets (M.lookup i) >>= \case
+      Nothing -> do n <- gets M.size
+                    let sym = assert (n < numIds)
+                            $ nat (bitWidth numIds) $ fromIntegral n
+                    modify $ M.insert i sym
+                    return sym
 
-          Just sym -> return sym
+      Just sym -> return sym
 
     numIdentifiers = length . nub . concatMap goRule . TPDB.rules
       where
         goRule rule = (goTerm $ TPDB.lhs rule) ++ (goTerm $ TPDB.rhs rule)
-        goTerm term = (TPDB.lvars term) ++ (TPDB.lsyms term)
+        goTerm term = (map Left $ TPDB.lvars term) ++ (map Right $ TPDB.lsyms term)
 
 assignments :: Ord var => Int -> Trs var n l -> Assignments var
 assignments n trs = do 
@@ -73,7 +84,7 @@ assignments n trs = do
 variableSet :: Ord v => Trs v s l -> S.Set v
 variableSet (Trs rules) = S.unions $ map goRule rules
   where
-    goRule (Rule l r) = variableSet' l `S.union` (variableSet' r)
+    goRule (Rule _ l r) = variableSet' l `S.union` (variableSet' r)
 
 variableSet' :: Ord v => Term v s l -> S.Set v
 variableSet' (Var v)          = S.singleton v
@@ -83,7 +94,7 @@ nodeArities :: Ord node => Trs v node l -> M.Map node Int
 nodeArities (Trs rules) = M.fromListWith (\a b -> assert (a == b) a) 
                         $ concatMap goRule rules
   where 
-    goRule (Rule l r)      = (goTerm l) ++ (goTerm r)
+    goRule (Rule _ l r)    = (goTerm l) ++ (goTerm r)
     goTerm (Var {})        = []
     goTerm (Node v _ args) = (v, length args) : (concatMap goTerm args)
 
@@ -106,6 +117,7 @@ subterms = go
     go t@(Var _)       = [t]
     go t@(Node _ _ ts) = t : (concatMap go ts)
 
+{-
 definedSymbols :: Trs v node label -> [(node, label)]
 definedSymbols (Trs rules) = mapMaybe goRule rules
   where
@@ -118,11 +130,11 @@ dependencyPairs (Trs rules) = Trs $ concatMap goRule rules
   where
     defined = definedSymbols $ Trs rules
 
-    goRule (Rule     (Var _)          _  ) = []
-    goRule (Rule lhs@(Node ls ll lts) rhs) = do
+    goRule (Rule _   (Var _)          _  ) = []
+    goRule (Rule False lhs@(Node ls ll lts) rhs) = do
       (Node us ul uts) <- us
-      return $ Rule (Node (ls,True) ll $ map toDpTerm lts)
-                    (Node (us,True) ul $ map toDpTerm uts)
+      return $ Rule True (Node ls ll $ map toDpTerm lts)
+                         (Node us ul $ map toDpTerm uts)
       where
         us = do s@(Node f l _) <- filter (not . isVar) $ subterms rhs
                 guard $ (f,l) `elem` defined
@@ -138,11 +150,12 @@ dpProblem trs = Trs $ original ++ dp
 trsToDp :: Trs Symbol Symbol label -> DPTrs label
 trsToDp (Trs rules) = Trs $ map goRule rules
   where
-    goRule (Rule lhs rhs)  = Rule (toDpTerm lhs) (toDpTerm rhs)
+    goRule (Rule isMarked lhs rhs)  = Rule isMarked (toDpTerm lhs) (toDpTerm rhs)
 
 toDpTerm :: Term v n l -> Term v (n,Bool) l
 toDpTerm (Var v)         = Var v
 toDpTerm (Node s l args) = Node (s,False) l $ map toDpTerm args
+    -}
 
 ungroupTrs :: GroupedTrs v n l -> Trs v n l
 ungroupTrs (GroupedTrs rules) = Trs $ concat rules
@@ -162,10 +175,10 @@ removeMarkedUntagged (Trs rules) (TaggedGroupedTrs labeledRules) =  (Trs keep, d
 hasMarkedRule :: DPTrs label -> Bool
 hasMarkedRule (Trs rules) = any goRule rules
   where
-    goRule (Rule lhs _) = isMarked lhs
+    goRule (Rule isMarked _ _) = isMarked
 
 isValidTrs :: Ord v => Trs v s l -> Bool
 isValidTrs (Trs rules) = all isValidRule rules
   where
-    isValidRule (Rule lhs rhs) = (not $ isVar lhs) 
-                              && (variableSet' rhs `S.isSubsetOf` (variableSet' lhs))
+    isValidRule (Rule _ lhs rhs) = (not $ isVar lhs) 
+                                && (variableSet' rhs `S.isSubsetOf` (variableSet' lhs))

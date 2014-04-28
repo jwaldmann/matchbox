@@ -7,23 +7,34 @@
 import           CO4.Test.TermComp2014.Config
 
 import MB.Arctic
-import MB.Strategy
-import qualified MB.Options as O
 
-import qualified Control.Concurrent.Combine as C
-import qualified Control.Concurrent.Combine.Action as A
+-- import MB.Work
+import MB.Logic
+
+
+import qualified MB.Options as O
 
 import qualified Compress.Common as CC
 
-import TPDB.Data ( strict, rules )
+import TPDB.Data ( strict, rules, TRS, RS(..), separate )
 import TPDB.Pretty 
 import qualified TPDB.Input 
 import TPDB.DP.Transform
 import TPDB.DP.Usable
 import TPDB.DP.Graph
 
+import qualified Compress.Common as CC
+import qualified Compress.Simple as CS
+import qualified Compress.PaperIter as CPI
+import qualified Compress.Paper as CP
+
 import Control.Monad ( guard, when )
 import System.IO
+import Control.Monad.Trans.Cont
+import Control.Monad.Trans.Maybe
+
+import CO4.Test.TermComp2014.Run (run1)
+import CO4.Test.TermComp2014.Config (defaultConfig)
 
 -- https://github.com/apunktbau/co4/issues/81#issuecomment-41269315
 type Proof = Doc 
@@ -32,74 +43,67 @@ main :: IO ()
 main = do
     (config,filePath) <- parseConfig
     trs <- TPDB.Input.get_trs filePath
-    out <- A.run ( strategy trs ) 
+    out <- run $ handle trs 
     case out of
-        Just proof -> do
-            putStrLn "YES"
-            print $ pretty proof    
+        Nothing    -> do putStrLn "MAYBE"
+        Just proof -> do  putStrLn "YES" ; print $ pretty proof    
 
-strategy = C.apply dptransform handle_sccs
+handle sys = do
+    let dp = TPDB.DP.Transform.dp sys 
+    proof <- handle_scc dp
+    return $ vcat [ "DP transformation"
+                  , "sys:" <+> pretty sys , "proof:" <+> proof ] 
 
--- | on the compressed signatur
-matrices_compressed = foldr1 C.orelse 
-         [  matrix_arctic_dp 1 8 
-         ,  matrix_arctic_dp 2 6 
-         , matrix_arctic_dp 3 4
-         , matrix_arctic_dp 4 3
-         ]
+handle_scc  = orelse nomarkedrules 
+            $ usablerules
+            $ decomp handle_scc 
+            $ orelse_andthen matrices (apply handle_scc) 
+            $ orelse_andthen semanticlab (apply handle_scc)
+            $ const reject
 
-matrices next = 
-      C.apply ( compressor O.Paper )
-    $ C.apply matrices_compressed
-    $ C.apply ( transformer  ( \ sys -> return $ CC.expand_all_trs sys ) ( \ sys p -> p ) )
-    $ next
+apply h =  \ (sys,f) -> do p <- h sys ; return $ f p 
 
+nomarkedrules dp = do
+    guard $ null $ filter strict $ rules dp 
+    return "no marked rules"
+
+usablerules succ dp = 
+    ( let re = TPDB.DP.Usable.restrict dp 
+          ignore = length (rules re) == length (rules dp)
+      in  do p <- succ re
+             return $ if ignore then p
+                      else vcat [ "restrict to usable rules"
+                                  , p ]
+    )
+
+decomp succ fail sys = case TPDB.DP.Graph.components sys of
+    [ sys' ] | length (rules sys') == length (rules sys) 
+        -> fail sys
+    cs -> do
+        proofs <- mapM succ cs
+        return $ "SCCs" <+> vcat [ "sys:" <+> pretty sys 
+            , "number of SCCs" <+> pretty ( length proofs )
+            , "proofs:" <+> vcat proofs ] 
+
+matrices  =  capture $ foldr1 orelse
+    $ map (\(d,b) -> matrix_arc d b)  [(1,8),(2,6),(3,4){-,(4,3)-} ] 
+
+matrix_arc dim bits sys = do
+    let c = O.Paper
+        (cost, rs) = ( case c of
+                       O.None -> CS.nocompress 
+                       O.Simple -> CS.compress 
+                       O.Paper -> CP.compress CP.Simple
+                       O.PaperIter -> CP.compress CP.Iterative
+                     ) $ rules sys
+        csys = RS { rules = CC.roots rs
+                               , separate = separate sys }
+    (csys', f) <- mkWork ( matrix_arctic_dp dim bits ) csys
+    let sys' = CC.expand_all_trs csys'
+    return ( sys', f )
 
 -- | this is the connection to tc/CO4/Test/TermComp2014/Main
-semanticlab = \ sys -> do
-    (sys', info) <- A.io $ do
-        hPutStrLn stderr "send @sys@ to external prover of type  DP -> IO (Maybe (DP, Proof))"        
-        return $ Just ( sys, "(dummy implemetation)"  )
-    when (length ( rules sys) == length (rules sys')) $ error "huh"
-    return $ \ k -> do
-        out <- k sys'
-        return $ "Sem. Lab." <+> vcat [ "sys:" <+> pretty sys 
-                                      , "sys':" <+> pretty sys' 
-                                      , info, out ]
 
-handle_sccs = C.orelse nomarkedrules
-    $ C.apply ( C.orelse usablerules pass )
-    $ committed decompose handle_sccs
-
-    -- $ C.apply ( C.orelse  matrices semanticlab ) 
-    $ matrices handle_sccs 
-
-nomarkedrules = \ sys -> 
-    if null $ filter strict $ rules sys
-    then return $ "has no marked rules"
-    else fail "has strict rules"
-
-dptransform = transformer
-    ( \ sys -> return $ TPDB.DP.Transform.dp sys )
-    ( \ sys proof -> vcat [ "DP transformation", "sys:" <+> pretty sys , "proof:" <+> proof ] )
-
--- | restrict to usable rules.
--- this transformer fails if all rules are usable
-usablerules = transformer
-    ( \ sys -> do
-          let re = TPDB.DP.Usable.restrict sys 
-          guard $ length (rules re) < length (rules sys)
-          return re
-    )
-    ( \ sys proof ->  vcat [ "restrict to Usable rules", "sys:" <+> pretty sys , "proof:" <+> proof ] )
-
--- | compute EDG, split in components
--- | this transformer fails if the problem IS the single SCC
-decompose = transformers
-    ( \ sys -> case TPDB.DP.Graph.components sys of
-                   [ sys' ] | length (rules sys') == length (rules sys) -> Nothing
-                   cs -> return cs )
-    ( \ sys proofs -> "SCCs" <+> vcat [ "sys:" <+> pretty sys 
-        , "number of SCCs" <+> pretty ( length proofs )
-        , "proofs:" <+> vcat proofs ] )
+semanticlab = mkWork $ \ sys -> run1 defaultConfig sys
+    -- return $ Just ( sys' , \ p -> vcat [ "Semantic labelling", p] )
 
