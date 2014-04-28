@@ -57,6 +57,16 @@ instance (Pretty v, Pretty s) => Pretty (Reason v s) where
             , nest 4 $ pretty i
             , pretty p
             ]
+        Usable_Rules p -> vcat
+            [ "restriction to usable rules"
+            , pretty p
+            ]
+        SCCs ps -> vcat
+            [ "EDG has" <+> (pretty $ length ps) <+> "SCCs"
+            , vcat $ do
+                  (k,p) <- zip [1 :: Int .. ] ps
+                  return $ "SCC" <+> pretty k <+> pretty p
+            ]
         Extra doc p -> vcat
             [ "extra proof method"
             , nest 4 doc

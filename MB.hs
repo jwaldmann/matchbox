@@ -37,7 +37,8 @@ import CO4.Test.TermComp2014.Run (run1)
 import CO4.Test.TermComp2014.Config 
 
 -- https://github.com/apunktbau/co4/issues/81#issuecomment-41269315
-type Proof = Doc 
+-- type Proof = Doc 
+import qualified MB.Proof as P
 
 main :: IO ()
 main = do
@@ -51,8 +52,10 @@ main = do
 handle sys = do
     let dp = TPDB.DP.Transform.dp sys 
     proof <- handle_scc dp
-    return $ vcat [ "DP transformation"
-                  , "sys:" <+> pretty sys , "proof:" <+> proof ] 
+    return $ P.Proof { P.input =  sys
+                  , P.claim = P.Top_Termination
+                  , P.reason = P.DP_Transform proof 
+                  }
 
 handle_scc  = orelse nomarkedrules 
             $ usablerules
@@ -65,16 +68,21 @@ apply h =  \ (sys,f) -> do p <- h sys ; return $ f p
 
 nomarkedrules dp = do
     guard $ null $ filter strict $ rules dp 
-    return "no marked rules"
+    return $ P.Proof 
+            { P.input = dp
+            , P.claim = P.Top_Termination
+            , P.reason = P.No_Strict_Rules 
+            }
 
 usablerules succ dp = 
     ( let re = TPDB.DP.Usable.restrict dp 
           ignore = length (rules re) == length (rules dp)
       in  do p <- succ re
              return $ if ignore then p
-                      else vcat [ "restrict to usable rules"
-                                , "vorher:" <+> pretty dp
-                                  , p ]
+                      else P.Proof { P.input = dp
+                                   , P.claim = P.Top_Termination
+                                   , P.reason = P.Usable_Rules p
+                                   }
     )
 
 decomp succ fail sys = case TPDB.DP.Graph.components sys of
@@ -82,9 +90,10 @@ decomp succ fail sys = case TPDB.DP.Graph.components sys of
         -> fail sys
     cs -> do
         proofs <- mapM succ cs
-        return $ "SCCs" <+> vcat [ "sys:" <+> pretty sys 
-            , "number of SCCs" <+> pretty ( length proofs )
-            , "proofs:" <+> vcat proofs ] 
+        return $ P.Proof { P.input = sys
+                         , P.claim = P.Top_Termination
+                         , P.reason = P.SCCs proofs
+                         }
 
 matrices  =  capture $ foldr1 orelse
     $ map (\(d,b) -> matrix_arc d b)  [(1,8),(2,6),(3,4){-,(4,3)-} ] 
@@ -108,5 +117,12 @@ matrix_arc dim bits sys = do
 semanticlabs = capture $ foldr1 orelse
     $ map (\(b,n) -> semanticlab $ defaultConfig { modelBitWidth = b, numPrecedences = n, beVerbose = True }) [ (0,1), (1,2), (2,2) ] 
 
-semanticlab config = mkWork $ \ sys -> run1 config sys
-    -- return $ Just ( sys' , \ p -> vcat [ "Semantic labelling", p] )
+semanticlab config = mkWork $ \ sys -> do
+    out <- run1 config sys
+    return $ case out of
+        Nothing -> Nothing
+        Just (sys', sl) -> Just (sys', \ p -> P.Proof
+            { P.input = sys
+            , P.claim = P.Top_Termination
+            , P.reason = P.Extra ( "semanticlab" <+> sl ) p
+            } )

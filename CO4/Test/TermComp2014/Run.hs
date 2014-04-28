@@ -41,14 +41,15 @@ runN config trs =
       False -> return $ Just $ text "empty"
       True  -> run1' symbolMap config dp >>= \case
         Nothing              -> return Nothing
-        Just (dp', _, proof) -> goDP dp' >>= return . fmap proof
+        Just (dp', _, proof) -> goDP dp' >>= 
+            return . fmap ( \ p -> vcat [proof, p] )
 
 {-
 run1 :: 
      => Config -> TPDB.TRS v (Marked c) -> IO (Maybe (TPDB.TRS v (Marked c), Doc -> Doc))
      -}
 run1 :: Config -> TPDB.TRS TPDB.Identifier (TPDB.Marked TPDB.Identifier) 
-     -> IO (Maybe (TPDB.TRS TPDB.Identifier (TPDB.Marked TPDB.Identifier), Doc -> Doc))
+     -> IO (Maybe (TPDB.TRS TPDB.Identifier (TPDB.Marked TPDB.Identifier), Doc ))
 run1 config trs = do
   let (dp@(Trs rules), symbolMap) = fromTPDBTrs trs
 
@@ -64,7 +65,7 @@ run1 config trs = do
       in
         return $ Just (trs', proof)
 
-run1' :: SymbolMap -> Config -> DPTrs () -> IO (Maybe (DPTrs (), [DPRule ()], Doc -> Doc))
+run1' :: SymbolMap -> Config -> DPTrs () -> IO (Maybe (DPTrs (), [DPRule ()], Doc ))
 run1' symbolMap config dp = 
   let sigmas    = assignments (modelBitWidth config) dp
       parameter = (dp, sigmas)
@@ -80,11 +81,10 @@ run1' symbolMap config dp =
                       (dp',delete)      = removeMarkedUntagged dp $ last ints
                   in do
                     -- when (beVerbose $ config) $ dump config symbolMap dp proof
-                    return $ Just (dp', delete, \p -> 
+                    return $ Just (dp', delete,  
                        vcat [ -- "input:" <+> pretty dp
                             -- , "symbolMap:" <+> pretty (M.toList $ M.mapKeys value symbolMap)
                                text $ show proof
-                            , p
                             ])
 
 

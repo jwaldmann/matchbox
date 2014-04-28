@@ -51,32 +51,15 @@ remover_arctic msg unpack h  sys = do
             when (length ( rules sys) == length (rules sys')) 
                  $ error "huh"
             return ( sys'
-                   , \ out ->  "Arctic" <+> vcat [ "sys:" <+> pretty sys , pretty m, out ]
+                   , \ out ->  
+                   -- "Arctic" <+> vcat [ "sys:" <+> pretty sys , pretty m, out ]
+               Proof 
+               { input = unpack sys
+               , claim = Top_Termination
+               , reason = Matrix_Interpretation_Arctic m out
+               }
                    )
 
 
-{-
-        return $ Proof 
-               { input = unpack sys
-               , claim = Top_Termination
-               , reason = Matrix_Interpretation_Arctic m out
-               }
--}
 
-{-
-ContT $ \ later -> do
-    (m, sys') <- MaybeT $ h sys
-    when (length ( rules sys) == length (rules sys')) 
-         $ error "huh"
-    out <- later sys'
-    return $ "Arctic" <+> vcat [ "sys:" <+> pretty sys , pretty m, out ]
--}
-
-{-
-        return $ Proof 
-               { input = unpack sys
-               , claim = Top_Termination
-               , reason = Matrix_Interpretation_Arctic m out
-               }
--}
 
