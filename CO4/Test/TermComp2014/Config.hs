@@ -24,7 +24,7 @@ defaultConfig = Config
   , numPatterns              = 0
   , precedenceDomainBitWidth = (-1)
   , bruteFilter              = False
-  , usePrecedence            = False
+  , usePrecedence            = True
   , emptyPrecedence          = False
   , useInterpretation        = False
   }

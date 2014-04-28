@@ -33,6 +33,9 @@ import System.IO
 import Control.Monad.Trans.Cont
 import Control.Monad.Trans.Maybe
 
+import CO4.Test.TermComp2014.Run (run1)
+import CO4.Test.TermComp2014.Config (defaultConfig)
+
 -- https://github.com/apunktbau/co4/issues/81#issuecomment-41269315
 type Proof = Doc 
 
@@ -83,7 +86,7 @@ decomp succ fail sys = case TPDB.DP.Graph.components sys of
             , "proofs:" <+> vcat proofs ] 
 
 matrices  =  capture $ foldr1 orelse
-    $ map (\(d,b) -> matrix_arc d b)  [(1,8),(2,6),(3,4),(4,3) ] 
+    $ map (\(d,b) -> matrix_arc d b)  [(1,8),(2,6),(3,4){-,(4,3)-} ] 
 
 matrix_arc dim bits sys = do
     let c = O.Paper
@@ -101,11 +104,6 @@ matrix_arc dim bits sys = do
 
 -- | this is the connection to tc/CO4/Test/TermComp2014/Main
 
-semanticlab = mkWork $ \ sys -> do            
-    hPutStrLn stderr $ unlines 
-        [ "send this external (sem. lab.) prover"
-        , show $ pretty sys
-        ]
+semanticlab = mkWork $ \ sys -> run1 defaultConfig sys
     -- return $ Just ( sys' , \ p -> vcat [ "Semantic labelling", p] )
-    return Nothing
 

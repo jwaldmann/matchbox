@@ -60,16 +60,16 @@ dpproof p = case reason p of
     No_Strict_Rules -> C.PIsEmpty
     Equivalent d p -> dpproof  p
     Matrix_Interpretation_Natural mia q -> 
-        C.RedPairProc { C.dp_orderingConstraintProof 
+        C.RedPairProc { C.rppOrderingConstraintProof 
                       = ocp sharp C.Naturals mia
-                      , C.red_pair_dps = C.DPS $ map rsharp $ filter strict $ rules $ input q
-                      , C.redpairproc_dpProof = dpproof q
+                      , C.rppDps = C.DPS $ map rsharp $ filter strict $ rules $ input q
+                      , C.rppDpProof = dpproof q
                       }
     Matrix_Interpretation_Arctic mia q -> 
-        C.RedPairProc { C.dp_orderingConstraintProof 
+        C.RedPairProc { C.rppOrderingConstraintProof 
                       = ocp sharp (C.Arctic C.Naturals) mia
-                      , C.red_pair_dps = C.DPS $ map rsharp $ filter strict $ rules $ input q
-                      , C.redpairproc_dpProof = dpproof q
+                      , C.rppDps = C.DPS $ map rsharp $ filter strict $ rules $ input q
+                      , C.rppDpProof = dpproof q
                       }
 
 

@@ -22,7 +22,7 @@ data Term var node label       = Var  var
                                | Node node label [Term var node label]
                                deriving (Eq,Show)
 
-data Rule var node label       = Rule (Term var node label) (Term var node label)
+data Rule var node label       = Rule Bool (Term var node label) (Term var node label)
                                deriving (Eq,Show)
 
 data Trs var node label        = Trs [Rule var node label]
@@ -48,14 +48,12 @@ type UnlabeledTerm             = Term Symbol Symbol ()
 type UnlabeledRule             = Rule Symbol Symbol ()
 type UnlabeledTrs              = Trs  Symbol Symbol ()
 
-type MarkedSymbol              = (Symbol, Bool)
+type DPTerm       label        = Term Symbol Symbol label
+type DPRule       label        = Rule Symbol Symbol label
+type DPTrs        label        = Trs  Symbol Symbol label
+type GroupedDPTrs label        = GroupedTrs Symbol Symbol label
 
-type DPTerm       label        = Term Symbol MarkedSymbol label
-type DPRule       label        = Rule Symbol MarkedSymbol label
-type DPTrs        label        = Trs  Symbol MarkedSymbol label
-type GroupedDPTrs label        = GroupedTrs Symbol MarkedSymbol label
-
-type TaggedGroupedDPTrs label        = TaggedGroupedTrs Symbol MarkedSymbol label
+type TaggedGroupedDPTrs label        = TaggedGroupedTrs Symbol Symbol label
 
 type Interpretation            = Map [Pattern Domain] Domain
 
@@ -98,12 +96,12 @@ data TerminationOrder key         = FilterAndPrec (ArgFilter key) (Precedence ke
 
 type UsableSymbol key = Map key Bool
 
-type MSL = (MarkedSymbol,Label) 
+type MSL = (Symbol,Label) 
 
 
 type UsableOrder key =  (UsableSymbol key, TerminationOrder key)
 
-data Proof = Proof (Model MarkedSymbol) [UsableOrder MSL]
+data Proof = Proof (Model Symbol) [UsableOrder MSL] deriving Show
 
 
 constraint :: (DPTrs (), Assignments Symbol) 
@@ -115,7 +113,7 @@ constraint (trs,assignments) (Proof model orders) =
             couldDeleteOneRule ( steps ( tagAll labeledTrs ) orders )
 
 couldDeleteOneRule
-  :: TaggedGroupedTrs Symbol MarkedSymbol label -> Bool
+  :: TaggedGroupedTrs Symbol Symbol label -> Bool
 couldDeleteOneRule trs = case trs of
     TaggedGroupedTrs rss -> exists rss ( \ rs -> 
         forall rs ( \ r -> case r of (tag,rule) -> not tag && isMarkedRule rule ) )
@@ -127,9 +125,9 @@ tagAll trs = case trs of
         TaggedGroupedTrs (map (map ( \ rule -> (True,rule))) rss)
 
 steps
-  :: TaggedGroupedTrs Symbol MarkedSymbol Label
+  :: TaggedGroupedTrs Symbol Symbol Label
      -> [(Map MSL Bool, TerminationOrder MSL)]
-     -> TaggedGroupedTrs Symbol MarkedSymbol Label
+     -> TaggedGroupedTrs Symbol Symbol Label
 steps trs orders = foldl step trs orders 
 
 -- | check that all usable rules are tagged (if not, raise exception).
@@ -138,9 +136,9 @@ steps trs orders = foldl step trs orders
 -- then untag the marked rules that are strictly compatible.
 
 step
-  :: TaggedGroupedTrs Symbol MarkedSymbol Label
+  :: TaggedGroupedTrs Symbol Symbol Label
      -> (Map MSL Bool, TerminationOrder MSL)
-     -> TaggedGroupedTrs Symbol MarkedSymbol Label
+     -> TaggedGroupedTrs Symbol Symbol Label
 step trs (usable,order) = case usableOK trs usable of
     False -> undefined
     True -> 
@@ -150,16 +148,16 @@ step trs (usable,order) = case usableOK trs usable of
                 True  -> untagStrictlyCompatible utrs order
 
 weaklyCompatibleOK
-  :: TaggedGroupedTrs Symbol MarkedSymbol Label
+  :: TaggedGroupedTrs Symbol Symbol Label
      -> TerminationOrder MSL -> Bool
 weaklyCompatibleOK (TaggedGroupedTrs rss) order = 
     forall rss ( \ rs -> forall rs ( \ r -> case r of 
         ( tag, rule ) -> not tag || isWeaklyCompatible order rule  ) )
     
 untagStrictlyCompatible
-  :: TaggedGroupedTrs Symbol MarkedSymbol Label
+  :: TaggedGroupedTrs Symbol Symbol Label
      -> TerminationOrder MSL
-     -> TaggedGroupedTrs Symbol MarkedSymbol Label
+     -> TaggedGroupedTrs Symbol Symbol Label
 untagStrictlyCompatible ( TaggedGroupedTrs rss ) order = 
     TaggedGroupedTrs 
         ( for rss ( \ rs -> for rs ( \ r -> case r of
@@ -174,20 +172,20 @@ tagUsable (TaggedGroupedTrs rss) usable = TaggedGroupedTrs (
       case {- assertKnown -} ( isMarkedRule rule ) of
         True -> ( tag, rule ) -- keep the previous tag (rule might already be removed)
         False -> case rule of
-            Rule lhs rhs -> case {- assertKnown -} lhs of 
+            Rule _ lhs rhs -> case {- assertKnown -} lhs of 
                 Var v -> undefined -- cannot happen (at top of lhs)
                 Node sym lab ts -> ( lookup eqMSL (sym,lab) usable, rule ) ) ) )
 
 
 -- | check that the usable (unmarked) rules are tagged in the table
 usableOK
-  :: TaggedGroupedTrs Symbol MarkedSymbol Label
+  :: TaggedGroupedTrs Symbol Symbol Label
      -> Map MSL Bool -> Bool
 usableOK (TaggedGroupedTrs rss) usable = forall rss ( \ rs -> forall rs ( \ (tag,rule) -> 
     case rule of 
-      Rule lhs rhs -> 
+      Rule isMarked lhs rhs -> 
         let -- for marked rules, left top symbol must be usable 
-            left_ok = implies (isMarked lhs && tag) ( case lhs of
+            left_ok = implies (isMarked && tag) ( case lhs of
                 Var v -> undefined -- should not happen (no lhs can be Var)
                 Node sym lab ts -> lookup eqMSL (sym,lab) usable  )
             -- if left top symbol is usable, then all syms in rhs must be usable
@@ -203,27 +201,27 @@ usableOK (TaggedGroupedTrs rss) usable = forall rss ( \ rs -> forall rs ( \ (tag
 
 -- * make labeled TRS & search model
 
-makeLabeledTrs :: Model MarkedSymbol -> DPTrs () -> Assignments Symbol -> (GroupedDPTrs Label, Bool)
+makeLabeledTrs :: Model Symbol -> DPTrs () -> Assignments Symbol -> (GroupedDPTrs Label, Bool)
 makeLabeledTrs model (Trs rules) assignments = 
   case unzip (map (\r -> makeLabeledRule model r assignments) rules) of
     (rules', equalities) -> (GroupedTrs rules', and equalities)
 
-makeLabeledRule :: Model MarkedSymbol -> DPRule () -> Assignments Symbol -> ([DPRule Label], Bool)
-makeLabeledRule model (Rule lhs rhs) assignments = 
+makeLabeledRule :: Model Symbol -> DPRule () -> Assignments Symbol -> ([DPRule Label], Bool)
+makeLabeledRule model (Rule isMarked lhs rhs) assignments = 
   let goRule sigma = case makeLabeledTerm model lhs sigma of
         (lhs', lhsValue) -> case makeLabeledTerm model rhs sigma of
-          (rhs', rhsValue) -> (Rule lhs' rhs', eqValue lhsValue rhsValue)
+          (rhs', rhsValue) -> (Rule isMarked lhs' rhs', eqValue lhsValue rhsValue)
   in
     case unzip (map goRule assignments) of
       (rules', equalities) -> (rules', and equalities)
 
-makeLabeledTerm :: Model MarkedSymbol -> DPTerm () -> Sigma Symbol -> (DPTerm Label, Domain)
+makeLabeledTerm :: Model Symbol -> DPTerm () -> Sigma Symbol -> (DPTerm Label, Domain)
 makeLabeledTerm model term sigma = case term of
   Var s         -> (Var s, valueOfVar s sigma)
   Node s _ args -> case unzip (map (\a -> makeLabeledTerm model a sigma) args) of
     (args', argsValues) -> (Node s argsValues args', valueOfFun s argsValues model)
 
-valueOfTerm :: Model MarkedSymbol -> Sigma Symbol -> DPTerm () -> Domain
+valueOfTerm :: Model Symbol -> Sigma Symbol -> DPTerm () -> Domain
 valueOfTerm model sigma term = case term of
   Var v           -> valueOfVar v sigma
   Node sym l args -> case l of 
@@ -231,7 +229,7 @@ valueOfTerm model sigma term = case term of
           in
             valueOfFun sym values model
 
-valueOfFun :: MarkedSymbol -> [Domain] -> Model MarkedSymbol -> Domain
+valueOfFun :: Symbol -> [Domain] -> Model Symbol -> Domain
 valueOfFun s args model = 
   let interp     = interpretation s model
       argPattern = map Exactly args
@@ -241,15 +239,16 @@ valueOfFun s args model =
 valueOfVar :: Symbol -> Sigma Symbol -> Domain
 valueOfVar = lookup eqSymbol
 
-interpretation :: MarkedSymbol -> Model MarkedSymbol -> Interpretation
-interpretation = lookup eqMarkedSymbol
+interpretation :: Symbol -> Model Symbol -> Interpretation
+interpretation = lookup eqSymbol
 
 -- * filter arguments
 
 filterArgumentsDPTrs :: ArgFilter MSL -> DPTrs Label -> DPTrs Label
 filterArgumentsDPTrs filter (Trs rules) = 
-  let goRule (Rule lhs rhs) = Rule (filterArgumentsDPTerm filter lhs) 
-                                   (filterArgumentsDPTerm filter rhs)
+  let goRule (Rule isMarked lhs rhs) = Rule isMarked
+                                         (filterArgumentsDPTerm filter lhs) 
+                                         (filterArgumentsDPTerm filter rhs)
   in
     Trs (map goRule rules)
 
@@ -257,7 +256,7 @@ filterArgumentsDPTerm :: ArgFilter MSL -> DPTerm Label -> DPTerm Label
 filterArgumentsDPTerm filter term = case term of
   Var v         -> Var v
   Node s l args -> 
-    let flt = lookup eqMarkedLabeledSymbol (s,l) filter
+    let flt = lookup eqLabeledSymbol (s,l) filter
     in  case flt of
      Selection indices -> 
       Node s l (map (\i -> filterArgumentsDPTerm filter (atIndex i args)) indices)
@@ -267,10 +266,10 @@ filterArgumentsDPTerm filter term = case term of
 -- * check compatibility with order
 
 isWeaklyCompatible
-  :: TerminationOrder MSL -> Rule Symbol MarkedSymbol Label -> Bool
-isWeaklyCompatible order (Rule lhs rhs) = 
+  :: TerminationOrder MSL -> Rule Symbol Symbol Label -> Bool
+isWeaklyCompatible order (Rule isMarked lhs rhs) = 
        let cmp = case order of
-             LinearInt int -> linearRule int (Rule lhs rhs) 
+             LinearInt int -> linearRule int (Rule isMarked lhs rhs) 
              FilterAndPrec f p ->
                  lpo p (filterArgumentsDPTerm f lhs) (filterArgumentsDPTerm f rhs) 
        in case cmp of
@@ -279,10 +278,10 @@ isWeaklyCompatible order (Rule lhs rhs) =
               NGe -> False
 
 isStrictlyCompatible
-  :: TerminationOrder MSL -> Rule Symbol MarkedSymbol Label -> Bool
-isStrictlyCompatible order (Rule lhs rhs) = isMarked lhs &&
+  :: TerminationOrder MSL -> Rule Symbol Symbol Label -> Bool
+isStrictlyCompatible order (Rule isMarked lhs rhs) = isMarked &&
        let cmp = case order of
-             LinearInt int -> linearRule int (Rule lhs rhs) 
+             LinearInt int -> linearRule int (Rule isMarked lhs rhs) 
              FilterAndPrec f p ->
                  lpo p (filterArgumentsDPTerm f lhs) (filterArgumentsDPTerm f rhs) 
        in case cmp of
@@ -290,20 +289,15 @@ isStrictlyCompatible order (Rule lhs rhs) = isMarked lhs &&
               Eq  -> False
               NGe -> False
 
-isMarkedRule :: Rule Symbol MarkedSymbol label -> Bool
-isMarkedRule (Rule lhs rhs) = isMarked lhs
-
-isMarked :: DPTerm label -> Bool
-isMarked term = case term of 
-  Var _          -> False
-  Node (_,m) _ _ -> m
+isMarkedRule :: Rule Symbol Symbol label -> Bool
+isMarkedRule (Rule isMarked lhs rhs) = isMarked
 
 -- * order from linear interpretation
 -- FIXME: at the moment, this handles only unary functions (enough for SRS)
 -- FIXME: bit width (3) is hardwired (in linearTerm below)
 
 linearRule :: LinearInterpretation MSL -> DPRule Label -> Order
-linearRule int (Rule lhs rhs) = 
+linearRule int (Rule _ lhs rhs) = 
     case linearTerm int lhs of
         LinearFunction labs llins -> 
             case linearTerm int rhs of
@@ -324,7 +318,7 @@ linearTerm :: LinearInterpretation MSL -> DPTerm Label -> LinearFunction
 linearTerm int t = case t of
     Var x ->  LinearFunction (nat 3 0) [ True ] 
     Node f lf args -> 
-        let int_f = lookup eqMarkedLabeledSymbol (f, lf) int
+        let int_f = lookup eqLabeledSymbol (f, lf) int
             values = map ( linearTerm int ) args
         in  substitute int_f values
 
@@ -371,12 +365,12 @@ lpo precedence s t = case t of
 
 ord :: Precedence MSL -> MSL -> MSL -> Order
 ord precedence a b = case precedence of
-    EmptyPrecedence -> case eqMarkedLabeledSymbol a b of
+    EmptyPrecedence -> case eqLabeledSymbol a b of
         True -> Eq
         False -> NGe
     Precedence prec -> 
-        let pa = lookup eqMarkedLabeledSymbol a prec
-            pb = lookup eqMarkedLabeledSymbol b prec
+        let pa = lookup eqLabeledSymbol a prec
+            pb = lookup eqLabeledSymbol b prec
         in
             ordNat pa pb
 
@@ -418,14 +412,14 @@ lookup f k map = case map of
       False -> lookup f k ms
       True  -> v
 
-eqMarkedLabeledSymbol :: MSL -> MSL -> Bool
-eqMarkedLabeledSymbol (s,l) (s',l') = (eqMarkedSymbol s s') && (eqLabel l l')
+eqLabeledSymbol :: MSL -> MSL -> Bool
+eqLabeledSymbol (s,l) (s',l') = (eqSymbol s s') && (eqLabel l l')
 
 eqMSL :: MSL -> MSL -> Bool
-eqMSL = eqMarkedLabeledSymbol 
+eqMSL = eqLabeledSymbol 
 
 eqLabeledDPTerm :: DPTerm Label -> DPTerm Label -> Bool
-eqLabeledDPTerm = eqTerm eqSymbol eqMarkedSymbol eqLabel
+eqLabeledDPTerm = eqTerm eqSymbol eqSymbol eqLabel
 
 eqTerm :: (v -> v -> Bool) -> (n -> n -> Bool) -> (l -> l -> Bool) 
        -> Term v n l -> Term v n l -> Bool
@@ -445,9 +439,6 @@ eqOrder x y = case x of
   Gr  -> case y of { Gr  -> True; _ -> False }
   Eq  -> case y of { Eq  -> True; _ -> False }
   NGe -> case y of { NGe -> True; _ -> False }
-
-eqMarkedSymbol :: MarkedSymbol -> MarkedSymbol -> Bool
-eqMarkedSymbol (sym,m) (sym',m') = (eqSymbol sym sym') && (eqBool m m')
 
 eqSymbol :: Symbol -> Symbol -> Bool
 eqSymbol = eqNat

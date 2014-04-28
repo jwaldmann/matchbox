@@ -7,7 +7,7 @@ import           CO4.AllocatorData (Allocator,constructors,known)
 import           CO4.Prelude (kList,uList,kList',kBool,uBool,kTuple2)
 import           CO4.PreludeNat (nat,kNat',uNat)
 import           CO4.Util (bitWidth)
-import           CO4.Test.TermComp2014.Standalone (Symbol,Domain,DPTrs,MarkedSymbol,Label,Model,UsableOrder,MSL,Proof)
+import           CO4.Test.TermComp2014.Standalone (Symbol,Domain,DPTrs,Label,Model,UsableOrder,MSL,Proof)
 import           CO4.Test.TermComp2014.Util (nodeArities)
 import           CO4.Test.TermComp2014.Config
 
@@ -18,7 +18,7 @@ type Talloc t = Allocator -- with phantom type
 
 -- data Proof = Proof (Model MarkedSymbol) [UsableOrder MSL]
 
-aProof :: Talloc (Model MarkedSymbol) -> Talloc [UsableOrder MSL] -> Talloc Proof
+aProof :: Talloc (Model Symbol) -> Talloc [UsableOrder MSL] -> Talloc Proof
 aProof mod orders = known 0 1 [ mod, orders ]
 
 aTuple2 :: Talloc a -> Talloc b -> Talloc (a,b)
@@ -53,7 +53,7 @@ usableMapAllocator config = kList' . concatMap goArity . M.toList . nodeArities
     labels            = map (nat n) [0..height-1]
     goArity (s,arity) = do
       args <- sequence $ replicate arity labels
-      return $ kTuple2 (kTuple2 (kMarkedSymbolAllocator s) (kLabelAllocator args))
+      return $ kTuple2 (kTuple2 (kSymbolAllocator s) (kLabelAllocator args))
              $ uBool
 
 orderAllocator :: Config -> DPTrs () -> Allocator
@@ -80,7 +80,7 @@ filterAllocator config = kList' . concatMap goArity . M.toList . nodeArities
                else uList arity $ goIndex $ arity - 1
           projection = goIndex $ arity - 1
 
-      return $ kTuple2 (kTuple2 (kMarkedSymbolAllocator s) (kLabelAllocator args))
+      return $ kTuple2 (kTuple2 (kSymbolAllocator s) (kLabelAllocator args))
              $ case args of
                 [] -> known 0 2 [ kList' [] ]
                 _  -> (constructors [ Just [selection] , Just [projection] ])
@@ -105,7 +105,7 @@ interpretationAllocator config trs = kList' $ concatMap goArity arities
 
     goArity (symbol,arity) = do
       args <- sequence $ replicate arity labels
-      return $ kTuple2 (kTuple2 (kMarkedSymbolAllocator symbol) 
+      return $ kTuple2 (kTuple2 (kSymbolAllocator symbol) 
                                 (kLabelAllocator args)
                        ) 
              $ linfun arity
@@ -114,10 +114,13 @@ interpretationAllocator config trs = kList' $ concatMap goArity arities
 modelAllocator :: Config -> DPTrs () -> Allocator
 modelAllocator config = kList' . map goArity . M.toList . nodeArities
   where
-    goArity (sym@(_,marked),arity) = kTuple2 (kMarkedSymbolAllocator sym) $
+    {-
+    goArity (sym@(_,marked),arity) = kTuple2 (kSymbolAllocator sym) $
       if marked 
       then kList' [ kTuple2 (kList' [kPattern Nothing]) (kValueAllocator $ nat 0 0) ]
       else goInterpretation arity
+      -}
+    goArity (sym,arity) = kTuple2 (kSymbolAllocator sym) $ goInterpretation arity
 
     goInterpretation arity = if (numPatterns config) <= 0 || 
                                 (numPatterns config) >= interpretationSize
@@ -166,7 +169,7 @@ precedenceAllocator config trs =
 
     goArity (symbol,arity) = do
       args <- sequence $ replicate arity labels
-      return $ kTuple2 (kTuple2 (kMarkedSymbolAllocator symbol) 
+      return $ kTuple2 (kTuple2 (kSymbolAllocator symbol) 
                                 (kLabelAllocator args)
                        ) 
                        (uNat precedenceBitWidth)
@@ -179,9 +182,6 @@ uValueAllocator = uNat
 
 kSymbolAllocator :: Symbol -> Allocator
 kSymbolAllocator = kNat'
-
-kMarkedSymbolAllocator :: MarkedSymbol -> Allocator
-kMarkedSymbolAllocator (s,m) = kTuple2 (kSymbolAllocator s) (kBool m)
 
 kLabelAllocator :: Label -> Allocator
 kLabelAllocator = kList' . map kValueAllocator
