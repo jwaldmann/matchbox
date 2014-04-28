@@ -69,8 +69,7 @@ nomarkedrules dp = do
 
 usablerules succ dp = 
     ( let re = TPDB.DP.Usable.restrict dp 
-          ignore = False
-                   -- length (rules re) == length (rules dp)
+          ignore = length (rules re) == length (rules dp)
       in  do p <- succ re
              return $ if ignore then p
                       else vcat [ "restrict to usable rules"
