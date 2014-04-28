@@ -4,6 +4,7 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE LambdaCase #-}
+{-# language OverloadedStrings #-}
 {-# OPTIONS_GHC -fno-warn-unused-binds #-}
 
 module CO4.Test.TermComp2014.Run where
@@ -20,6 +21,7 @@ import           CO4.Test.TermComp2014.Standalone
 import           CO4.Test.TermComp2014.Config
 import System.IO
 import Data.Maybe (catMaybes)
+import qualified Data.Map as M
 
 $( compileFile [Cache, ImportPrelude] "tc/CO4/Test/TermComp2014/Standalone.hs" )
 
@@ -55,5 +57,11 @@ run1 config trs = do
                           }
                in do
                 hPutStrLn stderr $ show proof
-                return $ Just (trs', \p -> vcat [pretty trs, text (show proof), p])
+                return $ Just (trs', \p -> 
+                       vcat [ "input:" <+> pretty trs
+                            , "symbolMap:" <+> 
+                              pretty (M.toList $ M.mapKeys value symbolMap)
+                            , text $ show proof
+                            , p
+                            ])
 
