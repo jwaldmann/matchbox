@@ -15,6 +15,7 @@ data Config = Config {
   , emptyPrecedence          :: Bool
   , useInterpretation        :: Bool
   , beVerbose                :: Bool
+  , outputCPF                :: Bool
   }
   deriving Show
 
@@ -29,6 +30,7 @@ defaultConfig = Config
   , emptyPrecedence          = False
   , useInterpretation        = False
   , beVerbose                = False
+  , outputCPF                = False
   }
 
 repairConfig :: Config -> Config
@@ -62,6 +64,9 @@ options =
 
  , Option [ 'e' ] ["empty-precedence" ] (NoArg (\c -> c {usePrecedence=True,emptyPrecedence=True}))
    "use RPO with empty precedence (that is, argument-filtered subterm relation) (default: false)"
+
+ , Option [ 'c' ] [ "cpf" ] (NoArg (\c -> c {outputCPF=True}))
+   "output proof in CPF format (default: false)"
 
  , Option [ 'v' ] ["verbose" ] (NoArg (\c -> c {beVerbose=True}))
    "be verbose (default: false)"
