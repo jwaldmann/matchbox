@@ -25,12 +25,10 @@ import           CO4.Test.TermComp2014.Proof.Dump (dumpTrs,dump)
 $( compileFile [Cache, ImportPrelude] "tc/CO4/Test/TermComp2014/Standalone.hs" )
 
 runN :: Config -> TPDB.TRS TPDB.Identifier (TPDB.Marked TPDB.Identifier) -> IO (Maybe Doc)
-runN config trs = do
-  when (beVerbose config) $ dumpTrs config symbolMap dp 
-
+runN config trs =
   if not (isValidTrs dp)
-    then hPutStrLn stderr "invalid trs" >> return Nothing
-    else goDP dp
+  then hPutStrLn stderr "invalid trs" >> return Nothing
+  else goDP dp
   where
     (dp, symbolMap) = fromTPDBTrs trs
 
@@ -66,7 +64,9 @@ run1' symbolMap config dp =
   let sigmas    = assignments (modelBitWidth config) dp
       parameter = (dp, sigmas)
       alloc     = allocator config dp
-  in
+  in do
+    when (beVerbose config) $ dumpTrs config symbolMap dp 
+
     solveAndTestP parameter alloc encConstraint constraint
       >>= \case Nothing -> return Nothing
                 Just proof@(Proof model orders) -> 
