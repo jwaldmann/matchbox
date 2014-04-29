@@ -23,9 +23,6 @@ import           CO4.Test.TermComp2014.Standalone
 import           CO4.Test.TermComp2014.Config
 import           CO4.Test.TermComp2014.Proof.Dump (dumpTrs,dump)
 
-import System.IO
-import qualified Data.Map as M
-
 $( compileFile [Cache, ImportPrelude] "tc/CO4/Test/TermComp2014/Standalone.hs" )
 
 runN :: Config -> TPDB.TRS TPDB.Identifier (TPDB.Marked TPDB.Identifier) -> IO (Maybe Doc)

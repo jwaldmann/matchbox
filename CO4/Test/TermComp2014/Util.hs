@@ -51,12 +51,18 @@ fromTPDBTrs trs = (Trs rules', M.fromList $ map swap $ M.toList symbolMap)
         goRule rule = (goTerm $ TPDB.lhs rule) ++ (goTerm $ TPDB.rhs rule)
         goTerm term = (map Left $ TPDB.lvars term) ++ (map Right $ TPDB.lsyms term)
 
-{-
-toTPDBRules :: SymbolMap -> DPTrs () -> [TPDB.Rule (TPDB.Term TPDB.Identifier (TPDB.Marked TPDB.Identifier)]
-toTPDBRules symbolMap (Trs rules) = map goRule rules
+toTPDBRules :: SymbolMap -> (TPDB.Marked TPDB.Identifier -> label -> a) -> DPTrs label
+            -> [TPDB.Rule (TPDB.Term TPDB.Identifier a)]
+toTPDBRules symbolMap f (Trs rules) = map goRule rules
   where
-    goRule (Rule isMarked lhs rhs) = 
-    -}
+    goRule (Rule isMarked lhs rhs) = TPDB.Rule (goTerm lhs) (goTerm rhs)
+                                               (if isMarked then TPDB.Strict else TPDB.Weak)
+                                               True -- top ???
+    goTerm (Var s) = case M.lookup s symbolMap of
+      (Just (Left i)) -> TPDB.Var i
+    
+    goTerm (Node s label args) = case M.lookup s symbolMap of
+      (Just (Right i)) -> TPDB.Node (f i label) $ map goTerm args
 
 assignments :: Ord var => Int -> Trs var n l -> Assignments var
 assignments n trs = do 
@@ -127,3 +133,7 @@ isValidTrs (Trs rules) = all isValidRule rules
   where
     isValidRule (Rule _ lhs rhs) = (not $ isVar lhs) 
                                 && (variableSet' rhs `S.isSubsetOf` (variableSet' lhs))
+
+fromIndex :: Num a => Index -> a
+fromIndex This     = 0
+fromIndex (Next i) = 1 + (fromIndex i)
