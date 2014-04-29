@@ -31,7 +31,6 @@ import Control.Applicative
 import System.IO
 
 import TPDB.CPF.Proof.Util (sortVariables)
-import Data.List (nub)
 
 -- https://github.com/apunktbau/co4/issues/81#issuecomment-41269315
 
@@ -42,7 +41,7 @@ main :: IO ()
 main = do
     (config,filePath) <- parseConfig
     trs <- TPDB.Input.get_trs filePath
-    out <- run $ handle $ trs { rules = nub $ map sortVariables $ rules trs }
+    out <- run $ handle $ trs { rules = map sortVariables $ rules trs }
     case out of
         Nothing    -> do putStrLn "MAYBE"
         Just proof -> do  

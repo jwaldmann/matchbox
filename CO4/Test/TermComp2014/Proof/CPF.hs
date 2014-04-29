@@ -65,7 +65,7 @@ toCpfModel symbolMap model = T.FiniteModel (2^bitWidth) $ map toInterpret model
 
         toArithFunction = T.AFSum . map (goMapping . indexArgs)
           where
-            indexArgs (ps,v)        = (zip [0..] ps, v)
+            indexArgs (ps,v)        = (zip [1..] ps, v)
             goMapping ([],v)        = toNatural v
             goMapping ((i,p):ps, v) = 
               case p of
@@ -91,8 +91,8 @@ toCpfOrderingConstraintProof symbolMap trs [(_, FilterAndPrec filter (Precedence
     toFilterEntry ((sym,label), filter) =
       T.ArgumentFilterEntry (toCpfLabeledSymbol symbolMap (sym,label)) (arity sym)
         $ case filter of
-            Selection is -> Right $ map fromIndex is
-            Projection i -> Left $ fromIndex i
+            Selection is -> Right $ map (\i -> 1 + fromIndex i) is
+            Projection i -> Left $ 1 + (fromIndex i)
 
     arity sym = case M.lookup sym arities of
       Nothing -> error $ "CO4.Test.TermComp2014.Proof.CPF.toCpfOrderingConstraintProof: missing symbol (" ++ show sym ++ ")"
