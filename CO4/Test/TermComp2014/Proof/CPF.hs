@@ -38,7 +38,7 @@ toCpfRedPairProof symbolMap trs usableOrder innerProof =
     dps         = T.DPS $ toTPDBRules symbolMap toLabeledSymbol
                         $ ungroupTrs trs
 
-    filterUsable (TaggedGroupedTrs rs) = Trs $ map snd $ filter fst $ concat rs
+    filterUsable (TaggedGroupedTrs rs) = Trs $ map snd $ filter (not . fst) $ concat rs
     toLabeledSymbol i l                = addCpfLabel l $ T.fromMarkedIdentifier i
 
 toCpfModel :: SymbolMap -> Model Symbol -> T.Model
