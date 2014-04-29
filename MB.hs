@@ -2,6 +2,7 @@
 -- see https://github.com/apunktbau/co4/issues/82
 
 {-# language OverloadedStrings #-}
+{-# language LambdaCase #-}
 {-# language NoMonomorphismRestriction #-}
 
 import CO4.Test.TermComp2014.Run (run1)
@@ -23,8 +24,10 @@ import TPDB.DP.Transform
 import TPDB.DP.Usable
 import TPDB.DP.Graph
 import TPDB.Xml.Pretty ( document )
+import Text.PrettyPrint.Leijen.Text (hPutDoc)
 
-import Control.Monad ( guard, when )
+import Control.Monad ( guard, when, forM )
+import Control.Applicative
 import System.IO
 
 -- https://github.com/apunktbau/co4/issues/81#issuecomment-41269315
@@ -42,12 +45,12 @@ main = do
         Just proof -> do  
             putStrLn "YES" 
             if outputCPF config
-            then do
+              then do
+                hPutDoc stderr $ pretty proof
                 displayIO stdout $ renderCompact $ document 
                               $ P.tox $ P.rtoc proof
-                hPutStrLn stderr $ show $ pretty proof
-            else do
-                hPutStrLn stdout $ show $ pretty proof    
+              else do
+                hPutDoc stdout $ pretty proof    
 
 handle sys = do
     let dp = TPDB.DP.Transform.dp sys 
@@ -85,15 +88,20 @@ usablerules succ dp =
                                    }
     )
 
-decomp succ fail sys = case TPDB.DP.Graph.components sys of
-    [ sys' ] | length (rules sys') == length (rules sys) 
-        -> fail sys
-    cs -> do
-        proofs <- mapM succ cs
+decomp succ fail sys = 
+    let cs = TPDB.DP.Graph.components sys 
+        one_large_component = case cs of
+            [ Right c ] | length (rules c) == length (rules sys) 
+                -> True
+            _   -> False
+    in if  one_large_component then fail sys else do
+        proofs <- forM cs $ \ case 
+            Left v -> return $ Left v
+            Right c -> Right <$> succ c
         return $ P.Proof { P.input = sys
-                         , P.claim = P.Top_Termination
-                         , P.reason = P.SCCs proofs
-                         }
+                     , P.claim = P.Top_Termination
+                     , P.reason = P.SCCs proofs
+                     }
 
 matrices  =  capture $ foldr1 orelse
     $ map (\(d,b) -> matrix_arc d b)  [(1,8),(2,6),(3,4){-,(4,3)-} ] 

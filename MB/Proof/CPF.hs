@@ -7,6 +7,9 @@ import TPDB.Data
 import TPDB.DP 
 import MB.Proof.Type
 
+import MB.Proof.Doc () -- for print error messages
+import TPDB.Pretty ( render, pretty ) -- "
+
 import qualified TPDB.CPF.Proof.Type as C
 import qualified TPDB.CPF.Proof.Xml 
 
@@ -69,24 +72,48 @@ dpproof p = case reason p of
         C.RedPairProc { C.rppOrderingConstraintProof 
                       = ocp sharp (C.Arctic C.Naturals) mia
                       , C.rppDps = C.DPS $ map rsharp $ filter strict $ rules $ input q
+                      , C.rppUsableRules = 
+                           Just $ C.DPS $ map rsharp $ filter (not . strict) $ rules $ input q
                       , C.rppDpProof = dpproof q
                       }
+    SCCs ps -> C.DepGraphProc $ do
+        p <- ps
+        return $ case p of
+            Left v -> C.DepGraphComponent
+               { C.dgcRealScc = False
+               , C.dgcDps = C.DPS $ map rsharp [ v ]
+               }
+            Right p -> C.DepGraphComponent 
+               { C.dgcRealScc = True 
+               , C.dgcDps = C.DPS $ map rsharp $ filter strict $ rules $ input p
+               , C.dgcDpProof = dpproof p
+               }
+    Usable_Rules p -> dpproof p
+    r -> error $ unlines [ "dpproof: missing CPF output for"
+                         , render $ pretty r 
+                         ]
 
+plain :: Identifier -> C.Symbol
+plain k = C.SymName k 
 
-plain k = C.SymName $ show k 
+sharp :: Marked Identifier -> C.Symbol
 sharp k =  case k of
-            Original o -> C.SymName $ show o
-            Marked   o -> C.SymSharp $ C.SymName $ show o
+            Original o ->              plain o
+            Marked   o -> C.SymSharp $ plain o
 
 deriving instance Eq C.Symbol
 deriving instance Ord C.Symbol
 deriving instance Eq C.Label
 deriving instance Ord C.Label
 
+{-
 msharp m = m { mapping = M.fromList $ do
     ( k, v ) <- M.toList $ mapping m
     return (sharp k, v) }
+-}
 
+rsharp :: Rule (Term Identifier (Marked Identifier)) 
+       -> Rule (Term Identifier C.Symbol)
 rsharp u = u { lhs = fmap sharp $ lhs u
              , rhs = fmap sharp $ rhs u
              }

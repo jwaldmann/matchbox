@@ -38,7 +38,7 @@ data Reason v s = No_Strict_Rules
          (Interpretation s (A.Arctic Integer))
            (Proof v s)
      | Usable_Rules (Proof v s)
-     | SCCs [ Proof v s ]
+     | SCCs [ Either (Rule (Term v s)) (Proof v s) ]
      | Extra Doc (Proof v s)
 
 
