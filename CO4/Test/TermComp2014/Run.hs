@@ -21,11 +21,10 @@ import           CO4.Test.TermComp2014.Util
 import           CO4.Test.TermComp2014.Allocators (allocator)
 import           CO4.Test.TermComp2014.Standalone 
 import           CO4.Test.TermComp2014.Config
+import           CO4.Test.TermComp2014.Proof.Dump (dumpTrs,dump)
 
 import System.IO
-import Data.Maybe (catMaybes)
 import qualified Data.Map as M
--- import           CO4.Test.TermComp2014.Proof.Dump (dumpTrs,dump)
 
 $( compileFile [Cache, ImportPrelude] "tc/CO4/Test/TermComp2014/Standalone.hs" )
 
@@ -71,7 +70,7 @@ run1' symbolMap config dp =
       parameter = (dp, sigmas)
       alloc     = allocator config dp
   in do
-    -- when (beVerbose config) $ dumpTrs config symbolMap dp 
+    when (beVerbose config) $ dumpTrs config symbolMap dp 
 
     solveAndTestP parameter alloc encConstraint constraint
       >>= \case Nothing -> return Nothing
@@ -80,11 +79,9 @@ run1' symbolMap config dp =
                       ints              = intermediates dp labeledTrs orders
                       (dp',delete)      = removeMarkedUntagged dp $ last ints
                   in do
-                    -- when (beVerbose $ config) $ dump config symbolMap dp proof
+                    when (beVerbose $ config) $ dump config symbolMap dp proof
                     return $ Just (dp', delete,  
                        vcat [ -- "input:" <+> pretty dp
                             -- , "symbolMap:" <+> pretty (M.toList $ M.mapKeys value symbolMap)
                                text $ show proof
                             ])
-
-
