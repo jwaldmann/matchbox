@@ -96,16 +96,14 @@ toCpfOrderingConstraintProof symbolMap trs [(_, FilterAndPrec filter (Precedence
 
 toCpfSymbol :: SymbolMap -> Symbol -> T.Symbol
 toCpfSymbol symbolMap symbol = case M.lookup symbol symbolMap of
-  Just (Left  i)              -> T.SymName i
-  Just (Right (T.Marked i))   -> T.SymSharp $ T.SymName i
-  Just (Right (T.Original i)) -> T.SymName i 
-  Nothing                     -> error $ "CO4.Test.TermComp2014.Proof.CPF.toCpfSymbol: missing symbol (" ++ show symbol ++ ")"
+  Just (Left  i) -> T.SymName i
+  Just (Right i) -> T.fromMarkedIdentifier i
+  Nothing        -> error $ "CO4.Test.TermComp2014.Proof.CPF.toCpfSymbol: missing symbol (" ++ show symbol ++ ")"
 
 toCpfLabeledSymbol :: SymbolMap -> (Symbol,Label) -> T.Symbol
 toCpfLabeledSymbol symbolMap (symbol,label) = case M.lookup symbol symbolMap of
-  Just (Right (T.Marked i))   -> addCpfLabel label $ T.SymSharp $ T.SymName i
-  Just (Right (T.Original i)) -> addCpfLabel label $ T.SymName i 
-  Nothing                     -> error $ "CO4.Test.TermComp2014.Proof.CPF.toLabeledCpfSymbol: missing symbol (" ++ show symbol ++ ")"
+  Just (Right i) -> addCpfLabel label $ T.fromMarkedIdentifier i
+  Nothing        -> error $ "CO4.Test.TermComp2014.Proof.CPF.toLabeledCpfSymbol: missing symbol (" ++ show symbol ++ ")"
 
 addCpfLabel :: Label -> T.Symbol -> T.Symbol
 addCpfLabel label symbol = T.SymLabel symbol $ T.LblNumber $ map value label
