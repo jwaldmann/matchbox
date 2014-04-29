@@ -2,19 +2,20 @@
 -- see https://github.com/apunktbau/co4/issues/82
 
 {-# language OverloadedStrings #-}
+{-# language LambdaCase #-}
 {-# language NoMonomorphismRestriction #-}
 
-import           CO4.Test.TermComp2014.Config
+import CO4.Test.TermComp2014.Run (run1)
+import CO4.Test.TermComp2014.Config 
 
 import MB.Arctic
-
--- import MB.Work
 import MB.Logic
-
-
 import qualified MB.Options as O
 
 import qualified Compress.Common as CC
+import qualified Compress.Simple as CS
+import qualified Compress.PaperIter as CPI
+import qualified Compress.Paper as CP
 
 import TPDB.Data ( strict, rules, TRS, RS(..), separate )
 import TPDB.Pretty 
@@ -22,22 +23,17 @@ import qualified TPDB.Input
 import TPDB.DP.Transform
 import TPDB.DP.Usable
 import TPDB.DP.Graph
+import TPDB.Xml.Pretty ( document )
+import Text.PrettyPrint.Leijen.Text (hPutDoc)
 
-import qualified Compress.Common as CC
-import qualified Compress.Simple as CS
-import qualified Compress.PaperIter as CPI
-import qualified Compress.Paper as CP
-
-import Control.Monad ( guard, when )
+import Control.Monad ( guard, when, forM )
+import Control.Applicative
 import System.IO
-import Control.Monad.Trans.Cont
-import Control.Monad.Trans.Maybe
-
-import CO4.Test.TermComp2014.Run (run1)
-import CO4.Test.TermComp2014.Config (defaultConfig)
 
 -- https://github.com/apunktbau/co4/issues/81#issuecomment-41269315
-type Proof = Doc 
+
+-- type Proof = Doc 
+import qualified MB.Proof as P
 
 main :: IO ()
 main = do
@@ -46,13 +42,23 @@ main = do
     out <- run $ handle trs 
     case out of
         Nothing    -> do putStrLn "MAYBE"
-        Just proof -> do  putStrLn "YES" ; print $ pretty proof    
+        Just proof -> do  
+            putStrLn "YES" 
+            if outputCPF config
+              then do
+                hPutDoc stderr $ pretty proof
+                displayIO stdout $ renderCompact $ document 
+                              $ P.tox $ P.rtoc proof
+              else do
+                hPutDoc stdout $ pretty proof    
 
 handle sys = do
     let dp = TPDB.DP.Transform.dp sys 
     proof <- handle_scc dp
-    return $ vcat [ "DP transformation"
-                  , "sys:" <+> pretty sys , "proof:" <+> proof ] 
+    return $ P.Proof { P.input =  sys
+                  , P.claim = P.Top_Termination
+                  , P.reason = P.DP_Transform proof 
+                  }
 
 handle_scc  = orelse nomarkedrules 
             $ usablerules
@@ -65,25 +71,37 @@ apply h =  \ (sys,f) -> do p <- h sys ; return $ f p
 
 nomarkedrules dp = do
     guard $ null $ filter strict $ rules dp 
-    return "no marked rules"
+    return $ P.Proof 
+            { P.input = dp
+            , P.claim = P.Top_Termination
+            , P.reason = P.No_Strict_Rules 
+            }
 
 usablerules succ dp = 
     ( let re = TPDB.DP.Usable.restrict dp 
           ignore = length (rules re) == length (rules dp)
       in  do p <- succ re
              return $ if ignore then p
-                      else vcat [ "restrict to usable rules"
-                                  , p ]
+                      else P.Proof { P.input = dp
+                                   , P.claim = P.Top_Termination
+                                   , P.reason = P.Usable_Rules p
+                                   }
     )
 
-decomp succ fail sys = case TPDB.DP.Graph.components sys of
-    [ sys' ] | length (rules sys') == length (rules sys) 
-        -> fail sys
-    cs -> do
-        proofs <- mapM succ cs
-        return $ "SCCs" <+> vcat [ "sys:" <+> pretty sys 
-            , "number of SCCs" <+> pretty ( length proofs )
-            , "proofs:" <+> vcat proofs ] 
+decomp succ fail sys = 
+    let cs = TPDB.DP.Graph.components sys 
+        one_large_component = case cs of
+            [ Right c ] | length (rules c) == length (rules sys) 
+                -> True
+            _   -> False
+    in if  one_large_component then fail sys else do
+        proofs <- forM cs $ \ case 
+            Left v -> return $ Left v
+            Right c -> Right <$> succ c
+        return $ P.Proof { P.input = sys
+                     , P.claim = P.Top_Termination
+                     , P.reason = P.SCCs proofs
+                     }
 
 matrices  =  capture $ foldr1 orelse
     $ map (\(d,b) -> matrix_arc d b)  [(1,8),(2,6),(3,4){-,(4,3)-} ] 
@@ -105,7 +123,14 @@ matrix_arc dim bits sys = do
 -- | this is the connection to tc/CO4/Test/TermComp2014/Main
 
 semanticlabs = capture $ foldr1 orelse
-    $ map (\b -> semanticlab $ defaultConfig { modelBitWidth = b, beVerbose = True }) [0..3] 
+    $ map (\(b,n) -> semanticlab $ defaultConfig { modelBitWidth = b, numPrecedences = n, beVerbose = True }) [ (0,1), (1,2), (2,2) ] 
 
-semanticlab config = mkWork $ \ sys -> run1 config sys
-    -- return $ Just ( sys' , \ p -> vcat [ "Semantic labelling", p] )
+semanticlab config = mkWork $ \ sys -> do
+    out <- run1 config sys
+    return $ case out of
+        Nothing -> Nothing
+        Just (sys', sl) -> Just (sys', \ p -> P.Proof
+            { P.input = sys
+            , P.claim = P.Top_Termination
+            , P.reason = P.Extra ( "semanticlab" <+> sl ) p
+            } )

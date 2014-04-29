@@ -4,6 +4,7 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE LambdaCase #-}
+{-# language OverloadedStrings #-}
 {-# OPTIONS_GHC -fno-warn-unused-binds #-}
 
 module CO4.Test.TermComp2014.Run where
@@ -20,7 +21,11 @@ import           CO4.Test.TermComp2014.Util
 import           CO4.Test.TermComp2014.Allocators (allocator)
 import           CO4.Test.TermComp2014.Standalone 
 import           CO4.Test.TermComp2014.Config
-import           CO4.Test.TermComp2014.Proof.Dump (dumpTrs,dump)
+
+import System.IO
+import Data.Maybe (catMaybes)
+import qualified Data.Map as M
+-- import           CO4.Test.TermComp2014.Proof.Dump (dumpTrs,dump)
 
 $( compileFile [Cache, ImportPrelude] "tc/CO4/Test/TermComp2014/Standalone.hs" )
 
@@ -36,14 +41,15 @@ runN config trs =
       False -> return $ Just $ text "empty"
       True  -> run1' symbolMap config dp >>= \case
         Nothing              -> return Nothing
-        Just (dp', _, proof) -> goDP dp' >>= return . fmap proof
+        Just (dp', _, proof) -> goDP dp' >>= 
+            return . fmap ( \ p -> vcat [proof, p] )
 
 {-
 run1 :: 
      => Config -> TPDB.TRS v (Marked c) -> IO (Maybe (TPDB.TRS v (Marked c), Doc -> Doc))
      -}
 run1 :: Config -> TPDB.TRS TPDB.Identifier (TPDB.Marked TPDB.Identifier) 
-     -> IO (Maybe (TPDB.TRS TPDB.Identifier (TPDB.Marked TPDB.Identifier), Doc -> Doc))
+     -> IO (Maybe (TPDB.TRS TPDB.Identifier (TPDB.Marked TPDB.Identifier), Doc ))
 run1 config trs = do
   let (dp@(Trs rules), symbolMap) = fromTPDBTrs trs
 
@@ -59,13 +65,13 @@ run1 config trs = do
       in
         return $ Just (trs', proof)
 
-run1' :: SymbolMap -> Config -> DPTrs () -> IO (Maybe (DPTrs (), [DPRule ()], Doc -> Doc))
+run1' :: SymbolMap -> Config -> DPTrs () -> IO (Maybe (DPTrs (), [DPRule ()], Doc ))
 run1' symbolMap config dp = 
   let sigmas    = assignments (modelBitWidth config) dp
       parameter = (dp, sigmas)
       alloc     = allocator config dp
   in do
-    when (beVerbose config) $ dumpTrs config symbolMap dp 
+    -- when (beVerbose config) $ dumpTrs config symbolMap dp 
 
     solveAndTestP parameter alloc encConstraint constraint
       >>= \case Nothing -> return Nothing
@@ -74,5 +80,11 @@ run1' symbolMap config dp =
                       ints              = intermediates dp labeledTrs orders
                       (dp',delete)      = removeMarkedUntagged dp $ last ints
                   in do
-                    when (beVerbose $ config) $ dump config symbolMap dp proof
-                    return $ Just (dp', delete, \p -> vcat [text (show proof), p])
+                    -- when (beVerbose $ config) $ dump config symbolMap dp proof
+                    return $ Just (dp', delete,  
+                       vcat [ -- "input:" <+> pretty dp
+                            -- , "symbolMap:" <+> pretty (M.toList $ M.mapKeys value symbolMap)
+                               text $ show proof
+                            ])
+
+
