@@ -10,8 +10,6 @@ import CO4.Test.TermComp2014.Util
 import CO4.Test.TermComp2014.Config
 import TPDB.DP (Marked (..))
 
-deriving instance Show a => Show (Marked a)
-
 dumpTrs :: Config -> SymbolMap -> DPTrs () -> IO ()
 dumpTrs config symbolMap dp = do
   print $ "Configuration:" 
