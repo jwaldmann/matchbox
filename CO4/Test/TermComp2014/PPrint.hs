@@ -46,7 +46,7 @@ pprintTaggedRule goV goN goL symbolMap (tag, Rule isMarked l r) =
 pprintRule :: (SymbolMap -> v -> String) -> (SymbolMap -> n -> String) -> (l -> String) 
            -> SymbolMap -> Rule v n l -> String 
 pprintRule goV goN goL symbolMap (Rule isMarked l r) = 
-  concat [ goTerm True l, " -> ", goTerm False r ]
+  concat [ goTerm True l, " -> ", goTerm True r ]
   where
     goTerm _ (Var v) = goV symbolMap v
     goTerm topLeft (Node s l args) = 

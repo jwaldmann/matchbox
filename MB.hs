@@ -30,6 +30,9 @@ import Control.Monad ( guard, when, forM )
 import Control.Applicative
 import System.IO
 
+import TPDB.CPF.Proof.Util (sortVariables)
+import Data.List (nub)
+
 -- https://github.com/apunktbau/co4/issues/81#issuecomment-41269315
 
 -- type Proof = Doc 
@@ -39,7 +42,7 @@ main :: IO ()
 main = do
     (config,filePath) <- parseConfig
     trs <- TPDB.Input.get_trs filePath
-    out <- run $ handle trs 
+    out <- run $ handle $ trs { rules = nub $ map sortVariables $ rules trs }
     case out of
         Nothing    -> do putStrLn "MAYBE"
         Just proof -> do  
@@ -89,7 +92,8 @@ usablerules succ dp =
     )
 
 decomp succ fail sys = 
-    let cs = TPDB.DP.Graph.components sys 
+    let 
+        cs = TPDB.DP.Graph.components sys 
         one_large_component = case cs of
             [ Right c ] | length (rules c) == length (rules sys) 
                 -> True
@@ -104,7 +108,8 @@ decomp succ fail sys =
                      }
 
 matrices  =  capture $ foldr1 orelse
-    $ map (\(d,b) -> matrix_arc d b)  [(1,8),(2,6),(3,4){-,(4,3)-} ] 
+    $ map (\(d,b) -> matrix_arc d b)  -- [(1,8),(2,6),(3,4){-,(4,3)-} ] 
+                                      [(1,8),(2,4)]
 
 matrix_arc dim bits sys = do
     let c = O.Paper
@@ -123,14 +128,16 @@ matrix_arc dim bits sys = do
 -- | this is the connection to tc/CO4/Test/TermComp2014/Main
 
 semanticlabs = capture $ foldr1 orelse
-    $ map (\(b,n) -> semanticlab $ defaultConfig { modelBitWidth = b, numPrecedences = n, beVerbose = True }) [ (0,1), (1,2), (2,2) ] 
+    $ map (\(b,n) -> semanticlab $ defaultConfig 
+        { modelBitWidth = b, numPrecedences = n, beVerbose = True }) 
+        [  (0,1), (1,1) {-, (2,2)-} ] 
 
 semanticlab config = mkWork $ \ sys -> do
     out <- run1 config sys
     return $ case out of
         Nothing -> Nothing
-        Just (sys', sl) -> Just (sys', \ p -> P.Proof
+        Just (sys', f) -> Just (sys', \ p -> P.Proof
             { P.input = sys
             , P.claim = P.Top_Termination
-            , P.reason = P.Extra ( "semanticlab" <+> sl ) p
+            , P.reason = P.Cpf2Cpf ( {-"semanticlab" <+> sl-} f ) p
             } )

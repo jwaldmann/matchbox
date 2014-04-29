@@ -67,8 +67,12 @@ instance (Pretty v, Pretty s) => Pretty (Reason v s) where
                   (k,p) <- zip [1 :: Int .. ] ps
                   return $ "SCC" <+> pretty k <+> pretty p
             ]
+
+        Cpf2Cpf f p -> vcat [ "semanticLabeling", pretty p ]
+
         Extra doc p -> vcat
             [ "extra proof method"
             , nest 4 doc
             , pretty p
             ]
+

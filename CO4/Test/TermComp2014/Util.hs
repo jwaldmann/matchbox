@@ -55,9 +55,10 @@ toTPDBRules :: SymbolMap -> (TPDB.Marked TPDB.Identifier -> label -> a) -> DPTrs
             -> [TPDB.Rule (TPDB.Term TPDB.Identifier a)]
 toTPDBRules symbolMap f (Trs rules) = map goRule rules
   where
-    goRule (Rule isMarked lhs rhs) = TPDB.Rule (goTerm lhs) (goTerm rhs)
-                                               (if isMarked then TPDB.Strict else TPDB.Weak)
-                                               True -- top ???
+    goRule (Rule isMarked lhs rhs) = TPDB.Rule 
+      (goTerm lhs) (goTerm rhs)
+      (if isMarked then TPDB.Strict else TPDB.Weak)
+      True -- top ???
     goTerm (Var s) = case M.lookup s symbolMap of
       (Just (Left i)) -> TPDB.Var i
     
@@ -122,6 +123,15 @@ removeMarkedUntagged (Trs rules) (TaggedGroupedTrs labeledRules) =  (Trs keep, d
       if all (\ (tag,rule) -> isMarkedRule rule && not tag ) labeledRules
       then Left rule -- delete
       else Right  rule -- keep
+
+removeMarkedUntagged_HACK (Trs rules) (TaggedGroupedTrs labeledRules) = 
+                                       GroupedTrs labeledRules'
+  where
+    (delete, labeledRules') = partitionEithers $ zipWith check rules labeledRules
+    check rule labeledRules = 
+      if all (\ (tag,rule) -> isMarkedRule rule && not tag ) labeledRules
+      then Left labeledRules -- delete
+      else Right  $ map snd labeledRules -- keep
 
 hasMarkedRule :: DPTrs label -> Bool
 hasMarkedRule (Trs rules) = any goRule rules
