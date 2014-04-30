@@ -58,7 +58,7 @@ toTPDBRules symbolMap f (Trs rules) = map goRule rules
     goRule (Rule isMarked lhs rhs) = TPDB.Rule 
       (goTerm lhs) (goTerm rhs)
       (if isMarked then TPDB.Strict else TPDB.Weak)
-      True -- top ???
+      False -- top ???
     goTerm (Var s) = case M.lookup s symbolMap of
       (Just (Left i)) -> TPDB.Var i
     
