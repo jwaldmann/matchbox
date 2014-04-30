@@ -139,7 +139,10 @@ step
   :: TaggedGroupedTrs Symbol Symbol Label
      -> (Map MSL Bool, TerminationOrder MSL)
      -> TaggedGroupedTrs Symbol Symbol Label
-step trs (usable,order) = case usableOK trs usable of
+step trs (usable,order) = case 
+         -- usableOK trs usable 
+         require_all_usable trs usable -- FIXME
+  of
     False -> undefined
     True -> 
         let utrs = tagUsable trs usable 
@@ -176,6 +179,9 @@ tagUsable (TaggedGroupedTrs rss) usable = TaggedGroupedTrs (
                 Var v -> undefined -- cannot happen (at top of lhs)
                 Node sym lab ts -> ( lookup eqMSL (sym,lab) usable, rule ) ) ) )
 
+
+require_all_usable (TaggedGroupedTrs rss) usable = 
+    forall usable ( \ (k,v) -> v ) 
 
 -- | check that the usable (unmarked) rules are tagged in the table
 usableOK
