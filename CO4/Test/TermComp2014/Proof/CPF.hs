@@ -31,10 +31,25 @@ toCpfSemLabProof symbolMap trs model =
     dps    = T.DPS $ filter T.strict all
     all    = toTPDBRules symbolMap (flip addCpfLabel') $ ungroupTrs trs
 
-toCpfRedPairProof :: SymbolMap -> DPTrs () -> GroupedDPTrs Label -> [UsableOrder MSL] -> T.DpProof -> T.DpProof
 toCpfRedPairProof symbolMap trs labeledTrs usableOrder innerProof = 
-  T.RedPairProc ocp dps innerProof (Just usableRules)
+  T.RedPairProc { T.rppOrderingConstraintProof = ocp 
+                , T.rppDps = dps 
+                , T.rppUsableRules = (Just usableRules)
+                , T.rppDpProof = inner'
+                }
   where
+    inner' = T.UnlabProc 
+                { T.ulpDps = T.DPS 
+                        $ filter T.strict
+                        $ toTPDBRules symbolMap (flip addCpfLabel')
+                        $ ungroupTrs trs'
+                , T.ulpTrs = T.DPS
+                        $ toTPDBRules symbolMap (flip addCpfLabel')
+                        $ filterUsable
+                        $ steps (tagAll labeledTrs) usableOrder
+                , T.ulpDpProof = innerProof
+                }
+
     ocp         = toCpfOrderingConstraintProof symbolMap labeledTrs usableOrder
     usableRules = T.DPS $ toTPDBRules symbolMap (flip addCpfLabel')
                         $ filterUsable
