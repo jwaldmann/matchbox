@@ -15,12 +15,42 @@ import           CO4.PreludeNat (width,value)
 import           CO4.Test.TermComp2014.Util
 import           CO4.Test.TermComp2014.Standalone
 
+type Arities = M.Map Symbol Int
+
 toCpfProof :: SymbolMap -> (DPTrs (), Assignments Symbol) -> Proof -> T.DpProof -> T.DpProof
-toCpfProof symbolMap (trs, assignments) (Proof model order) = 
-    toCpfSemLabProof  symbolMap labeledTrs model
-  . toCpfRedPairProof symbolMap trs labeledTrs order
+toCpfProof symbolMap (trs, assignments) (Proof model orders) innerProof = 
+  semLabProof
   where
+    arities           = nodeArities trs
     (labeledTrs,True) = makeLabeledTrs model trs assignments
+    labeledUR         = T.DPS $ toTPDBRules symbolMap (flip addCpfLabel') nativeUsableRules
+    unlabeledUR       = T.DPS $ toTPDBRules symbolMap (const . T.fromMarkedIdentifier) 
+                                                      nativeUsableRules
+
+    nativeUsableRules = filterUsable $ steps (tagAll labeledTrs) orders
+    
+    ints              = intermediates trs labeledTrs orders
+
+    semLabProof       = toCpfSemLabProof symbolMap labeledTrs model redPairProofs
+
+    redPairProofs     = 
+      {- -- eigentlich so:
+    
+      foldr (\(i,o) -> toCpfRedPairProof symbolMap arities i o labeledUR) 
+                        unlabProof
+                      $ zip ints orders 
+      -}
+
+        case (ints,orders) of
+          ([i1,i2],[o]) -> toCpfRedPairProof symbolMap arities i2 o labeledUR unlabProof
+          _             -> error "NARF"
+
+    unlabProof        = toCpfUnlabProof symbolMap trs (last ints) unlabeledUR innerProof
+
+    filterUsable (TaggedGroupedTrs rs) = Trs 
+      $ map snd 
+      $ filter (\(isTagged, Rule isMarked _ _ ) -> not isMarked && isTagged) 
+      $ concat rs
 
 toCpfSemLabProof :: SymbolMap -> GroupedDPTrs Label -> Model Symbol -> T.DpProof -> T.DpProof
 toCpfSemLabProof symbolMap trs model = 
@@ -31,41 +61,33 @@ toCpfSemLabProof symbolMap trs model =
     dps    = T.DPS $ filter T.strict all
     all    = toTPDBRules symbolMap (flip addCpfLabel') $ ungroupTrs trs
 
-toCpfRedPairProof symbolMap trs labeledTrs usableOrder innerProof = 
+toCpfRedPairProof :: SymbolMap -> Arities -> TaggedGroupedDPTrs Label
+                  -> UsableOrder MSL -> T.DPS -> T.DpProof -> T.DpProof
+toCpfRedPairProof symbolMap arities labeledTrs order usableRules innerProof = 
   T.RedPairProc { T.rppOrderingConstraintProof = ocp 
-                , T.rppDps = dps 
-                , T.rppUsableRules = (Just usableRules)
-                , T.rppDpProof = inner'
+                , T.rppDps                     = dps 
+                , T.rppUsableRules             = (Just usableRules)
+                , T.rppDpProof                 = innerProof
                 }
   where
-    inner' = T.UnlabProc 
-                { T.ulpDps = T.DPS 
-                        $ filter T.strict
-                        $ toTPDBRules symbolMap (flip addCpfLabel')
-                        $ ungroupTrs trs'
-                , T.ulpTrs = T.DPS
-                        $ toTPDBRules symbolMap (flip addCpfLabel')
-                        $ filterUsable
-                        $ steps (tagAll labeledTrs) usableOrder
-                , T.ulpDpProof = innerProof
-                }
+    ocp = toCpfOrderingConstraintProof symbolMap arities order
+    dps = T.DPS
+        $ filter T.strict
+        $ toTPDBRules symbolMap (flip addCpfLabel')
+        $ ungroupTrs 
+        $ removeMarkedUntagged' labeledTrs
 
-    ocp         = toCpfOrderingConstraintProof symbolMap labeledTrs usableOrder
-    usableRules = T.DPS $ toTPDBRules symbolMap (flip addCpfLabel')
-                        $ filterUsable
-                        $ steps (tagAll labeledTrs) usableOrder
-
-    dps         = T.DPS $ filter T.strict
-                        $ toTPDBRules symbolMap (flip addCpfLabel')
-                        $ ungroupTrs trs'
-
-    filterUsable (TaggedGroupedTrs rs) = Trs 
-      $ map snd 
-      $ filter (\(isTagged, Rule isMarked _ _ ) -> not isMarked && isTagged) 
-      $ concat rs
-  
-    ints = intermediates trs labeledTrs usableOrder
-    trs' = removeMarkedUntagged_HACK (ungroupTrs labeledTrs) $ last ints
+toCpfUnlabProof :: SymbolMap -> DPTrs () -> TaggedGroupedDPTrs Label -> T.DPS -> T.DpProof 
+                -> T.DpProof
+toCpfUnlabProof symbolMap trs labeledTrs usableRules innerProof =
+  T.UnlabProc { T.ulpDps = T.DPS 
+                         $ filter T.strict
+                         $ toTPDBRules symbolMap (const . T.fromMarkedIdentifier)
+                         $ fst
+                         $ removeMarkedUntagged trs labeledTrs
+              , T.ulpTrs     = usableRules
+              , T.ulpDpProof = innerProof
+              }
 
 toCpfModel :: SymbolMap -> Model Symbol -> T.Model
 toCpfModel symbolMap model = T.FiniteModel (2^bitWidth) $ map toInterpret model
@@ -91,13 +113,12 @@ toCpfModel symbolMap model = T.FiniteModel (2^bitWidth) $ map toInterpret model
 
             toNatural n = assert (width n <= bitWidth) $ T.AFNatural $ value n
 
-toCpfOrderingConstraintProof :: SymbolMap -> GroupedDPTrs Label -> [UsableOrder MSL]
+toCpfOrderingConstraintProof :: SymbolMap -> Arities -> UsableOrder MSL
                              -> T.OrderingConstraintProof
-toCpfOrderingConstraintProof symbolMap trs [(_, FilterAndPrec filter (Precedence prec))] = 
+toCpfOrderingConstraintProof symbolMap arities (_, FilterAndPrec filter (Precedence prec)) = 
   T.OCPRedPair $ T.RPPathOrder $ T.PathOrder 
     (map toPrecedenceEntry prec) (map toFilterEntry filter)
   where
-    arities = nodeArities $ ungroupTrs trs
     toPrecedenceEntry ((sym,label), prec) = 
       T.PrecedenceEntry (toCpfLabeledSymbol symbolMap (sym,label))
                         (arity sym)

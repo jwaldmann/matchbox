@@ -7,6 +7,7 @@ import           Control.Monad.State
 import           Data.List (nub)
 import           Data.Either (partitionEithers)
 import           Data.Tuple (swap)
+import           Data.Maybe (mapMaybe)
 import qualified Data.Map as M
 import qualified Data.Set as S
 import qualified TPDB.Data as TPDB
@@ -112,26 +113,32 @@ subterms = go
 ungroupTrs :: GroupedTrs v n l -> Trs v n l
 ungroupTrs (GroupedTrs rules) = Trs $ concat rules
 
+intermediates :: Trs v n l -> GroupedTrs Symbol Symbol Label -> [UsableOrder MSL]
+              -> [TaggedGroupedDPTrs Label]
 intermediates (Trs rules) g @ (GroupedTrs labeledRules) orders =
     assert (length rules == length labeledRules)
     $ scanl step (tagAll g) orders
 
+removeMarkedUntagged :: Trs v n l -> TaggedGroupedTrs v' n' l' -> (Trs v n l, [Rule v n l])
 removeMarkedUntagged (Trs rules) (TaggedGroupedTrs labeledRules) =  (Trs keep, delete)
   where
     (delete, keep) = partitionEithers $ zipWith check rules labeledRules
     check rule labeledRules = 
-      if all (\ (tag,rule) -> isMarkedRule rule && not tag ) labeledRules
-      then Left rule -- delete
-      else Right  rule -- keep
+      if all isMarkedUntagged labeledRules
+      then Left  rule -- delete
+      else Right rule -- keep
 
-removeMarkedUntagged_HACK (Trs rules) (TaggedGroupedTrs labeledRules) = 
-                                       GroupedTrs labeledRules'
+removeMarkedUntagged' :: TaggedGroupedTrs v n l -> GroupedTrs v n l
+removeMarkedUntagged' (TaggedGroupedTrs rules) = GroupedTrs
+                                               $ mapMaybe check rules
   where
-    (delete, labeledRules') = partitionEithers $ zipWith check rules labeledRules
-    check rule labeledRules = 
-      if all (\ (tag,rule) -> isMarkedRule rule && not tag ) labeledRules
-      then Left labeledRules -- delete
-      else Right  $ map snd labeledRules -- keep
+    check labeledRules = 
+      if all isMarkedUntagged labeledRules
+      then Nothing
+      else Just $ map snd labeledRules -- keep
+
+isMarkedUntagged :: (Bool, Rule v n l) -> Bool
+isMarkedUntagged (isTagged, Rule isMarked _ _) = isMarked && not isTagged
 
 hasMarkedRule :: DPTrs label -> Bool
 hasMarkedRule (Trs rules) = any goRule rules
