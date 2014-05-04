@@ -1,7 +1,6 @@
 module CO4.Test.TermComp2014.Allocators
 where
 
-import           Control.Exception (assert)
 import qualified Data.Map as M
 import           CO4.AllocatorData (Allocator,constructors,known)
 import           CO4.Prelude (kList,uList,kList',kBool,uBool,kTuple2)
