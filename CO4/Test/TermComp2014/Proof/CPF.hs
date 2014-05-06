@@ -4,7 +4,6 @@ module CO4.Test.TermComp2014.Proof.CPF
 where
 
 import           Control.Exception (assert)
-import           Data.List (nub)
 import qualified Data.Map as M
 import qualified TPDB.CPF.Proof.Type as T
 import qualified TPDB.CPF.Proof.Util as T

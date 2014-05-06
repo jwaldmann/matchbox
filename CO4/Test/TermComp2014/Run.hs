@@ -11,10 +11,10 @@ module CO4.Test.TermComp2014.Run where
 
 import           Control.Monad (when)
 import           System.IO (hPutStrLn,stderr)
-import qualified TPDB.Data as TPDB
-import qualified TPDB.DP   as TPDB
-import qualified TPDB.CPF.Proof.Type as TPDB
-import           TPDB.Pretty 
+import qualified TPDB.Data as T
+import qualified TPDB.DP   as T
+import qualified TPDB.CPF.Proof.Type as T
+import qualified TPDB.CPF.Proof.Util as T
 import qualified Satchmo.Core.Decode 
 import           CO4 hiding (Config)
 import           CO4.Prelude
@@ -27,36 +27,33 @@ import           CO4.Test.TermComp2014.Proof.CPF (toCpfProof)
 
 $( compileFile [Cache, ImportPrelude] "tc/CO4/Test/TermComp2014/Standalone.hs" )
 
-runN :: Config -> TPDB.TRS TPDB.Identifier (TPDB.Marked TPDB.Identifier) -> IO (Maybe Doc)
+runN :: Config -> T.TRS T.Identifier T.Identifier -> IO (Maybe T.Proof)
 runN config trs =
   if not (isValidTrs dp)
   then hPutStrLn stderr "invalid trs" >> return Nothing
-  else goDP dp
+  else goDP dp >>= return . fmap ( T.TrsTerminationProof 
+                                 . T.DpTrans (T.DPS tpdbStrictRules) True )
   where
-    (dp, symbolMap) = fromTPDBTrs trs
+    tpdbDp          = T.dp trs
+    tpdbStrictRules = filter T.strict $ toTPDBRules symbolMap (const . T.fromMarkedIdentifier) dp
+    (dp, symbolMap) = fromTPDBTrs tpdbDp
 
     goDP dp = case hasMarkedRule dp of
-      False -> return $ Nothing --Just $ text "empty"
+      False -> return $ Just T.PIsEmpty
       True  -> run1' symbolMap config dp >>= \case
         Nothing              -> return Nothing
-        Just (dp', _, proof) -> -- goDP dp' >>= 
-            --return . fmap ( \ p -> vcat [proof, p] )
-            return Nothing
+        Just (dp', _, proof) -> goDP dp' >>= return . fmap proof
 
-{-
-run1 :: 
-     => Config -> TPDB.TRS v (Marked c) -> IO (Maybe (TPDB.TRS v (Marked c), Doc -> Doc))
-     -}
-run1 :: Config -> TPDB.TRS TPDB.Identifier (TPDB.Marked TPDB.Identifier) 
-     -> IO (Maybe (TPDB.TRS TPDB.Identifier (TPDB.Marked TPDB.Identifier), TPDB.DpProof -> TPDB.DpProof ))
+run1 :: Config -> T.TRS T.Identifier (T.Marked T.Identifier) 
+     -> IO (Maybe (T.TRS T.Identifier (T.Marked T.Identifier), T.DpProof -> T.DpProof ))
 run1 config trs = do
   let (dp@(Trs rules), symbolMap) = fromTPDBTrs trs
 
   run1' symbolMap config dp >>= \case
     Nothing -> return Nothing
     Just (_, delete, proof) ->
-      let trs' = trs { TPDB.rules = do
-                         (original, transformed) <- zip (TPDB.rules trs) rules
+      let trs' = trs { T.rules = do
+                         (original, transformed) <- zip (T.rules trs) rules
                          if transformed `elem` delete
                            then []
                            else return original
@@ -65,7 +62,7 @@ run1 config trs = do
         return $ Just (trs', proof)
 
 run1' :: SymbolMap -> Config -> DPTrs () 
-      -> IO (Maybe (DPTrs (), [DPRule ()], TPDB.DpProof -> TPDB.DpProof ))
+      -> IO (Maybe (DPTrs (), [DPRule ()], T.DpProof -> T.DpProof ))
 run1' symbolMap config dp = 
   let sigmas    = assignments (modelBitWidth config) dp
       parameter = (dp, sigmas)
