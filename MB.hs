@@ -34,7 +34,7 @@ import TPDB.CPF.Proof.Util (sortVariables)
 
 -- https://github.com/apunktbau/co4/issues/81#issuecomment-41269315
 
--- type Proof = Doc 
+
 import qualified MB.Proof as P
 
 main :: IO ()
@@ -48,11 +48,11 @@ main = do
             putStrLn "YES" 
             if outputCPF config
               then do
-                hPutDoc stderr $ pretty proof
+                hPutDoc stderr $ pretty proof ; hPutStrLn stderr ""
                 displayIO stdout $ renderCompact $ document 
                               $ P.tox $ P.rtoc proof
               else do
-                hPutDoc stdout $ pretty proof    
+                hPutDoc stdout $ pretty proof    ; hPutStrLn stdout ""
 
 handle sys = do
     let dp = TPDB.DP.Transform.dp sys 
@@ -63,10 +63,9 @@ handle sys = do
                   }
 
 handle_scc  = orelse nomarkedrules 
-            $ usablerules
             $ decomp handle_scc 
-            $ orelse_andthen matrices (apply handle_scc) 
-            $ orelse_andthen semanticlabs (apply handle_scc)
+            $ orelse_andthen (for_usable_rules matrices) (apply handle_scc) 
+            -- $ orelse_andthen semanticlabs (apply handle_scc)
             $ const reject
 
 apply h =  \ (sys,f) -> do p <- h sys ; return $ f p 
@@ -78,17 +77,6 @@ nomarkedrules dp = do
             , P.claim = P.Top_Termination
             , P.reason = P.No_Strict_Rules 
             }
-
-usablerules succ dp = 
-    ( let re = TPDB.DP.Usable.restrict dp 
-          ignore = length (rules re) == length (rules dp)
-      in  do p <- succ re
-             return $ if ignore then p
-                      else P.Proof { P.input = dp
-                                   , P.claim = P.Top_Termination
-                                   , P.reason = P.Usable_Rules p
-                                   }
-    )
 
 decomp succ fail sys = 
     let 
@@ -108,7 +96,16 @@ decomp succ fail sys =
 
 matrices  =  capture $ foldr1 orelse
     $ map (\(d,b) -> matrix_arc d b)  -- [(1,8),(2,6),(3,4){-,(4,3)-} ] 
-                                      [(1,8),(2,4)]
+         [(1,8),(2,7),(3,6),(4,5)]
+
+for_usable_rules method = \ sys -> do
+    let restricted = TPDB.DP.Usable.restrict sys
+    -- reduction pair is compatible with usables rules only
+    (sys', f) <- method restricted
+    -- but reconstruct all rules for returning the result
+    let result = sys { rules = filter strict ( rules sys' )
+               ++ filter (not . strict) ( rules sys ) }
+    return ( result, f )
 
 matrix_arc dim bits sys = do
     let c = O.Paper

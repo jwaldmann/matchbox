@@ -38,6 +38,7 @@ data Reason v s = No_Strict_Rules
          (Interpretation s Integer) (Proof v s)
      | Matrix_Interpretation_Arctic  
          (Interpretation s (A.Arctic Integer))
+        (Maybe [ Rule (Term v s) ]) -- maybe mention usable rules
            (Proof v s)
      | Usable_Rules (Proof v s)
      | SCCs [ Either (Rule (Term v s)) (Proof v s) ]

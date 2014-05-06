@@ -44,6 +44,7 @@ remover_arctic :: ( )
 -}
 
 remover_arctic msg unpack h  sys = do
+    let usable = filter ( not . strict ) $ rules $ unpack sys
     out <- h sys
     return $ case out of 
         Nothing -> Nothing
@@ -56,7 +57,7 @@ remover_arctic msg unpack h  sys = do
                Proof 
                { input = unpack sys
                , claim = Top_Termination
-               , reason = Matrix_Interpretation_Arctic m out
+               , reason = Matrix_Interpretation_Arctic m (Just usable) out
                }
                    )
 

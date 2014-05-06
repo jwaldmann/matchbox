@@ -68,12 +68,12 @@ dpproof p = case reason p of
                       , C.rppDps = C.DPS $ map rsharp $ filter strict $ rules $ input q
                       , C.rppDpProof = dpproof q
                       }
-    Matrix_Interpretation_Arctic mia q -> 
+    Matrix_Interpretation_Arctic mia usable q -> 
         C.RedPairProc { C.rppOrderingConstraintProof 
                       = ocp sharp (C.Arctic C.Naturals) mia
                       , C.rppDps = C.DPS $ map rsharp $ filter strict $ rules $ input q
                       , C.rppUsableRules = 
-                           Just $ C.DPS $ map rsharp $ filter (not . strict) $ rules $ input q
+                           fmap (C.DPS . map rsharp ) usable
                       , C.rppDpProof = dpproof q
                       }
     SCCs ps -> C.DepGraphProc $ do

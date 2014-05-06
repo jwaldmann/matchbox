@@ -52,9 +52,12 @@ instance (Pretty v, Pretty s) => Pretty (Reason v s) where
             , nest 4 $ pretty i
             , pretty p
             ]
-        Matrix_Interpretation_Arctic i p -> vcat
+        Matrix_Interpretation_Arctic i u p -> vcat
             [ "rule removal by matrix interpretation into arctic numbers"
             , nest 4 $ pretty i
+            , nest 4 $ case u of
+                   Nothing -> empty
+                   Just rs -> "usable rules" <+> vcat (map pretty rs)
             , pretty p
             ]
         Usable_Rules p -> vcat
