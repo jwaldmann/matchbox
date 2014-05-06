@@ -71,7 +71,7 @@ handle sys = do
 handle_scc  = orelse nomarkedrules 
             $ decomp handle_scc 
             $ orelse_andthen (for_usable_rules matrices) (apply handle_scc) 
-            -- $ orelse_andthen semanticlabs (apply handle_scc)
+            $ orelse_andthen semanticlabs (apply handle_scc)
             $ const reject
 
 apply h =  \ (sys,f) -> do p <- h sys ; return $ f p 
@@ -102,8 +102,8 @@ decomp succ fail sys =
 
 matrices  =  capture $ foldr1 orelse
     $ map (\(d,b) -> matrix_arc d b) 
-         -- [(1,8),(2,7),(3,6),(4,5)]
-         [(1,8),(2,6),(3,4),(4,2)]
+         -- [(1,8),(2,6),(3,4),(4,2)]
+         [(1,8),(2,4),(3,2)]
 
 for_usable_rules method = \ sys -> do
     let restricted = TPDB.DP.Usable.restrict sys
@@ -133,7 +133,7 @@ matrix_arc dim bits sys = do
 semanticlabs = capture $ foldr1 orelse
     $ map (\(b,n) -> semanticlab $ defaultConfig 
         { modelBitWidth = b, numPrecedences = n, beVerbose = True }) 
-        [  (0,1), (1,1) {-, (2,2)-} ] 
+        [  (0,1), (1,1) , (1,2), (2,1), (2,2)  ]
 
 semanticlab config = mkWork $ \ sys -> do
     out <- run1 config sys

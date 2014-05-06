@@ -140,8 +140,8 @@ step
      -> (Map MSL Bool, TerminationOrder MSL)
      -> TaggedGroupedTrs Symbol Symbol Label
 step trs (usable,order) = case 
-         -- usableOK trs usable 
-         require_all_usable trs usable -- FIXME
+         usableOK trs usable 
+         -- require_all_usable trs usable -- FIXME
   of
     False -> undefined
     True -> 
