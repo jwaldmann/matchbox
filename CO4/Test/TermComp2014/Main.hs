@@ -1,6 +1,7 @@
 {-# LANGUAGE LambdaCase #-}
 import           System.Exit (exitSuccess, exitFailure)
-import           CO4.Test.TermComp2014.Config (parseConfig)
+import           Control.Monad (when)
+import           CO4.Test.TermComp2014.Config (parseConfig,outputCPF)
 import           CO4.Test.TermComp2014.Run (runN)
 import           TPDB.Input (get_trs)
 import qualified TPDB.CPF.Proof.Type as T
@@ -16,8 +17,10 @@ main = do
                   exitFailure
 
     Just p  -> do putStrLn "YES"
-                  putStrLn $ show $ document $ T.tox 
-                           $ T.CertificationProblem (T.TrsInput trs)
-                                                    "2.1" p 
-                                                    (T.ProofOrigin $ T.Tool "termcomp2014" "0")
+                  when (outputCPF config) $
+                    putStrLn $ show $ document $ T.tox 
+                             $ T.CertificationProblem 
+                                (T.TrsInput trs)
+                                "2.1" p 
+                                (T.ProofOrigin $ T.Tool "termcomp2014" "0")
                   exitSuccess

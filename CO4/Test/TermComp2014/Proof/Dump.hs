@@ -8,7 +8,6 @@ import CO4.Test.TermComp2014.PPrint
 import CO4.Test.TermComp2014.Standalone
 import CO4.Test.TermComp2014.Util
 import CO4.Test.TermComp2014.Config
-import TPDB.DP (Marked (..))
 
 dumpTrs :: Config -> SymbolMap -> DPTrs () -> IO ()
 dumpTrs config symbolMap dp = do
