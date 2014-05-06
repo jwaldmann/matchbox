@@ -34,16 +34,9 @@ toCpfProof symbolMap (trs, assignments) (Proof model orders) innerProof =
     semLabProof       = toCpfSemLabProof symbolMap labeledTrs model redPairProofs
 
     redPairProofs     = 
-      {- -- eigentlich so:
-    
       foldr (\(i,o) -> toCpfRedPairProof symbolMap arities i o labeledUR) 
                         unlabProof
-                      $ zip ints orders 
-      -}
-
-        case (ints,orders) of
-          ([i1,i2],[o]) -> toCpfRedPairProof symbolMap arities i2 o labeledUR unlabProof
-          _             -> error "NARF"
+                      $ zip (tail ints) orders
 
     unlabProof        = toCpfUnlabProof symbolMap trs (last ints) unlabeledUR innerProof
 
