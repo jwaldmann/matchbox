@@ -74,20 +74,25 @@ filterAllocator config = kList' . concatMap goArity . M.toList . nodeArities
     goArity (s,arity) = do
       args <- sequence $ replicate arity labels
       let selection = 
-               if bruteFilter config
-               then kList' []
-               else uList arity $ goIndex $ arity - 1
-          projection = goIndex $ arity - 1
+            case argumentFilter config of
+              AFBrute  -> kList' []
+              AFNormal -> uList arity $ uIndex $ arity - 1
+
+          projection = uIndex $ arity - 1
 
       return $ kTuple2 (kTuple2 (kSymbolAllocator s) (kLabelAllocator args))
-             $ case args of
-                [] -> known 0 2 [ kList' [] ]
-                _  -> (constructors [ Just [selection] , Just [projection] ])
-                       -- known 0 2 [ selection ]
+             $ case (arity, argumentFilter config) of
+                (0, _)      -> known 0 2 [ kList' [] ]
+                (a, AFNone) -> known 0 2 [ kList' $ map kIndex [0 .. a-1] ]
+                (_, _)      -> constructors [ Just [selection] , Just [projection] ]
 
-    goIndex i | i < 0 = error "TermComp2014.Allocators.filterAllocator.goIndex"
-    goIndex 0         = known 0 2 [ ]
-    goIndex i         = constructors [ Just [], Just [ goIndex $ i - 1 ] ]
+    uIndex i | i < 0 = error "TermComp2014.Allocators.filterAllocator.uIndex"
+    uIndex 0         = known 0 2 [ ]
+    uIndex i         = constructors [ Just [], Just [ uIndex $ i - 1 ] ]
+
+    kIndex i | i < 0 = error "TermComp2014.Allocators.filterAllocator.kIndex"
+    kIndex 0         = known 0 2 [ ]
+    kIndex i         = known 1 2 [ kIndex $ i - 1 ]
 
 interpretationAllocator :: Config -> DPTrs () -> Allocator
 interpretationAllocator config trs = kList' $ concatMap goArity arities

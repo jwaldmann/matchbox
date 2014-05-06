@@ -1,16 +1,24 @@
 module CO4.Test.TermComp2014.Config 
-  (Config (..), defaultConfig, parseConfig, repairConfig)
+  (Config (..), ArgumentFilter (..), defaultConfig, parseConfig, repairConfig)
 where
 
 import System.Console.GetOpt
 import System.Environment
+
+data ArgumentFilter = AFNone | AFNormal | AFBrute deriving Show
+
+parseArgumentFilter :: String -> ArgumentFilter
+parseArgumentFilter "none"   = AFNone
+parseArgumentFilter "normal" = AFNormal
+parseArgumentFilter "brute"  = AFBrute
+parseArgumentFilter s        = error $ "Config.parseArgumentFilter: can not parse '" ++ s ++ "'"
 
 data Config = Config {
     modelBitWidth            :: Int
   , numPrecedences           :: Int
   , numPatterns              :: Int
   , precedenceDomainBitWidth :: Int
-  , bruteFilter              :: Bool
+  , argumentFilter           :: ArgumentFilter
   , usePrecedence            :: Bool
   , emptyPrecedence          :: Bool
   , useInterpretation        :: Bool
@@ -25,7 +33,7 @@ defaultConfig = Config
   , numPrecedences           = 1
   , numPatterns              = 0
   , precedenceDomainBitWidth = (-1)
-  , bruteFilter              = False
+  , argumentFilter           = AFNormal
   , usePrecedence            = True
   , emptyPrecedence          = False
   , useInterpretation        = False
@@ -53,8 +61,9 @@ options =
  , Option [ 'h' ] ["height"] (ReqArg (\v c -> c { precedenceDomainBitWidth = read v }) "NUM") 
    "bitwidth for height of precedence (if < 0, maximum necessary bitwidth is assumed) (default: -1)"
 
- , Option [ 'b'  ] ["brute-filter"] (NoArg (\c -> c { bruteFilter = True })) 
-   "use argument filter that deletes all children (default: false)"
+ , Option [ 'a'  ] ["argument-filter"] (ReqArg (\v c -> c { argumentFilter = parseArgumentFilter v })
+                                       "[none,normal,brute]") 
+   "used argument filter ('brute' deletes all children) (default: normal)"
 
  , Option [ 'l' ] ["linear-interpretation"] (NoArg (\c -> c { useInterpretation=True }))
    "use linear interpretations (with linear coefficients in {0,1}) (default: false)"
