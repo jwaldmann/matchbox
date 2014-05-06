@@ -31,6 +31,7 @@ import Control.Applicative
 import System.IO
 
 import TPDB.CPF.Proof.Util (sortVariables)
+import MB.Proof.Outline (outline)
 
 -- https://github.com/apunktbau/co4/issues/81#issuecomment-41269315
 
@@ -48,11 +49,16 @@ main = do
             putStrLn "YES" 
             if outputCPF config
               then do
-                hPutDoc stderr $ pretty proof ; hPutStrLn stderr ""
                 displayIO stdout $ renderCompact $ document 
                               $ P.tox $ P.rtoc proof
+                hPutStrLn stderr "YES"
+                hPutDoc stderr $ pretty proof ; hPutStrLn stderr ""
+                hPutStrLn stderr "Proof outline"
+                hPutDoc stderr $ outline proof ; hPutStrLn stderr ""
               else do
                 hPutDoc stdout $ pretty proof    ; hPutStrLn stdout ""
+                hPutStrLn stdout "Proof outline"
+                hPutDoc stdout $ outline proof ; hPutStrLn stdout ""
 
 handle sys = do
     let dp = TPDB.DP.Transform.dp sys 
@@ -95,8 +101,9 @@ decomp succ fail sys =
                      }
 
 matrices  =  capture $ foldr1 orelse
-    $ map (\(d,b) -> matrix_arc d b)  -- [(1,8),(2,6),(3,4){-,(4,3)-} ] 
-         [(1,8),(2,7),(3,6),(4,5)]
+    $ map (\(d,b) -> matrix_arc d b) 
+         -- [(1,8),(2,7),(3,6),(4,5)]
+         [(1,8),(2,6),(3,4),(4,2)]
 
 for_usable_rules method = \ sys -> do
     let restricted = TPDB.DP.Usable.restrict sys
