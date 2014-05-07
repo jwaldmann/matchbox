@@ -22,11 +22,9 @@ toCpfProof symbolMap (trs, assignments) (Proof model orders) innerProof =
   where
     arities           = nodeArities trs
     (labeledTrs,True) = makeLabeledTrs model trs assignments
-    labeledUR         = T.DPS $ toTPDBRules symbolMap (flip addCpfLabel') nativeUsableRules
-    unlabeledUR       = T.DPS $ toTPDBRules symbolMap (const . T.fromMarkedIdentifier) 
-                                                      nativeUsableRules
-
-    nativeUsableRules = filterUsable $ steps (tagAll labeledTrs) orders
+    labeledUR         = T.DPS $ toTPDBRules symbolMap (flip addCpfLabel') 
+                              $ filterUsable 
+                              $ steps (tagAll labeledTrs) orders
     
     ints              = intermediates trs labeledTrs orders
 
@@ -37,7 +35,7 @@ toCpfProof symbolMap (trs, assignments) (Proof model orders) innerProof =
                         unlabProof
                       $ zip (tail ints) orders
 
-    unlabProof        = toCpfUnlabProof symbolMap trs (last ints) unlabeledUR innerProof
+    unlabProof        = toCpfUnlabProof symbolMap trs (last ints) innerProof
 
     filterUsable (TaggedGroupedTrs rs) = Trs 
       $ map snd 
@@ -69,15 +67,15 @@ toCpfRedPairProof symbolMap arities labeledTrs order usableRules innerProof =
         $ ungroupTrs 
         $ removeMarkedUntagged' labeledTrs
 
-toCpfUnlabProof :: SymbolMap -> DPTrs () -> TaggedGroupedDPTrs Label -> T.DPS -> T.DpProof 
+toCpfUnlabProof :: SymbolMap -> DPTrs () -> TaggedGroupedDPTrs Label -> T.DpProof 
                 -> T.DpProof
-toCpfUnlabProof symbolMap trs labeledTrs usableRules innerProof =
+toCpfUnlabProof symbolMap trs labeledTrs innerProof =
   T.UnlabProc { T.ulpDps = T.DPS 
                          $ filter T.strict
                          $ toTPDBRules symbolMap (const . T.fromMarkedIdentifier)
                          $ fst
                          $ removeMarkedUntagged trs labeledTrs
-              , T.ulpTrs     = usableRules
+              , T.ulpTrs     = T.DPS $ toTPDBRules symbolMap (const . T.fromMarkedIdentifier) trs
               , T.ulpDpProof = innerProof
               }
 
