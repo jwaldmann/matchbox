@@ -66,13 +66,8 @@ toTPDBRules symbolMap f (Trs rules) = map goRule rules
     goTerm (Node s label args) = case M.lookup s symbolMap of
       (Just (Right i)) -> TPDB.Node (f i label) $ map goTerm args
 
-assignments :: Ord var => Int -> Trs var n l -> Assignments var
-assignments n trs = do 
-  values <- sequence $ replicate (length vars) [0..(2^n)-1]
-  return $ zipWith goMapping vars values
-  where
-    vars              = S.toList $ variableSet trs
-    goMapping v value = (v, nat n value)
+modelValues :: Int -> [Domain]
+modelValues n = map (nat n) [0..(2^n)-1]
 
 variableSet :: Ord v => Trs v s l -> S.Set v
 variableSet (Trs rules) = S.unions $ map goRule rules

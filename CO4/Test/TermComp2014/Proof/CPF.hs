@@ -16,12 +16,12 @@ import           CO4.Test.TermComp2014.Standalone
 
 type Arities = M.Map Symbol Int
 
-toCpfProof :: SymbolMap -> (DPTrs (), Assignments Symbol) -> Proof -> T.DpProof -> T.DpProof
-toCpfProof symbolMap (trs, assignments) (Proof model orders) innerProof = 
+toCpfProof :: SymbolMap -> (DPTrs (), [Domain]) -> Proof -> T.DpProof -> T.DpProof
+toCpfProof symbolMap (trs, modelValues) (Proof model orders) innerProof = 
   semLabProof
   where
     arities           = nodeArities trs
-    (labeledTrs,True) = makeLabeledTrs model trs assignments
+    (labeledTrs,True) = makeLabeledTrs model trs modelValues
     labeledUR         = T.DPS $ toTPDBRules symbolMap (flip addCpfLabel') 
                               $ filterUsable 
                               $ steps (tagAll labeledTrs) orders

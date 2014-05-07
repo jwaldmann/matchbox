@@ -53,7 +53,7 @@ type DPRule       label        = Rule Symbol Symbol label
 type DPTrs        label        = Trs  Symbol Symbol label
 type GroupedDPTrs label        = GroupedTrs Symbol Symbol label
 
-type TaggedGroupedDPTrs label        = TaggedGroupedTrs Symbol Symbol label
+type TaggedGroupedDPTrs label  = TaggedGroupedTrs Symbol Symbol label
 
 type Interpretation            = Map [Pattern Domain] Domain
 
@@ -104,11 +104,11 @@ type UsableOrder key =  (UsableSymbol key, TerminationOrder key)
 data Proof = Proof (Model Symbol) [UsableOrder MSL] deriving Show
 
 
-constraint :: (DPTrs (), Assignments Symbol) 
+constraint :: (DPTrs (), [Domain]) 
            -> Proof
            -> Bool
-constraint (trs,assignments) (Proof model orders) = 
-    case makeLabeledTrs model trs assignments of
+constraint (trs,modelValues) (Proof model orders) = 
+    case makeLabeledTrs model trs modelValues of
         (labeledTrs, isModel) -> isModel &&
             couldDeleteOneRule ( steps ( tagAll labeledTrs ) orders )
 
@@ -207,18 +207,25 @@ usableOK (TaggedGroupedTrs rss) usable = forall rss ( \ rs -> forall rs ( \ (tag
 
 -- * make labeled TRS & search model
 
-makeLabeledTrs :: Model Symbol -> DPTrs () -> Assignments Symbol -> (GroupedDPTrs Label, Bool)
-makeLabeledTrs model (Trs rules) assignments = 
-  case unzip (map (\r -> makeLabeledRule model r assignments) rules) of
+assignements :: [Symbol] -> [Domain] -> Assignments Symbol
+assignements syms values = case syms of
+  []   -> [[]]
+  s:ss -> concatMap (\as -> concatMap (\v -> [(s,v) : as]) values) 
+                    (assignements ss values)
+
+makeLabeledTrs :: Model Symbol -> DPTrs () -> [Domain] -> (GroupedDPTrs Label, Bool)
+makeLabeledTrs model (Trs rules) modelValues = 
+  case unzip (map (\r -> makeLabeledRule model r modelValues) rules) of
     (rules', equalities) -> (GroupedTrs rules', and equalities)
 
-makeLabeledRule :: Model Symbol -> DPRule () -> Assignments Symbol -> ([DPRule Label], Bool)
-makeLabeledRule model (Rule isMarked lhs rhs) assignments = 
-  let goRule sigma = case makeLabeledTerm model lhs sigma of
+makeLabeledRule :: Model Symbol -> DPRule () -> [Domain] -> ([DPRule Label], Bool)
+makeLabeledRule model (Rule isMarked lhs rhs) modelValues = 
+  let sigmas       = assignements (variables lhs) modelValues
+      goRule sigma = case makeLabeledTerm model lhs sigma of
         (lhs', lhsValue) -> case makeLabeledTerm model rhs sigma of
           (rhs', rhsValue) -> (Rule isMarked lhs' rhs', eqValue lhsValue rhsValue)
   in
-    case unzip (map goRule assignments) of
+    case unzip (map goRule sigmas) of
       (rules', equalities) -> (rules', and equalities)
 
 makeLabeledTerm :: Model Symbol -> DPTerm () -> Sigma Symbol -> (DPTerm Label, Domain)
@@ -404,6 +411,23 @@ lex ord xs ys = case xs of
       NGe -> NGe
 
 -- * utilities
+
+variables :: Term Symbol n l -> [Symbol]
+variables = 
+  let go vs term = case term of
+        Var v -> case isElem eqSymbol v vs of
+                  True  -> vs
+                  False -> v:vs
+
+        Node _ _ args -> foldl go vs args
+  in
+    go []
+
+isElem :: (a -> a -> Bool) -> a -> [a] -> Bool
+isElem eq x xs = case xs of
+  []   -> False
+  y:ys -> case eq x y of True  -> True
+                         False -> isElem eq x ys
 
 atIndex :: Index -> [a] -> a
 atIndex index xs = case index of

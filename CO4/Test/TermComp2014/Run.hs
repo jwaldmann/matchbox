@@ -64,8 +64,8 @@ run1 config trs = do
 run1' :: SymbolMap -> Config -> DPTrs () 
       -> IO (Maybe (DPTrs (), [DPRule ()], T.DpProof -> T.DpProof ))
 run1' symbolMap config dp = 
-  let sigmas    = assignments (modelBitWidth config) dp
-      parameter = (dp, sigmas)
+  let mValues   = modelValues $ modelBitWidth config
+      parameter = (dp, mValues)
       alloc     = allocator config dp
   in do
     when (beVerbose config) $ dumpTrs config symbolMap dp 
@@ -73,7 +73,7 @@ run1' symbolMap config dp =
     solveAndTestP parameter alloc encConstraint constraint
       >>= \case Nothing -> return Nothing
                 Just proof@(Proof model orders) -> 
-                  let (labeledTrs,True) = makeLabeledTrs model dp sigmas
+                  let (labeledTrs,True) = makeLabeledTrs model dp mValues
                       ints              = intermediates dp labeledTrs orders
                       (dp',delete)      = removeMarkedUntagged dp $ last ints
                   in do

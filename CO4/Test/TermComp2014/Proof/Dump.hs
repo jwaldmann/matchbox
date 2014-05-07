@@ -59,8 +59,7 @@ dump config symbolMap dp (Proof model orders) = do
   where
    ints              = intermediates dp labeledTrs orders
    (_, delete)       = removeMarkedUntagged dp $ last ints
-   sigmas            = assignments (modelBitWidth config) dp
-   (labeledTrs,True) = makeLabeledTrs model dp sigmas
+   (labeledTrs,True) = makeLabeledTrs model dp $ modelValues $ modelBitWidth config
 
 print :: String -> IO ()
 print = hPutStrLn stderr
