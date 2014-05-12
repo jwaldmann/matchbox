@@ -2,7 +2,7 @@ module CO4.Test.TermComp2014.Allocators
 where
 
 import qualified Data.Map as M
-import           CO4.AllocatorData (Allocator,constructors,known)
+import           CO4.Allocator.Data (Allocator,constructors,known)
 import           CO4.Prelude (kList,uList,kList',kBool,uBool,kTuple2)
 import           CO4.PreludeNat (nat,kNat',uNat)
 import           CO4.Util (bitWidth)
