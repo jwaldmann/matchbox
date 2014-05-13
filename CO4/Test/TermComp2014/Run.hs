@@ -25,7 +25,7 @@ import           CO4.Test.TermComp2014.Config
 import           CO4.Test.TermComp2014.Proof.Dump (dumpTrs,dump)
 import           CO4.Test.TermComp2014.Proof.CPF (toCpfProof)
 
-$( compileFile [Cache, ImportPrelude] "tc/CO4/Test/TermComp2014/Standalone.hs" )
+$( compileFile [Cache, NoAllocators, ImportPrelude] "tc/CO4/Test/TermComp2014/Standalone.hs" )
 
 runN :: Config -> T.TRS T.Identifier T.Identifier -> IO (Maybe T.Proof)
 runN config trs =
