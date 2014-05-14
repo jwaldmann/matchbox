@@ -11,19 +11,19 @@ import           CO4.Test.TermComp2014.Standalone
 import           CO4.Test.TermComp2014.Util (SymbolMap)
 
 pprintUnlabeledTrs :: SymbolMap -> UnlabeledTrs -> String
-pprintUnlabeledTrs = pprintTrs pprintSymbol pprintSymbol $ const ""
+pprintUnlabeledTrs = pprintTrs pprintSymbol pprintSymbolWithMark $ const ""
 
 pprintLabeledTrs :: (label -> String) -> SymbolMap -> Trs Symbol Symbol label -> String
-pprintLabeledTrs = pprintTrs pprintSymbol pprintSymbol
+pprintLabeledTrs = pprintTrs pprintSymbol pprintSymbolWithMark
 
 pprintDPTrs :: (l -> String) -> SymbolMap -> DPTrs l -> String
-pprintDPTrs goL symbolMap = pprintTrs pprintSymbol pprintSymbol goL symbolMap
+pprintDPTrs goL symbolMap = pprintTrs pprintSymbol pprintSymbolWithMark goL symbolMap
 
 -- pprintTaggedDPTrs :: (l -> String) -> SymbolMap -> TaggedDPTrs l -> String
-pprintTaggedDPTrs goL symbolMap = pprintTaggedTrs pprintSymbol pprintSymbol goL symbolMap
+pprintTaggedDPTrs goL symbolMap = pprintTaggedTrs pprintSymbol pprintSymbolWithMark goL symbolMap
 
 pprintDPRule :: (l -> String) -> SymbolMap -> DPRule l -> String
-pprintDPRule = pprintRule pprintSymbol pprintSymbol
+pprintDPRule = pprintRule pprintSymbol pprintSymbolWithMark
 
 pprintTrs :: (SymbolMap -> v -> String) -> (SymbolMap -> n -> String) -> (l -> String) 
           -> SymbolMap -> Trs v n l -> String 
@@ -51,7 +51,7 @@ pprintRule goV goN goL symbolMap (Rule isMarked l r) =
     goTerm _ (Var v) = goV symbolMap v
     goTerm topLeft (Node s l args) = 
       concat [ pprintLabeledSymbol goN goL symbolMap (s,l)
-             , if isMarked && topLeft then "#" else ""
+             -- , if isMarked && topLeft then "#" else ""
              , concat [ " (", intercalate ", " (map (goTerm False) args), ")" ]
              ]
 
@@ -68,8 +68,15 @@ pprintSymbol :: SymbolMap -> Symbol -> String
 pprintSymbol map symbol = case M.lookup symbol map of
   Nothing                        -> error "PPrint.pprintSymbol"
   Just (Left s)                  -> TPDB.name s
-  Just (Right (TPDB.Original s)) -> TPDB.name s
-  Just (Right (TPDB.Marked   s)) -> TPDB.name s
+  Just (Right (TPDB.Original s)) -> TPDB.name s 
+  Just (Right (TPDB.Marked   s)) -> TPDB.name s 
+
+pprintSymbolWithMark :: SymbolMap -> Symbol -> String
+pprintSymbolWithMark map symbol = case M.lookup symbol map of
+  Nothing                        -> error "PPrint.pprintSymbolWithMark"
+  Just (Left s)                  -> TPDB.name s
+  Just (Right (TPDB.Original s)) -> TPDB.name s 
+  Just (Right (TPDB.Marked   s)) -> TPDB.name s ++ "#"
 
 pprintModel :: (SymbolMap -> s -> String) -> SymbolMap -> Model s -> String
 pprintModel f symbolMap = unlines . intersperse "" . map pprintInterpretation

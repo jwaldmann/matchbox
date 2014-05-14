@@ -25,7 +25,7 @@ dump config symbolMap dp (Proof model orders) = do
   print $ "\n#######################################\n"
 
   print $ "Model:"
-  print $ pprintModel pprintSymbol symbolMap model
+  print $ pprintModel pprintSymbolWithMark symbolMap model
 
   print $ "Labeled Trs:"
   print $ pprintDPTrs pprintLabel symbolMap $ ungroupTrs labeledTrs
@@ -34,11 +34,11 @@ dump config symbolMap dp (Proof model orders) = do
    case order of
     LinearInt int -> do
       print $ show i ++ ". Linear Interpretation:"
-      print $ pprintLinearInt pprintSymbol pprintLabel symbolMap int
+      print $ pprintLinearInt pprintSymbolWithMark pprintLabel symbolMap int
 
     FilterAndPrec filter precedence -> do
       print $ show i ++ ". Argument Filter:"
-      print $ pprintArgFilter pprintSymbol pprintLabel symbolMap filter
+      print $ pprintArgFilter pprintSymbolWithMark pprintLabel symbolMap filter
 
       print $ show i ++ ". Filtered Trs:"
       print $ pprintDPTrs pprintLabel symbolMap 
@@ -46,7 +46,7 @@ dump config symbolMap dp (Proof model orders) = do
             $ ungroupTrs labeledTrs
 
       print $ show i ++ ". Precedence:"
-      print $ pprintPrecedence pprintSymbol pprintLabel symbolMap precedence
+      print $ pprintPrecedence pprintSymbolWithMark pprintLabel symbolMap precedence
 
   print $ "\nDeleted:"
   print $ unlines $ map (pprintDPRule (const "") symbolMap) delete
