@@ -71,7 +71,11 @@ instance (Pretty v, Pretty s) => Pretty (Reason v s) where
                   return $ "SCC" <+> pretty k <+> pretty p
             ]
 
-        Cpf2Cpf f p -> vcat [ "semanticLabeling", pretty p ]
+        Cpf2Cpf info f p -> vcat 
+            [ "semanticLabeling" 
+            , nest 4 info
+            , pretty p 
+            ]
 
         Extra doc p -> vcat
             [ "extra proof method"

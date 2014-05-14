@@ -90,7 +90,7 @@ dpproof p = case reason p of
                }
     Usable_Rules p -> dpproof p
 
-    Cpf2Cpf f p -> f $ dpproof p
+    Cpf2Cpf _ f p -> f $ dpproof p
 
     r -> error $ unlines [ "dpproof: missing CPF output for"
                          , render $ pretty r 

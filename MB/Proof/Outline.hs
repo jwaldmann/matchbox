@@ -34,6 +34,6 @@ outreason r = case r of
     SCCs cs ->  vcat ["EDG decomposed in SCCs" 
                      , indent 4 $ vcat $ do Right c <- cs ; return $ outline c
                      ]
-    Cpf2Cpf f p -> vcat [ "Cpf2Cpf", indent 4 $ outline p ]
+    Cpf2Cpf info f p -> vcat [ "Cpf2Cpf", indent 4 $ info , indent 4 $ outline p ]
 
 

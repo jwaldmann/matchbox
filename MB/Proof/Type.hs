@@ -44,6 +44,6 @@ data Reason v s = No_Strict_Rules
      | SCCs [ Either (Rule (Term v s)) (Proof v s) ]
      | Extra Doc (Proof v s)
 
-     | Cpf2Cpf (T.DpProof -> T.DpProof) (Proof v s)
+     | Cpf2Cpf Doc (T.DpProof -> T.DpProof) (Proof v s)
 
 

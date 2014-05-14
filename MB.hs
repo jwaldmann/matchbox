@@ -138,7 +138,7 @@ semanticlabs = capture $ foldr1 orelse
         , numPrecedences = n
         , beVerbose = True 
         }) 
-        [  (0,1), (1,1) , (1,2), (2,1), (2,2)  ]
+        [  (0,1), (1,1) , (1,2), (2,1), (2,2), (3,1), (3,2), (3,3) ]
 
 semanticlab config = mkWork $ \ sys -> do
     out <- run1 config sys
@@ -147,5 +147,5 @@ semanticlab config = mkWork $ \ sys -> do
         Just (sys', f) -> Just (sys', \ p -> P.Proof
             { P.input = sys
             , P.claim = P.Top_Termination
-            , P.reason = P.Cpf2Cpf ( {-"semanticlab" <+> sl-} f ) p
+            , P.reason = P.Cpf2Cpf (text $ show config) f p
             } )
