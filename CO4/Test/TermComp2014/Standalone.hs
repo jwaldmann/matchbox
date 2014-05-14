@@ -139,10 +139,7 @@ step
   :: TaggedGroupedTrs Symbol Symbol Label
      -> (Map MSL Bool, TerminationOrder MSL)
      -> TaggedGroupedTrs Symbol Symbol Label
-step trs (usable,order) = case 
-         usableOK trs usable 
-         -- require_all_usable trs usable -- FIXME
-  of
+step trs (usable,order) = case usableOK trs usable of
     False -> undefined
     True -> 
         let utrs = tagUsable trs usable 
@@ -155,7 +152,7 @@ weaklyCompatibleOK
      -> TerminationOrder MSL -> Bool
 weaklyCompatibleOK (TaggedGroupedTrs rss) order = 
     forall rss ( \ rs -> forall rs ( \ r -> case r of 
-        ( tag, rule ) -> not tag || isWeaklyCompatible order rule  ) )
+        ( tag, rule ) -> not tag || isWeaklyCompatible order rule ))
     
 untagStrictlyCompatible
   :: TaggedGroupedTrs Symbol Symbol Label
@@ -172,10 +169,10 @@ untagStrictlyCompatible ( TaggedGroupedTrs rss ) order =
 -- keep tags for marked rules.
 tagUsable (TaggedGroupedTrs rss) usable = TaggedGroupedTrs (
     for rss ( \ rs -> for rs ( \ ( tag, rule ) -> 
-      case {- assertKnown -} ( isMarkedRule rule ) of
+      case assertKnown ( isMarkedRule rule ) of
         True -> ( tag, rule ) -- keep the previous tag (rule might already be removed)
         False -> case rule of
-            Rule _ lhs rhs -> case {- assertKnown -} lhs of 
+            Rule _ lhs rhs -> case assertKnown lhs of 
                 Var v -> undefined -- cannot happen (at top of lhs)
                 Node sym lab ts -> ( lookup eqMSL (sym,lab) usable, rule ) ) ) )
 
@@ -282,7 +279,8 @@ isWeaklyCompatible
   :: TerminationOrder MSL -> Rule Symbol Symbol Label -> Bool
 isWeaklyCompatible order (Rule isMarked lhs rhs) = 
        let cmp = case order of
-             LinearInt int -> linearRule int (Rule isMarked lhs rhs) 
+             LinearInt int -> 
+                 linearRule int (Rule isMarked lhs rhs) 
              FilterAndPrec f p ->
                  lpo p (filterArgumentsDPTerm f lhs) (filterArgumentsDPTerm f rhs) 
        in case cmp of
@@ -310,10 +308,15 @@ isMarkedRule (Rule isMarked lhs rhs) = isMarked
 -- FIXME: bit width (3) is hardwired (in linearTerm below)
 
 linearRule :: LinearInterpretation MSL -> DPRule Label -> Order
-linearRule int (Rule _ lhs rhs) = 
-    case linearTerm int lhs of
+linearRule int (Rule m lhs rhs) = 
+    let vars = varRule (Rule m lhs rhs)
+        -- the linear functions inside this block
+        -- use the ordering of the variables in vars,
+        -- e.g., with  vars = [x,y,z] , 
+        -- the term  y  is LinearFunction 0 [0,1,0]
+    in  case linearTerm int vars lhs of
         LinearFunction labs llins -> 
-            case linearTerm int rhs of
+            case linearTerm int vars rhs of
                 LinearFunction rabs rlins -> 
                     case geNat labs rabs && and ( zipWith geBool llins rlins) of
                         False -> NGe
@@ -327,29 +330,64 @@ linearRule int (Rule _ lhs rhs) =
 -- for consistency with CO4.PreludeNat.geNat ?
 geBool x y = x || not y
 
-linearTerm :: LinearInterpretation MSL -> DPTerm Label -> LinearFunction
-linearTerm int t = case t of
-    Var x ->  LinearFunction (nat 3 0) [ True ] 
+
+varRule :: DPRule a -> [ Symbol ]
+varRule (Rule _ lhs rhs) = varTerm lhs ( varTerm rhs [] )
+
+varTerm :: DPTerm a -> [ Symbol ] -> [ Symbol ]
+varTerm t vs = case {- assertKnown -} t of
+    Var v -> insert v vs
+    Node f lf args -> varTerms args vs
+
+varTerms :: [ DPTerm a ] -> [ Symbol ] -> [ Symbol ]
+varTerms ts vs = case {- assertKnown -} ts of
+    [] -> vs
+    t : ts' -> varTerm t ( varTerms ts' vs )
+
+insert :: Symbol -> [ Symbol ] -> [ Symbol ]
+insert v ws = case {- assertKnown -} ws of
+    [] -> [v]
+    w : ws' -> 
+        -- if eqSymbol v w then ws else w : insert v ws'
+        case {- assertKnown -} ( eqSymbol v w ) of 
+            True -> ws ; False -> w : insert v ws' 
+            
+
+linearTerm :: LinearInterpretation MSL -> [ Symbol ] -> DPTerm Label -> LinearFunction
+linearTerm int vars t = case t of
+    Var x ->  
+        LinearFunction (nat 5 0) ( map ( \ v -> eqSymbol v x) vars )
     Node f lf args -> 
         let int_f = lookup eqLabeledSymbol (f, lf) int
-            values = map ( linearTerm int ) args
-        in  substitute int_f values
+            values = map ( linearTerm int vars) args
+        in  substitute vars int_f values
 
-substitute :: LinearFunction -> [ LinearFunction ] -> LinearFunction
-substitute f gs = case f of 
+absolute (LinearFunction abs lin) = abs
+linear (LinearFunction abs lin) = lin
+
+substitute :: [ Symbol ] -> LinearFunction -> [ LinearFunction ] -> LinearFunction
+substitute vars f gs = case f of 
     LinearFunction fabs flins -> 
-       let flin = head flins 
-       in case gs of
-           [] -> undefined
-           g : rest -> case g of
-                   LinearFunction gabs glins -> 
-                    let glin = head glins 
-                    in  LinearFunction (plusNat fabs (timesBoolNat flin gabs)) 
-                                       [ flin && glin ]
+        let l0 = LinearFunction (nat 5 0) (map (\v -> False) vars)
+            s = foldr plusL l0 ( zipWith scaleL flins gs)
+        in  LinearFunction (plusNat fabs (absolute s)) (linear s)
 
+scaleL f (LinearFunction abs lin) = 
+    LinearFunction (timesBoolNat f abs) (map (timesBoolBool f) lin)
+
+plusL (LinearFunction a1 l1) (LinearFunction a2 l2) =
+    LinearFunction (plusNat a1 a2) (zipWith plusBoolBool l1 l2)
+
+plusBoolBool a b = case a of
+    False -> b
+    True -> case b of
+         False -> True
+         True -> undefined
+
+timesBoolBool a b = a && b
 
 timesBoolNat b n = case b of
-    False -> nat 5 0 -- FIXME bitwidth
+    False -> nat 5 0 
     True  -> n
 
 -- * path orders

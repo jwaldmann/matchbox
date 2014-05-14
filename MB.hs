@@ -132,7 +132,12 @@ matrix_arc dim bits sys = do
 
 semanticlabs = capture $ foldr1 orelse
     $ map (\(b,n) -> semanticlab $ defaultConfig 
-        { modelBitWidth = b, numPrecedences = n, beVerbose = True }) 
+        { modelBitWidth = b
+        , useInterpretation = True , usePrecedence = False
+        -- , useInterpretation = False , usePrecedence = True
+        , numPrecedences = n
+        , beVerbose = True 
+        }) 
         [  (0,1), (1,1) , (1,2), (2,1), (2,2)  ]
 
 semanticlab config = mkWork $ \ sys -> do

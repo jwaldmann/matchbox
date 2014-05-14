@@ -88,7 +88,7 @@ interpretationAllocator config trs = allocatorList $ concatMap goArity arities
     n                      = modelBitWidth config
     height                 = 2^n
     labels                 = map (nat n) [0..height-1]
-    absoluteCoefficientBitWidth    = 3 -- FIXME make configurable
+    absoluteCoefficientBitWidth    = 5 -- FIXME make configurable
     -- NOTE: this bit width is also hardwired in Standalone.hs (function linearTerm)
     linfun ar = knownLinearFunction (uNat absoluteCoefficientBitWidth)
                                     (allocatorList $ replicate ar completeBool)
