@@ -6,6 +6,7 @@ where
 import           Control.Exception (assert)
 import qualified Data.Map as M
 import qualified TPDB.CPF.Proof.Type as T
+import qualified TPDB.CPF.Proof.Type 
 import qualified TPDB.CPF.Proof.Util as T
 import           TPDB.CPF.Proof.Xml ()
 import qualified TPDB.Data as T
@@ -13,6 +14,7 @@ import qualified TPDB.DP as T
 import           CO4.PreludeNat (width,value)
 import           CO4.Test.TermComp2014.Util
 import           CO4.Test.TermComp2014.Standalone
+import qualified Data.List ( transpose )
 
 type Arities = M.Map Symbol Int
 
@@ -105,12 +107,40 @@ toCpfModel symbolMap model = T.FiniteModel (2^bitWidth) $ map toInterpret model
 
 toCpfOrderingConstraintProof :: SymbolMap -> Arities -> UsableOrder MSL
                              -> T.OrderingConstraintProof
-toCpfOrderingConstraintProof symbolMap arities (_, FilterAndPrec filter (Precedence prec)) = 
-  T.OCPRedPair $ T.RPPathOrder $ T.PathOrder 
-    (map toPrecedenceEntry prec) (map toFilterEntry filter)
-  where
+toCpfOrderingConstraintProof symbolMap arities uo = case uo of
+  (_, LinearInt lint ) -> 
+    T.OCPRedPair $ T.RPInterpretation 
+      $ T.Interpretation 
+      { T.interpretation_type = T.Matrix_Interpretation
+          { T.domain = T.Naturals, T.dimension = 1
+          , T.strictDimension = 1 }
+      , T.interprets = do
+          (k,v @ (LinearFunction abs lin)) <- lint
+          return $ T.Interpret 
+                 { T.symbol = toCpfLabeledSymbol symbolMap k
+                 , TPDB.CPF.Proof.Type.arity = length lin
+                 , T.value = fun v
+                 }
+      }
+   where 
+    einpack x = matrix [[x]]
+    matrix xss = T.Matrix $ map vector $ Data.List.transpose xss
+    vector xs = T.Vector $ map T.Coefficient_Coefficient 
+              $ map T.E_Integer xs
+    fun f = T.Polynomial $ T.Sum 
+          $ T.Polynomial_Coefficient (einpack $ value $ absolute f)
+          : do (k,b) <- zip [1..] $ linear f
+               let c = fromIntegral $ fromEnum b 
+               return $ T.Product 
+                      [ T.Polynomial_Coefficient (einpack c)
+                      , T.Polynomial_Variable $ show k
+                      ]
+  (_, FilterAndPrec filter (Precedence prec)) -> 
+    T.OCPRedPair $ T.RPPathOrder $ T.PathOrder 
+      (map toPrecedenceEntry prec) (map toFilterEntry filter)
+   where
     toPrecedenceEntry ((sym,label), prec) = 
-      T.PrecedenceEntry (toCpfLabeledSymbol symbolMap (sym,label))
+        T.PrecedenceEntry (toCpfLabeledSymbol symbolMap (sym,label))
                         (arity sym)
                         (value prec)
 
