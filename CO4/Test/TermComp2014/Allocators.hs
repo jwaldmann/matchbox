@@ -6,7 +6,7 @@ where
 import qualified Data.Map as M
 import           CO4 hiding (Config)
 import           CO4.Prelude (kList,uList,allocatorList)
-import           CO4.PreludeNat (Nat,nat,uNat,knownNat,completeNat)
+import           CO4.PreludeNat (Nat,nat,uNat,knownNat)
 import           CO4.Util (bitWidth)
 import           CO4.Test.TermComp2014.Standalone 
 import           CO4.Test.TermComp2014.Util (nodeArities)
@@ -32,7 +32,7 @@ usableMapAllocator config = allocatorList . concatMap goArity . M.toList . nodeA
     goArity (s,arity) = do
       args <- sequence $ replicate arity labels
       return $ knownTuple2 (knownTuple2 (kSymbolAllocator s) (kLabelAllocator args))
-             $ completeBool
+                           complete
 
 orderAllocator :: Config -> DPTrs () -> TAllocator (TerminationOrder MSL)
 orderAllocator config dpTrs = 
@@ -84,7 +84,7 @@ interpretationAllocator config trs = allocatorList $ concatMap goArity arities
     absoluteCoefficientBitWidth    = 5 -- FIXME make configurable
     -- NOTE: this bit width is also hardwired in Standalone.hs (function linearTerm)
     linfun ar = knownLinearFunction (uNat absoluteCoefficientBitWidth)
-                                    (allocatorList $ replicate ar completeBool)
+                                    (allocatorList $ replicate ar complete)
 
     goArity (symbol,arity) = do
       args <- sequence $ replicate arity labels
@@ -124,10 +124,12 @@ modelAllocator config = allocatorList . map goArity . M.toList . nodeArities
 
         incompleteInterpretation = kList (numPatterns config) goMapping
           where
-            goMapping = knownTuple2 (kList arity $ completePattern 
-                                                 $ uValueAllocator 
-                                                 $ modelBitWidth config)
+            goMapping = knownTuple2 (kList arity uPattern)
                                     (uValueAllocator $ modelBitWidth config)
+
+            uPattern = union knownAny 
+                     $ knownExactly $ uValueAllocator 
+                                    $ modelBitWidth config
 
 precedenceAllocator :: Config -> DPTrs () -> TAllocator (Precedence MSL)
 precedenceAllocator config trs = 
