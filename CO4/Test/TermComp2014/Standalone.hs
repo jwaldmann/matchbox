@@ -335,7 +335,7 @@ varRule :: DPRule a -> [ Symbol ]
 varRule (Rule _ lhs rhs) = varTerm lhs ( varTerm rhs [] )
 
 varTerm :: DPTerm a -> [ Symbol ] -> [ Symbol ]
-varTerm t vs = case {- assertKnown -} t of
+varTerm t vs = case assertKnown t of
     Var v -> insert v vs
     Node f lf args -> varTerms args vs
 
