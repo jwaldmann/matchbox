@@ -124,13 +124,9 @@ removeMarkedUntagged (Trs rules) (TaggedGroupedTrs labeledRules) =  (Trs keep, d
       else Right rule -- keep
 
 removeMarkedUntagged' :: TaggedGroupedTrs v n l -> GroupedTrs v n l
-removeMarkedUntagged' (TaggedGroupedTrs rules) = GroupedTrs
-                                               $ mapMaybe check rules
+removeMarkedUntagged' (TaggedGroupedTrs rules) = GroupedTrs $ map check rules
   where
-    check labeledRules = 
-      if all isMarkedUntagged labeledRules
-      then Nothing
-      else Just $ map snd labeledRules -- keep
+    check = map snd . filter (not . isMarkedUntagged)
 
 isMarkedUntagged :: (Bool, Rule v n l) -> Bool
 isMarkedUntagged (isTagged, Rule isMarked _ _) = isMarked && not isTagged

@@ -5,9 +5,8 @@ where
 
 import qualified Data.Map as M
 import           CO4 hiding (Config)
-import           CO4.Allocator.Data (Allocator,constructors,known)
 import           CO4.Prelude (kList,uList,allocatorList)
-import           CO4.PreludeNat (Nat,nat,uNat,knownNat,completeNat)
+import           CO4.PreludeNat (Nat,nat,uNat,knownNat)
 import           CO4.Util (bitWidth)
 import           CO4.Test.TermComp2014.Standalone 
 import           CO4.Test.TermComp2014.Util (nodeArities)
@@ -33,7 +32,7 @@ usableMapAllocator config = allocatorList . concatMap goArity . M.toList . nodeA
     goArity (s,arity) = do
       args <- sequence $ replicate arity labels
       return $ knownTuple2 (knownTuple2 (kSymbolAllocator s) (kLabelAllocator args))
-             $ completeBool
+                           complete
 
 orderAllocator :: Config -> DPTrs () -> TAllocator (TerminationOrder MSL)
 orderAllocator config dpTrs = 
@@ -64,22 +63,16 @@ filterAllocator config = allocatorList . concatMap goArity . M.toList . nodeArit
              $ case (arity, argumentFilter config) of
                 (0, _)      -> knownSelection knownNil
                 (a, AFNone) -> knownSelection $ allocatorList $ map kIndex [0 .. a-1]
-                (_, _)      -> unsafeTAllocator 
-                             $ constructors [ Just [toAllocator selectionIndices] 
-                                            , Just [toAllocator projectionIndex ] 
-                                            ]
+                (_, _)      -> union (knownSelection  $ selectionIndices)
+                                     (knownProjection $ projectionIndex)
 
     uIndex i | i < 0 = error "TermComp2014.Allocators.filterAllocator.uIndex"
-    uIndex i         = unsafeTAllocator $ go i
-      where
-        go 0 = known 0 2 [ ]
-        go i = constructors [ Just [], Just [ go $ i - 1 ] ]
+    uIndex 0         = knownThis
+    uIndex i         = union knownThis $ knownNext $ uIndex $ i - 1
 
     kIndex i | i < 0 = error "TermComp2014.Allocators.filterAllocator.kIndex"
-    kIndex i         = unsafeTAllocator $ go i
-      where
-        go 0 = known 0 2 [ ]
-        go i = known 1 2 [ go $ i - 1 ]
+    kIndex 0         = knownThis
+    kIndex i         = knownNext $ kIndex $ i - 1
 
 interpretationAllocator :: Config -> DPTrs () -> TAllocator (LinearInterpretation MSL)
 interpretationAllocator config trs = allocatorList $ concatMap goArity arities
@@ -91,7 +84,7 @@ interpretationAllocator config trs = allocatorList $ concatMap goArity arities
     absoluteCoefficientBitWidth    = 5 -- FIXME make configurable
     -- NOTE: this bit width is also hardwired in Standalone.hs (function linearTerm)
     linfun ar = knownLinearFunction (uNat absoluteCoefficientBitWidth)
-                                    (allocatorList $ replicate ar completeBool)
+                                    (allocatorList $ replicate ar complete)
 
     goArity (symbol,arity) = do
       args <- sequence $ replicate arity labels
@@ -131,10 +124,12 @@ modelAllocator config = allocatorList . map goArity . M.toList . nodeArities
 
         incompleteInterpretation = kList (numPatterns config) goMapping
           where
-            goMapping = knownTuple2 (kList arity $ completePattern 
-                                                 $ uValueAllocator 
-                                                 $ modelBitWidth config)
+            goMapping = knownTuple2 (kList arity uPattern)
                                     (uValueAllocator $ modelBitWidth config)
+
+            uPattern = union knownAny 
+                     $ knownExactly $ uValueAllocator 
+                                    $ modelBitWidth config
 
 precedenceAllocator :: Config -> DPTrs () -> TAllocator (Precedence MSL)
 precedenceAllocator config trs = 
