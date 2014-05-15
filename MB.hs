@@ -23,6 +23,7 @@ import qualified TPDB.Input
 import TPDB.DP.Transform
 import TPDB.DP.Usable
 import TPDB.DP.Graph
+import TPDB.Mirror
 import TPDB.Xml.Pretty ( document )
 import Text.PrettyPrint.Leijen.Text (hPutDoc)
 
@@ -40,9 +41,13 @@ import qualified MB.Proof as P
 
 main :: IO ()
 main = do
+    hSetBuffering stdout LineBuffering
+    hSetBuffering stderr LineBuffering
+
     (config,filePath) <- parseConfig
     trs <- TPDB.Input.get_trs filePath
-    out <- run $ handle $ trs { rules = map sortVariables $ rules trs }
+    out <- run $ handle_both
+               $ trs { rules = map sortVariables $ rules trs }
     case out of
         Nothing    -> do putStrLn "MAYBE"
         Just proof -> do  
@@ -60,6 +65,17 @@ main = do
                 hPutStrLn stdout "Proof outline"
                 hPutDoc stdout $ outline proof ; hPutStrLn stdout ""
 
+handle_both sys = case TPDB.Mirror.mirror sys of
+     Nothing -> handle sys
+     Just sys' -> parallel_or0 
+         [ handle sys
+         , do p <- handle sys' 
+              return $ P.Proof { P.input = sys
+                     , P.claim = P.Termination
+                     , P.reason = P.Mirror_Transform p 
+                     }
+         ]
+
 handle sys = do
     let dp = TPDB.DP.Transform.dp sys 
     proof <- handle_scc dp
@@ -70,9 +86,14 @@ handle sys = do
 
 handle_scc  = orelse nomarkedrules 
             $ decomp handle_scc 
-            $ orelse_andthen (for_usable_rules matrices) (apply handle_scc) 
-            $ orelse_andthen semanticlabs (apply handle_scc)
-            $ const reject
+
+            $ andthen0 ( parallel_or 
+                [ for_usable_rules matrices , semanticlabs ]) 
+            $  apply handle_scc
+
+--            $ orelse_andthen (for_usable_rules matrices) (apply handle_scc) 
+--            $ orelse_andthen semanticlabs (apply handle_scc)
+--             $ const reject
 
 apply h =  \ (sys,f) -> do p <- h sys ; return $ f p 
 
@@ -102,8 +123,8 @@ decomp succ fail sys =
 
 matrices  =  capture $ foldr1 orelse
     $ map (\(d,b) -> matrix_arc d b) 
-         -- [(1,8),(2,6),(3,4),(4,2)]
-         [(1,8),(2,4),(3,2)]
+         [(1,8),(2,7),(3,5),(4,4),(5,3)]
+         -- [(1,8),(2,4),(3,2)]
 
 for_usable_rules method = \ sys -> do
     let restricted = TPDB.DP.Usable.restrict sys
