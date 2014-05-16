@@ -15,6 +15,7 @@ import           CO4.PreludeNat (width,value)
 import           CO4.Test.TermComp2014.Util
 import           CO4.Test.TermComp2014.Standalone
 import qualified Data.List ( transpose )
+import           Data.List ( partition, nub )
 
 type Arities = M.Map Symbol Int
 
@@ -92,18 +93,22 @@ toCpfModel symbolMap model = T.FiniteModel (2^bitWidth) $ map toInterpret model
       where 
         arity = length $ fst $ head intpr
 
-        toArithFunction = T.AFSum . map (goMapping . indexArgs)
+        toArithFunction = goInts . map indexArgs . nub
           where
-            indexArgs (ps,v)        = (zip [1..] ps, v)
-            goMapping ([],v)        = toNatural v
-            goMapping ((i,p):ps, v) = 
-              case p of
-                Exactly k -> T.AFIfEqual (T.AFVariable i) (toNatural k) 
-                                                          (goMapping (ps,v)) 
-                                                          (T.AFNatural 0)
-                Any       -> goMapping (ps,v)
+            indexArgs (ps,v) = (zip [1..] ps, v)
+            toNatural n      = assert (width n <= bitWidth) $ T.AFNatural $ value n
 
-            toNatural n = assert (width n <= bitWidth) $ T.AFNatural $ value n
+            goInts []        = T.AFNatural 0
+            goInts [([],v)]  = toNatural v
+            goInts ints      = case p of
+              Any       -> goInts same'
+              Exactly k -> T.AFIfEqual (T.AFVariable i) (toNatural k)
+                           (goInts same')
+                           (goInts other)
+              where
+                d@(i,p)      = head $ fst $ head ints
+                (same,other) = partition (\i -> head (fst i) == d) ints
+                same'        = map (\(ps,v) -> (tail ps, v)) same
 
 toCpfOrderingConstraintProof :: SymbolMap -> Arities -> UsableOrder MSL
                              -> T.OrderingConstraintProof
