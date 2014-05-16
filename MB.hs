@@ -156,6 +156,7 @@ semanticlabs = capture $ foldr1 orelse
         , useInterpretation = True , usePrecedence = False
         -- , useInterpretation = False , usePrecedence = True
         , numPrecedences = n
+        , numPatterns = succ b
         , beVerbose = True 
         }) 
       $ do b <- [0 .. ] ; n <- [ 1 .. 2 ^ b ] ; return (b,n)
