@@ -15,7 +15,8 @@ import           CO4.PreludeNat (width,value)
 import           CO4.Test.TermComp2014.Util
 import           CO4.Test.TermComp2014.Standalone
 import qualified Data.List ( transpose )
-import           Data.List ( partition, nub )
+import           Data.List ( partition, nubBy )
+import           Data.Function (on)
 
 type Arities = M.Map Symbol Int
 
@@ -93,7 +94,7 @@ toCpfModel symbolMap model = T.FiniteModel (2^bitWidth) $ map toInterpret model
       where 
         arity = length $ fst $ head intpr
 
-        toArithFunction = goInts . map indexArgs . nub
+        toArithFunction = goInts . map indexArgs . nubBy ((==) `on` fst)
           where
             indexArgs (ps,v) = (zip [1..] ps, v)
             toNatural n      = assert (width n <= bitWidth) $ T.AFNatural $ value n
