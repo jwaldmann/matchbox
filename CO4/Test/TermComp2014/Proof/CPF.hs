@@ -94,12 +94,14 @@ toCpfModel symbolMap model = T.FiniteModel (2^bitWidth) $ map toInterpret model
       where 
         arity = length $ fst $ head intpr
 
-        toArithFunction = goInts . map indexArgs . nubBy ((==) `on` fst)
+        toArithFunction ints = goInts $ map indexArgs $ nubBy ((==) `on` fst) ints
           where
             indexArgs (ps,v) = (zip [1..] ps, v)
             toNatural n      = assert (width n <= bitWidth) $ T.AFNatural $ value n
 
-            goInts []        = T.AFNatural 0
+            defaultValue     = toNatural $ snd $ head ints
+
+            goInts []        = defaultValue
             goInts [([],v)]  = toNatural v
             goInts ints      = case p of
               Any       -> goInts same'
