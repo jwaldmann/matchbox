@@ -47,7 +47,7 @@ main = do
     (config,filePath) <- parseConfig
     trs <- TPDB.Input.get_trs filePath
     out <- run $ handle_both
-               $ trs { rules = map sortVariables $ rules trs }
+               $ trs -- { rules = map sortVariables $ rules trs }
     case out of
         Nothing    -> do putStrLn "MAYBE"
         Just proof -> do  
