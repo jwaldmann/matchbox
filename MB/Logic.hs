@@ -24,6 +24,8 @@ run r = Control.Exception.handle ( \ (e :: SomeException) -> do
 work :: (a -> LogicT IO (b, b -> c)) -> a -> IO (Maybe c)
 work w x = run $ do (x,f) <- w x ; return $ f x
 
+success = \ x -> return (x, id)
+
 traced s w = \ x -> do liftIO $ hPutStrLn stderr s ; w x
 
 mkWork :: (a -> IO (Maybe b)) -> (a -> LogicT IO b)
@@ -34,7 +36,6 @@ mkWork0 w = LogicT $ \ succ fail -> w >>= \ case
         Nothing -> fail
         Just y -> succ y fail
 
-success = \ x -> return (x, id)
 
 andthen0 p q x = p x >>= q
 
@@ -48,32 +49,12 @@ sequential_or ps = foldl1 orelse ps
 parallel_or :: [ a -> LogicT IO b ] -> a -> LogicT IO b
 parallel_or ps = \ x -> parallel_or0 $ map ( \ p -> p x ) ps
 
-parallel_or0 = 
-   -- parallel_or0_Chan
-   parallel_or0_STM
-
--- | start processes in parallel.
--- the first one that completes successfully
--- will give the overall result, and cancel the others.
--- FIXME: this is (1) ugly, and (2) most probably wrong
--- (what happens if such a group is cancelled?
--- will it cancel all its members? I don't think so)
-parallel_or0_Chan ps = mkWork0 $ do
-    ch <- newChan
-    as <- forM ps $ \ p -> async $ do 
-         m <- run p -- runLogicT p ( \ r f -> return $ Just r) (return Nothing)
-         writeChan ch m
-    let work k = if k <= 0 
-                 then return Nothing
-                 else do r <- readChan ch
-                         case r of
-                             Nothing -> work (k-1)
-                             Just x ->  return $ Just x
-    (work $ length as) `finally` (forM_ as cancel) 
-
-parallel_or0_STM :: [ LogicT IO b ] -> LogicT IO b
-parallel_or0_STM ps = mkWork0 $ do
-    asyncs :: [ Async (Maybe b) ] <- mapM async $ map run ps
+parallel_or0 :: [ LogicT IO b ] -> LogicT IO b
+parallel_or0 ps = mkWork0 $ do
+    let go  [] = return  []
+        go (p:ps) = withAsync ( run p ) $ \ a -> do
+                    as <- go ps ; return $ a : as
+    asyncs <- forM ps ( async . run )
     m <- waitAnyCatchCancelFilter isJust asyncs
     case m of
         Just (_, Right (Just x)) -> return $ Just x ; _ -> return Nothing
