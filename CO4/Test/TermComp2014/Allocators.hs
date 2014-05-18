@@ -106,12 +106,12 @@ modelAllocator config = allocatorList . map goArity . M.toList . nodeArities
 
     goInterpretation arity = if (numPatterns config) <= 0 || 
                                 (numPatterns config) >= interpretationSize
-                             then completeInterpretation
-                             else incompleteInterpretation
+                             then completeInterpretation 
+                             else incompleteInterpretation 
       where
         domainSize         = 2^(modelBitWidth config)
         interpretationSize = domainSize ^ arity
-
+        uval = uValueAllocator $ modelBitWidth config
         completeInterpretation = allocatorList $ do 
           args <- sequence $ replicate arity [0..domainSize - 1]
           return $ goMapping args
@@ -120,16 +120,13 @@ modelAllocator config = allocatorList . map goArity . M.toList . nodeArities
               knownTuple2 (allocatorList $ map (knownExactly . kValueAllocator 
                                                              . nat (modelBitWidth config) 
                                                              . fromIntegral) args)
-                          (uValueAllocator $ modelBitWidth config)
+                          uval
 
-        incompleteInterpretation = kList (numPatterns config) goMapping
-          where
-            goMapping = knownTuple2 (kList arity uPattern)
-                                    (uValueAllocator $ modelBitWidth config)
-
-            uPattern = union knownAny 
-                     $ knownExactly $ uValueAllocator 
-                                    $ modelBitWidth config
+        incompleteInterpretation = allocatorList $ do
+            k <- [ 1 .. numPatterns config]
+            let uPattern = union knownAny $ knownExactly uval
+                p = if  k < numPatterns config then uPattern else knownAny
+            return $ knownTuple2 ( kList arity p)  uval 
 
 precedenceAllocator :: Config -> DPTrs () -> TAllocator (Precedence MSL)
 precedenceAllocator config trs = 
