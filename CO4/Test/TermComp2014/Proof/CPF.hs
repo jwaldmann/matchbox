@@ -11,12 +11,14 @@ import qualified TPDB.CPF.Proof.Util as T
 import           TPDB.CPF.Proof.Xml ()
 import qualified TPDB.Data as T
 import qualified TPDB.DP as T
-import           CO4.PreludeNat (width,value)
+import           CO4.PreludeNat (width,value,nat)
 import           CO4.Test.TermComp2014.Util
 import           CO4.Test.TermComp2014.Standalone
 import qualified Data.List ( transpose )
 import           Data.List ( partition, nubBy )
 import           Data.Function (on)
+
+import Prelude hiding (lookup)
 
 type Arities = M.Map Symbol Int
 
@@ -87,16 +89,39 @@ toCpfModel :: SymbolMap -> Model Symbol -> T.Model
 toCpfModel symbolMap model = T.FiniteModel (2^bitWidth) $ map toInterpret model
   where
     bitWidth = width $ snd $ head $ snd $ head model
-
+    indexArgs (ps,v) = (zip [1..] ps, v)
     toInterpret (sym, intpr) = T.Interpret (toCpfSymbol symbolMap sym) arity
                              $ T.ArithFunction 
-                             $ toArithFunction intpr
+                             $ toArithFunction1 bitWidth arity 
+                             $ expandArithFunction bitWidth arity
+                             $ nubBy ((==) `on` fst) 
+                             $ intpr
       where 
         arity = length $ fst $ head intpr
 
-        toArithFunction ints = goInts $ map indexArgs $ nubBy ((==) `on` fst) ints
+ex0 = [([Exactly (nat 2 0),Exactly (nat 2 1)],nat 2 1),([Any,Any],nat 2 0)]
+
+
+expandArithFunction bw ar ints = do
+    let vs = map (nat bw) [ 0 .. 2^bw -1 ]
+    arg <- sequence $ replicate ar vs
+    let argPat = map Exactly arg
+    let val = lookup (\ xs ys -> and $ zipWith (eqPattern (==)) xs ys) argPat ints
+    return ( argPat , val )
+
+toArithFunction1 bitWidth arity ints = T.AFSum $ do
+    let toNatural n = assert (width n <= bitWidth) $ T.AFNatural $ value n
+    (argPat,val) <- ints
+    let go [] = toNatural val
+        go ((i,Exactly k): rest) = 
+           T.AFIfEqual (T.AFVariable i) (toNatural k) (go rest) (T.AFNatural 0)
+    return $ go $ zip [1..] argPat
+
+-- for debugging:
+deriving instance Show TPDB.CPF.Proof.Type.ArithFunction
+
+toArithFunction0 bitWidth arity ints = goInts ints
           where
-            indexArgs (ps,v) = (zip [1..] ps, v)
             toNatural n      = assert (width n <= bitWidth) $ T.AFNatural $ value n
 
             defaultValue     = toNatural $ snd $ head ints
