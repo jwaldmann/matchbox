@@ -1,4 +1,0 @@
-(VAR x)
-(RULES
-  a (a (b (b (x))))  -> b (b (b (a (a (a (x))))))
-)
