@@ -1,9 +1,0 @@
-(VAR x y)
-
-(RULES
-  m (n, y) -> n
-  m (x, n) -> x
-  m (s (x), s (y)) -> m (x,y)
-  d (n, s(y)) -> n
-  d (s (x), s (y)) -> s (d (m (x, y), s (y)))
-)
