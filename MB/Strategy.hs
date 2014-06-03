@@ -1,88 +1,111 @@
-{-# language OverloadedStrings #-}
 {-# language NoMonomorphismRestriction #-}
+{-# language StandaloneDeriving #-}
+{-# language ScopedTypeVariables #-}
+{-# language LambdaCase #-}
 
 module MB.Strategy where
 
-import MB.Proof
-
-import qualified Satchmo.SMT.Matrix as M
-import qualified Satchmo.SMT.Linear as L
-import qualified Satchmo.SMT.Exotic.Semiring.Arctic  as A
-
-import Control.Concurrent.Combine.Computer
-import Control.Concurrent.Combine.Lifter
+import qualified MB.Proof as P
+import qualified Control.Concurrent.Combine as C
+import qualified Control.Concurrent.Combine.Lifter as L
 import qualified Control.Concurrent.Combine.Action as A
 
-import TPDB.Data hiding  (Termination)
-import TPDB.Plain.Write
+import Control.Monad.Trans
+import Control.Monad.Trans.Cont
+import Control.Monad.Trans.Maybe
+import Control.Applicative
+
+import TPDB.Data
 import TPDB.Pretty
--- import Text.PrettyPrint.HughesPJ
-import qualified Data.Map as M
 
+import qualified Compress.Common as CC
+import qualified Compress.Simple as CS
+import qualified Compress.PaperIter as CPI
+import qualified Compress.Paper as CP
 
-type Prover v s = Computer (TRS v s) (Proof v s)
+import qualified MB.Options as O
+import System.IO
+import Data.Hashable
 
+type Work a r =  ContT (Maybe r) (MaybeT IO) a 
 
-no_strict_rules top unpack = \ sys -> 
-    if null $ strict_rules sys
-    then return $ Proof 
-            { input = unpack sys
-            , claim = if top then Top_Termination
-                      else Termination
-            , reason = No_Strict_Rules }
-    else fail "has strict rules"
+-- work :: (a -> Work b b) ->  a -> IO (Maybe b)
+work w x = runMaybeT $ runContT (w x) (return . Just)
 
-transformer fore back = \ sys -> do
+assert :: Bool -> Work () r
+assert f = if f then return () else reject 
+
+reject = ContT $ \ later -> MaybeT $ return Nothing
+
+traced s w = \ x -> do liftIO $ hPutStrLn stderr s ; w x
+
+andthen :: (a -> Work b r) -> ( b -> Work c r ) -> ( a -> Work c r )
+andthen p q = \ x -> p x >>= q
+
+orelse :: (a -> Work b r) -> (a -> Work b r) -> ( a -> Work b r )
+orelse p q = \  x -> ContT $ \ later -> MaybeT $ do
+    out <- runMaybeT $ runContT (p x) later
+    case out of 
+        Nothing -> runMaybeT $ runContT (q x) later
+        Just res -> return out
+
+orelse_andthen :: (a -> Work b r) -> (b -> Work c r) -> (a -> Work c r) -> (a -> Work c r)
+orelse_andthen p q r x = wrap (p x) >>= \ case 
+        Nothing -> r x
+        Just res -> q res
+
+-- wrap :: Work a r ->  Work (Maybe a) r
+wrap w = mapContT 
+    ( \ a -> MaybeT $ do x <- runMaybeT a ; case x of Nothing -> return $ Just Nothing ) w
+
+transformer :: (a -> Maybe b) -> (a -> r ->  r)
+            -> a -> Work b r 
+transformer fore back = \ sys -> ContT $ \ later -> 
     case fore sys of
         Nothing -> fail "fore"
-        Just sys' -> return $ \ later -> do
+        Just sys' -> do 
             out <- later sys'
             return $ back sys out
 
+-- | apply the continuation to each sub-result
+transformers :: (a -> Maybe [b]) -> (a -> [r] ->  r)
+            -> a -> Work b r 
+transformers fore back = \ sys -> ContT $ \ later -> 
+    case fore sys of
+        Nothing -> fail "fore"
+        Just syss' ->  do
+            outs <- mapM later syss'
+            return $ back sys outs
 
-remover_natural :: (  )
-        => Doc
-        -> ( TRS v s -> TRS v u )
-        -> ( TRS v s -> IO (Maybe (Interpretation u Integer, TRS v t)))
-        -> Lifter (TRS v s) (TRS v t) (Proof v u)
 
-remover_natural msg unpack h = \ sys -> do
-    (m, sys') <- A.io $ h sys
-    return $ \ k -> do
-        out <- k sys'
-        return $ Proof 
-               { input = unpack sys
-               , claim = Termination
-               , reason = Matrix_Interpretation_Natural m out
-               }
+{-
+\ sys -> do
+    mk <- foo sys
+    case mk of
+        Nothing -> baz sys
+        Just k -> k bar
+-}
 
-remover_arctic :: ( )
-        => Doc
-        -> ( TRS v s -> TRS v u )
-        -> ( TRS v s -> IO (Maybe (Interpretation u (A.Arctic Integer), TRS v t)))
-        -> Lifter (TRS v s) (TRS v t) (Proof v u)
 
-remover_arctic msg unpack h = \ sys -> do
-    (m, sys') <- A.io $ h sys
-    return $ \ k -> do
-        out <- k sys'
-        return $ Proof 
-               { input = unpack sys
-               , claim = Top_Termination
-               , reason = Matrix_Interpretation_Arctic m out
-               }
+pass = transformer ( \ sys -> return sys ) ( \ sys proof -> proof )
 
-remover_label ::  ( )
-     => Doc
-     ->  ( TRS v s -> TRS v u )
-     -> ( TRS v s -> IO (Maybe (Doc, TRS v t)))
-     -> Lifter (TRS v s) (TRS v t) (Proof v u)
-remover_label msg unpack h = \ sys -> do
-    (m, sys') <- A.io $ h sys
-    return $ \ k -> do
-        out <- k sys'
-        return $ Proof 
-               { input = unpack sys
-               , claim = Termination
-               , reason = Extra m out
-               }
+compressor c = transformer 
+    ( \ sys -> let (cost, rs) = ( case c of
+                       O.None -> CS.nocompress 
+                       O.Simple -> CS.compress 
+                       O.Paper -> CP.compress CP.Simple
+                       O.PaperIter -> CP.compress CP.Iterative
+                     ) $ rules sys
+               in  return $ RS { rules = CC.roots rs
+                               , separate = separate sys }
+    )
+    ( \ sys proof -> proof )
+{-
+    ( \ sys proof -> P.Proof
+         { P.input = sys
+         , P.claim = P.Termination
+         , P.reason = 
+              P.Equivalent (text $ show c) proof
+         } )
+-}
+

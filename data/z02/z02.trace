@@ -1,0 +1,723 @@
+a# (f, a (f, x1)) -> a# (x1, g)
+a# (x1, g) -> a# (f,
+                 [a/2/a.2] (g, f, x1))
+Configuration:
+a# (x1, g) -> a# (g, a (f, x1))
+a# (x1, g) -> a# (f, x1)
+a (x1, g) ->= [a/2/a.2] (f, g,
+Config {modelBitWidth = 0, numPrecedences = 1, numPatterns = 1, precedenceDomainBitWidth = -1, argumentFilter = AFNormal, usePrecedence = False, emptyPrecedence = False, useInterpretation = True, beVerbose = True, outputCPF = False}
+                        a (f, x1))
+[a/2/a.2] (f, f, x1) ->= a (x1,
+                           g)
+DP-TRS:
+total size 47
+a# (f (), a (f (), x1)) -> a# (x1, g ())
+"Options {dim = 1, bits = 8, compression = Simple, dp = True, fromtop = False, naive = False, mirror = False, mirror_labelled = False, parallel = False, label = Nothing, use_lpo = False, use_natural = False, use_arctic = False, printStatistics = False, cpf = False}"
+a# (x1, g ()) -> a# (f (), a (g (), a (f (), x1)))
+a# (x1, g ()) -> a# (g (), a (f (), x1))
+a# (x1, g ()) -> a# (f (), x1)
+a (f (), a (f (), x1)) -> a (x1, g ())
+a (x1, g ()) -> a (f (), a (g (), a (f (), x1)))
+
+Symbol Map:
+Count {elem_alloc = 8, elem_add = 24, elem_times = 30, matrix_alloc = fromList [((1,1),8)], matrix_add = fromList [((1,1),24)], matrix_times = fromList [((1,1,1),30)]}
+start producing CNF
+CNF finished vars 2256 clauses 7268
+starting solver
+fromList [((nat 3 0),Right (Marked a)),((nat 3 1),Right (Original f)),((nat 3 2),Right (Original a)),((nat 3 3),Left x1),((nat 3 4),Right (Original g))]
+Start producing CNF
+Allocator: #variables: 28, #clauses: 0
+solver finished, result: False
+a# (f, a (f, x1)) -> a# (x1, g)
+a# (x1, g) -> a# (f,
+                 [a/2/a.2] (g, f, x1))
+a# (x1, g) -> a# (g, a (f, x1))
+a# (x1, g) -> a# (f, x1)
+a (x1, g) ->= [a/2/a.2] (f, g,
+                        a (f, x1))
+[a/2/a.2] (f, f, x1) ->= a (x1,
+                           g)
+total size 47
+"Options {dim = 2, bits = 8, compression = Simple, dp = True, fromtop = False, naive = False, mirror = False, mirror_labelled = False, parallel = False, label = Nothing, use_lpo = False, use_natural = False, use_arctic = False, printStatistics = False, cpf = False}"
+Count {elem_alloc = 19, elem_add = 92, elem_times = 110, matrix_alloc = fromList [((1,1),1),((1,2),2),((2,1),3),((2,2),2)], matrix_add = fromList [((1,1),11),((2,1),13)], matrix_times = fromList [((1,2,1),11),((1,2,2),3),((2,2,1),13),((2,2,2),3)]}
+start producing CNF
+Cache hits: 374 (20%), misses: 1423 (79%)
+Toplevel: #variables: 1, #clauses: 4
+CNF finished
+#variables: 1727, #clauses: 5553, #literals: 14741, clause density: 3.2154024319629415
+#variables (Minisat): 1727, #clauses (Minisat): 5290, clause density: 3.0631152287203243
+#clauses of length 1:	55
+#clauses of length 2:	2512
+#clauses of length 3:	2282
+#clauses of length 4:	704
+
+Starting solver
+CNF finished vars 7848 clauses 25666
+starting solver
+Solver finished in 1.9e-2 seconds (result: False)
+Configuration:
+Config {modelBitWidth = 1, numPrecedences = 1, numPatterns = 2, precedenceDomainBitWidth = -1, argumentFilter = AFNormal, usePrecedence = False, emptyPrecedence = False, useInterpretation = True, beVerbose = True, outputCPF = False}
+DP-TRS:
+a# (f (), a (f (), x1)) -> a# (x1, g ())
+a# (x1, g ()) -> a# (f (), a (g (), a (f (), x1)))
+a# (x1, g ()) -> a# (g (), a (f (), x1))
+a# (x1, g ()) -> a# (f (), x1)
+a (f (), a (f (), x1)) -> a (x1, g ())
+a (x1, g ()) -> a (f (), a (g (), a (f (), x1)))
+
+Symbol Map:
+fromList [((nat 3 0),Right (Marked a)),((nat 3 1),Right (Original f)),((nat 3 2),Right (Original a)),((nat 3 3),Left x1),((nat 3 4),Right (Original g))]
+Start producing CNF
+Allocator: #variables: 98, #clauses: 0
+solver finished, result: False
+a# (f, a (f, x1)) -> a# (x1, g)
+a# (x1, g) -> a# (f,
+                 [a/2/a.2] (g, f, x1))
+a# (x1, g) -> a# (g, a (f, x1))
+a# (x1, g) -> a# (f, x1)
+a (x1, g) ->= [a/2/a.2] (f, g,
+                        a (f, x1))
+[a/2/a.2] (f, f, x1) ->= a (x1,
+                           g)
+total size 47
+"Options {dim = 3, bits = 8, compression = Simple, dp = True, fromtop = False, naive = False, mirror = False, mirror_labelled = False, parallel = False, label = Nothing, use_lpo = False, use_natural = False, use_arctic = False, printStatistics = False, cpf = False}"
+Count {elem_alloc = 34, elem_add = 222, elem_times = 258, matrix_alloc = fromList [((1,1),1),((1,3),2),((3,1),3),((3,3),2)], matrix_add = fromList [((1,1),11),((3,1),13)], matrix_times = fromList [((1,3,1),11),((1,3,3),3),((3,3,1),13),((3,3,3),3)]}
+start producing CNF
+CNF finished vars 18072 clauses 59527
+starting solver
+Cache hits: 1485 (24%), misses: 4476 (75%)
+Toplevel: #variables: 1, #clauses: 4
+CNF finished
+#variables: 5967, #clauses: 18355, #literals: 47881, clause density: 3.076085134908664
+#variables (Minisat): 5967, #clauses (Minisat): 17802, clause density: 2.9834087481146305
+#clauses of length 1:	113
+#clauses of length 2:	8366
+#clauses of length 3:	8468
+#clauses of length 4:	1408
+
+Starting solver
+Solver finished in 5.4e-2 seconds (result: True)
+Starting decoder
+Decoder finished
+Test: True
+
+#######################################
+
+Model:
+a# * 0 |-> 0
+a# * * |-> 0
+
+
+f  |-> 0
+
+
+a * * |-> 1
+a * * |-> 0
+
+
+g  |-> 0
+
+
+Labeled Trs:
+a#^[0, 1] (f^[] (), a^[0, 0] (f^[] (), x1)) -> a#^[0, 0] (x1, g^[] ())
+a#^[0, 1] (f^[] (), a^[0, 1] (f^[] (), x1)) -> a#^[1, 0] (x1, g^[] ())
+a#^[0, 0] (x1, g^[] ()) -> a#^[0, 1] (f^[] (), a^[0, 1] (g^[] (), a^[0, 0] (f^[] (), x1)))
+a#^[1, 0] (x1, g^[] ()) -> a#^[0, 1] (f^[] (), a^[0, 1] (g^[] (), a^[0, 1] (f^[] (), x1)))
+a#^[0, 0] (x1, g^[] ()) -> a#^[0, 1] (g^[] (), a^[0, 0] (f^[] (), x1))
+a#^[1, 0] (x1, g^[] ()) -> a#^[0, 1] (g^[] (), a^[0, 1] (f^[] (), x1))
+a#^[0, 0] (x1, g^[] ()) -> a#^[0, 0] (f^[] (), x1)
+a#^[1, 0] (x1, g^[] ()) -> a#^[0, 1] (f^[] (), x1)
+a^[0, 1] (f^[] (), a^[0, 0] (f^[] (), x1)) -> a^[0, 0] (x1, g^[] ())
+a^[0, 1] (f^[] (), a^[0, 1] (f^[] (), x1)) -> a^[1, 0] (x1, g^[] ())
+a^[0, 0] (x1, g^[] ()) -> a^[0, 1] (f^[] (), a^[0, 1] (g^[] (), a^[0, 0] (f^[] (), x1)))
+a^[1, 0] (x1, g^[] ()) -> a^[0, 1] (f^[] (), a^[0, 1] (g^[] (), a^[0, 1] (f^[] (), x1)))
+
+1. Linear Interpretation:
+a#^[0, 0] : 19
+a#^[0, 1] : 2  +  x_1  +  x_2
+a#^[1, 0] : 12  +  x_1  +  x_2
+a#^[1, 1] : 12
+f^[] : 10
+a^[0, 0] : 7
+a^[0, 1] : 0  +  x_2
+a^[1, 0] : 0  +  x_1
+a^[1, 1] : 8
+g^[] : 0
+
+
+Deleted:
+a# (x1, g ()) -> a# (g (), a (f (), x1))
+
+
+Intermediate system:
+keep a#^[0, 1] (f^[] (), a^[0, 0] (f^[] (), x1)) -> a#^[0, 0] (x1, g^[] ())
+keep a#^[0, 1] (f^[] (), a^[0, 1] (f^[] (), x1)) -> a#^[1, 0] (x1, g^[] ())
+keep a#^[0, 0] (x1, g^[] ()) -> a#^[0, 1] (f^[] (), a^[0, 1] (g^[] (), a^[0, 0] (f^[] (), x1)))
+keep a#^[1, 0] (x1, g^[] ()) -> a#^[0, 1] (f^[] (), a^[0, 1] (g^[] (), a^[0, 1] (f^[] (), x1)))
+keep a#^[0, 0] (x1, g^[] ()) -> a#^[0, 1] (g^[] (), a^[0, 0] (f^[] (), x1))
+keep a#^[1, 0] (x1, g^[] ()) -> a#^[0, 1] (g^[] (), a^[0, 1] (f^[] (), x1))
+keep a#^[0, 0] (x1, g^[] ()) -> a#^[0, 0] (f^[] (), x1)
+keep a#^[1, 0] (x1, g^[] ()) -> a#^[0, 1] (f^[] (), x1)
+usable a^[0, 1] (f^[] (), a^[0, 0] (f^[] (), x1)) -> a^[0, 0] (x1, g^[] ())
+usable a^[0, 1] (f^[] (), a^[0, 1] (f^[] (), x1)) -> a^[1, 0] (x1, g^[] ())
+usable a^[0, 0] (x1, g^[] ()) -> a^[0, 1] (f^[] (), a^[0, 1] (g^[] (), a^[0, 0] (f^[] (), x1)))
+usable a^[1, 0] (x1, g^[] ()) -> a^[0, 1] (f^[] (), a^[0, 1] (g^[] (), a^[0, 1] (f^[] (), x1)))
+
+
+Intermediate system:
+keep a#^[0, 1] (f^[] (), a^[0, 0] (f^[] (), x1)) -> a#^[0, 0] (x1, g^[] ())
+keep a#^[0, 1] (f^[] (), a^[0, 1] (f^[] (), x1)) -> a#^[1, 0] (x1, g^[] ())
+keep a#^[0, 0] (x1, g^[] ()) -> a#^[0, 1] (f^[] (), a^[0, 1] (g^[] (), a^[0, 0] (f^[] (), x1)))
+keep a#^[1, 0] (x1, g^[] ()) -> a#^[0, 1] (f^[] (), a^[0, 1] (g^[] (), a^[0, 1] (f^[] (), x1)))
+delete a#^[0, 0] (x1, g^[] ()) -> a#^[0, 1] (g^[] (), a^[0, 0] (f^[] (), x1))
+delete a#^[1, 0] (x1, g^[] ()) -> a#^[0, 1] (g^[] (), a^[0, 1] (f^[] (), x1))
+keep a#^[0, 0] (x1, g^[] ()) -> a#^[0, 0] (f^[] (), x1)
+keep a#^[1, 0] (x1, g^[] ()) -> a#^[0, 1] (f^[] (), x1)
+usable a^[0, 1] (f^[] (), a^[0, 0] (f^[] (), x1)) -> a^[0, 0] (x1, g^[] ())
+usable a^[0, 1] (f^[] (), a^[0, 1] (f^[] (), x1)) -> a^[1, 0] (x1, g^[] ())
+usable a^[0, 0] (x1, g^[] ()) -> a^[0, 1] (f^[] (), a^[0, 1] (g^[] (), a^[0, 0] (f^[] (), x1)))
+usable a^[1, 0] (x1, g^[] ()) -> a^[0, 1] (f^[] (), a^[0, 1] (g^[] (), a^[0, 1] (f^[] (), x1)))
+
+Configuration:
+Config {modelBitWidth = 0, numPrecedences = 1, numPatterns = 1, precedenceDomainBitWidth = -1, argumentFilter = AFNormal, usePrecedence = False, emptyPrecedence = False, useInterpretation = True, beVerbose = True, outputCPF = False}
+DP-TRS:
+a# (f (), a (f (), x1)) -> a# (x1, g ())
+a# (x1, g ()) -> a# (f (), a (g (), a (f (), x1)))
+a# (x1, g ()) -> a# (f (), x1)
+a (f (), a (f (), x1)) -> a (x1, g ())
+a (x1, g ()) -> a (f (), a (g (), a (f (), x1)))
+a# (f, a (f, x1)) -> a# (x1, g)
+
+a# (x1, g) -> a# (f,
+                 [a/2/a.2] (g, f, x1))
+a# (x1, g) -> a# (f, x1)
+Symbol Map:
+a (x1, g) ->= [a/2/a.2] (f, g,
+                        a (f, x1))
+[a/2/a.2] (f, f, x1) ->= a (x1,
+fromList [((nat 3 0),Right (Marked a)),((nat 3 1),Right (Original f)),((nat 3 2),Right (Original a)),((nat 3 3),Left x1),((nat 3 4),Right (Original g))]
+                           g)
+total size 39
+Start producing CNF
+"Options {dim = 1, bits = 8, compression = Simple, dp = True, fromtop = False, naive = False, mirror = False, mirror_labelled = False, parallel = False, label = Nothing, use_lpo = False, use_natural = False, use_arctic = False, printStatistics = False, cpf = False}"
+Allocator: #variables: 28, #clauses: 0
+Count {elem_alloc = 8, elem_add = 20, elem_times = 25, matrix_alloc = fromList [((1,1),8)], matrix_add = fromList [((1,1),20)], matrix_times = fromList [((1,1,1),25)]}
+############### caught thread killed
+Cache hits: 336 (20%), misses: 1298 (79%)
+start producing CNF
+Toplevel: #variables: 1, #clauses: 4
+CNF finished vars 1884 clauses 6035
+CNF finished
+starting solver
+#variables: 1483, #clauses: 4781, #literals: 12715, clause density: 3.2238705327039785
+#variables (Minisat): 1483, #clauses (Minisat): 4520, clause density: 3.047875927174646
+#clauses of length 1:	53
+#clauses of length 2:	2138
+#clauses of length 3:	1974
+#clauses of length 4:	616
+
+Starting solver
+Solver finished in 1.0e-2 seconds (result: False)
+Configuration:
+Config {modelBitWidth = 1, numPrecedences = 1, numPatterns = 2, precedenceDomainBitWidth = -1, argumentFilter = AFNormal, usePrecedence = False, emptyPrecedence = False, useInterpretation = True, beVerbose = True, outputCPF = False}
+DP-TRS:
+a# (f (), a (f (), x1)) -> a# (x1, g ())
+a# (x1, g ()) -> a# (f (), a (g (), a (f (), x1)))
+a# (x1, g ()) -> a# (f (), x1)
+a (f (), a (f (), x1)) -> a (x1, g ())
+a (x1, g ()) -> a (f (), a (g (), a (f (), x1)))
+
+Symbol Map:
+fromList [((nat 3 0),Right (Marked a)),((nat 3 1),Right (Original f)),((nat 3 2),Right (Original a)),((nat 3 3),Left x1),((nat 3 4),Right (Original g))]
+Start producing CNF
+Allocator: #variables: 98, #clauses: 0
+solver finished, result: False
+a# (f, a (f, x1)) -> a# (x1, g)
+a# (x1, g) -> a# (f,
+                 [a/2/a.2] (g, f, x1))
+a# (x1, g) -> a# (f, x1)
+a (x1, g) ->= [a/2/a.2] (f, g,
+                        a (f, x1))
+[a/2/a.2] (f, f, x1) ->= a (x1,
+                           g)
+total size 39
+"Options {dim = 2, bits = 8, compression = Simple, dp = True, fromtop = False, naive = False, mirror = False, mirror_labelled = False, parallel = False, label = Nothing, use_lpo = False, use_natural = False, use_arctic = False, printStatistics = False, cpf = False}"
+Count {elem_alloc = 19, elem_add = 80, elem_times = 96, matrix_alloc = fromList [((1,1),1),((1,2),2),((2,1),3),((2,2),2)], matrix_add = fromList [((1,1),8),((2,1),12)], matrix_times = fromList [((1,2,1),8),((1,2,2),2),((2,2,1),12),((2,2,2),3)]}
+start producing CNF
+CNF finished vars 6851 clauses 22347
+starting solver
+solver finished, result: False
+a# (f, a (f, x1)) -> a# (x1, g)
+a# (x1, g) -> a# (f,
+                 [a/2/a.2] (g, f, x1))
+a# (x1, g) -> a# (f, x1)
+a (x1, g) ->= [a/2/a.2] (f, g,
+                        a (f, x1))
+[a/2/a.2] (f, f, x1) ->= a (x1,
+                           g)
+total size 39
+"Options {dim = 3, bits = 8, compression = Simple, dp = True, fromtop = False, naive = False, mirror = False, mirror_labelled = False, parallel = False, label = Nothing, use_lpo = False, use_natural = False, use_arctic = False, printStatistics = False, cpf = False}"
+Count {elem_alloc = 34, elem_add = 198, elem_times = 231, matrix_alloc = fromList [((1,1),1),((1,3),2),((3,1),3),((3,3),2)], matrix_add = fromList [((1,1),8),((3,1),12)], matrix_times = fromList [((1,3,1),8),((1,3,3),2),((3,3,1),12),((3,3,3),3)]}
+start producing CNF
+Cache hits: 1329 (24%), misses: 4057 (75%)
+Toplevel: #variables: 1, #clauses: 4
+CNF finished
+#variables: 5171, #clauses: 15863, #literals: 41391, clause density: 3.0676851672790564
+#variables (Minisat): 5171, #clauses (Minisat): 15342, clause density: 2.9669309611293753
+#clauses of length 1:	105
+#clauses of length 2:	7220
+#clauses of length 3:	7306
+#clauses of length 4:	1232
+
+Starting solver
+Solver finished in 3.4e-2 seconds (result: True)
+Starting decoder
+Decoder finished
+Test: True
+
+#######################################
+
+Model:
+a# 1 * |-> 0
+a# 0 * |-> 0
+
+
+f  |-> 0
+
+
+a 0 0 |-> 0
+a * * |-> 0
+
+
+g  |-> 1
+
+
+Labeled Trs:
+a#^[0, 0] (f^[] (), a^[0, 0] (f^[] (), x1)) -> a#^[0, 1] (x1, g^[] ())
+a#^[0, 0] (f^[] (), a^[0, 1] (f^[] (), x1)) -> a#^[1, 1] (x1, g^[] ())
+a#^[0, 1] (x1, g^[] ()) -> a#^[0, 0] (f^[] (), a^[1, 0] (g^[] (), a^[0, 0] (f^[] (), x1)))
+a#^[1, 1] (x1, g^[] ()) -> a#^[0, 0] (f^[] (), a^[1, 0] (g^[] (), a^[0, 1] (f^[] (), x1)))
+a#^[0, 1] (x1, g^[] ()) -> a#^[0, 0] (f^[] (), x1)
+a#^[1, 1] (x1, g^[] ()) -> a#^[0, 1] (f^[] (), x1)
+a^[0, 0] (f^[] (), a^[0, 0] (f^[] (), x1)) -> a^[0, 1] (x1, g^[] ())
+a^[0, 0] (f^[] (), a^[0, 1] (f^[] (), x1)) -> a^[1, 1] (x1, g^[] ())
+a^[0, 1] (x1, g^[] ()) -> a^[0, 0] (f^[] (), a^[1, 0] (g^[] (), a^[0, 0] (f^[] (), x1)))
+a^[1, 1] (x1, g^[] ()) -> a^[0, 0] (f^[] (), a^[1, 0] (g^[] (), a^[0, 1] (f^[] (), x1)))
+
+1. Linear Interpretation:
+a#^[0, 0] : 10  +  x_1  +  x_2
+a#^[0, 1] : 12  +  x_1  +  x_2
+a#^[1, 0] : 18  +  x_1
+a#^[1, 1] : 30  +  x_1
+f^[] : 5
+a^[0, 0] : 8  +  x_1  +  x_2
+a^[0, 1] : 10  +  x_1  +  x_2
+a^[1, 0] : 0  +  x_2
+a^[1, 1] : 12  +  x_1  +  x_2
+g^[] : 16
+
+
+Deleted:
+a# (x1, g ()) -> a# (f (), x1)
+
+
+Intermediate system:
+keep a#^[0, 0] (f^[] (), a^[0, 0] (f^[] (), x1)) -> a#^[0, 1] (x1, g^[] ())
+keep a#^[0, 0] (f^[] (), a^[0, 1] (f^[] (), x1)) -> a#^[1, 1] (x1, g^[] ())
+keep a#^[0, 1] (x1, g^[] ()) -> a#^[0, 0] (f^[] (), a^[1, 0] (g^[] (), a^[0, 0] (f^[] (), x1)))
+keep a#^[1, 1] (x1, g^[] ()) -> a#^[0, 0] (f^[] (), a^[1, 0] (g^[] (), a^[0, 1] (f^[] (), x1)))
+keep a#^[0, 1] (x1, g^[] ()) -> a#^[0, 0] (f^[] (), x1)
+keep a#^[1, 1] (x1, g^[] ()) -> a#^[0, 1] (f^[] (), x1)
+usable a^[0, 0] (f^[] (), a^[0, 0] (f^[] (), x1)) -> a^[0, 1] (x1, g^[] ())
+usable a^[0, 0] (f^[] (), a^[0, 1] (f^[] (), x1)) -> a^[1, 1] (x1, g^[] ())
+usable a^[0, 1] (x1, g^[] ()) -> a^[0, 0] (f^[] (), a^[1, 0] (g^[] (), a^[0, 0] (f^[] (), x1)))
+usable a^[1, 1] (x1, g^[] ()) -> a^[0, 0] (f^[] (), a^[1, 0] (g^[] (), a^[0, 1] (f^[] (), x1)))
+
+
+Intermediate system:
+keep a#^[0, 0] (f^[] (), a^[0, 0] (f^[] (), x1)) -> a#^[0, 1] (x1, g^[] ())
+keep a#^[0, 0] (f^[] (), a^[0, 1] (f^[] (), x1)) -> a#^[1, 1] (x1, g^[] ())
+keep a#^[0, 1] (x1, g^[] ()) -> a#^[0, 0] (f^[] (), a^[1, 0] (g^[] (), a^[0, 0] (f^[] (), x1)))
+keep a#^[1, 1] (x1, g^[] ()) -> a#^[0, 0] (f^[] (), a^[1, 0] (g^[] (), a^[0, 1] (f^[] (), x1)))
+delete a#^[0, 1] (x1, g^[] ()) -> a#^[0, 0] (f^[] (), x1)
+delete a#^[1, 1] (x1, g^[] ()) -> a#^[0, 1] (f^[] (), x1)
+usable a^[0, 0] (f^[] (), a^[0, 0] (f^[] (), x1)) -> a^[0, 1] (x1, g^[] ())
+usable a^[0, 0] (f^[] (), a^[0, 1] (f^[] (), x1)) -> a^[1, 1] (x1, g^[] ())
+usable a^[0, 1] (x1, g^[] ()) -> a^[0, 0] (f^[] (), a^[1, 0] (g^[] (), a^[0, 0] (f^[] (), x1)))
+usable a^[1, 1] (x1, g^[] ()) -> a^[0, 0] (f^[] (), a^[1, 0] (g^[] (), a^[0, 1] (f^[] (), x1)))
+
+CNF finished vars 16180 clauses 53206
+starting solver
+Configuration:
+Config {modelBitWidth = 0, numPrecedences = 1, numPatterns = 1, precedenceDomainBitWidth = -1, argumentFilter = AFNormal, usePrecedence = False, emptyPrecedence = False, useInterpretation = True, beVerbose = True, outputCPF = False}
+DP-TRS:
+a# (f (), a (f (), x1)) -> a# (x1, g ())
+a# (x1, g ()) -> a# (f (), a (g (), a (f (), x1)))
+a (f (), a (f (), x1)) -> a (x1, g ())
+a (x1, g ()) -> a (f (), a (g (), a (f (), x1)))
+
+Symbol Map:
+fromList [((nat 3 0),Right (Marked a)),((nat 3 1),Right (Original f)),((nat 3 2),Right (Original a)),((nat 3 3),Left x1),((nat 3 4),Right (Original g))]
+Start producing CNF
+solver finished, result: Undef
+Allocator: #variables: 28, #clauses: 0
+a# (f, a (f, x1)) -> a# (x1, g)
+a# (x1, g) -> a# (f,
+                 [a/2/a.2] (g, f, x1))
+a (x1, g) ->= [a/2/a.2] (f, g,
+                        a (f, x1))
+[a/2/a.2] (f, f, x1) ->= a (x1,
+############### caught thread killed
+                           g)
+Cache hits: 294 (20%), misses: 1152 (79%)
+total size 33
+Toplevel: #variables: 1, #clauses: 4
+"Options {dim = 1, bits = 8, compression = Simple, dp = True, fromtop = False, naive = False, mirror = False, mirror_labelled = False, parallel = False, label = Nothing, use_lpo = False, use_natural = False, use_arctic = False, printStatistics = False, cpf = False}"
+CNF finished
+Count {elem_alloc = 8, elem_add = 18, elem_times = 23, matrix_alloc = fromList [((1,1),8)], matrix_add = fromList [((1,1),18)], matrix_times = fromList [((1,1,1),23)]}
+start producing CNF
+#variables: 1287, #clauses: 4147, #literals: 11056, clause density: 3.2222222222222223
+#variables (Minisat): 1287, #clauses (Minisat): 3932, clause density: 3.0551670551670553
+#clauses of length 1:	43
+#clauses of length 2:	1835
+#clauses of length 3:	1733
+#clauses of length 4:	536
+
+Starting solver
+CNF finished vars 1708 clauses 5417
+starting solver
+Solver finished in 2.0e-2 seconds (result: False)
+Configuration:
+Config {modelBitWidth = 1, numPrecedences = 1, numPatterns = 2, precedenceDomainBitWidth = -1, argumentFilter = AFNormal, usePrecedence = False, emptyPrecedence = False, useInterpretation = True, beVerbose = True, outputCPF = False}
+DP-TRS:
+a# (f (), a (f (), x1)) -> a# (x1, g ())
+a# (x1, g ()) -> a# (f (), a (g (), a (f (), x1)))
+a (f (), a (f (), x1)) -> a (x1, g ())
+a (x1, g ()) -> a (f (), a (g (), a (f (), x1)))
+
+Symbol Map:
+fromList [((nat 3 0),Right (Marked a)),((nat 3 1),Right (Original f)),((nat 3 2),Right (Original a)),((nat 3 3),Left x1),((nat 3 4),Right (Original g))]
+Start producing CNF
+Allocator: #variables: 98, #clauses: 0
+solver finished, result: False
+a# (f, a (f, x1)) -> a# (x1, g)
+a# (x1, g) -> a# (f,
+                 [a/2/a.2] (g, f, x1))
+a (x1, g) ->= [a/2/a.2] (f, g,
+                        a (f, x1))
+[a/2/a.2] (f, f, x1) ->= a (x1,
+                           g)
+total size 33
+"Options {dim = 2, bits = 8, compression = Simple, dp = True, fromtop = False, naive = False, mirror = False, mirror_labelled = False, parallel = False, label = Nothing, use_lpo = False, use_natural = False, use_arctic = False, printStatistics = False, cpf = False}"
+Count {elem_alloc = 19, elem_add = 76, elem_times = 92, matrix_alloc = fromList [((1,1),1),((1,2),2),((2,1),3),((2,2),2)], matrix_add = fromList [((1,1),6),((2,1),12)], matrix_times = fromList [((1,2,1),6),((1,2,2),2),((2,2,1),12),((2,2,2),3)]}
+start producing CNF
+CNF finished vars 6518 clauses 21178
+starting solver
+Cache hits: 1169 (24%), misses: 3620 (75%)
+Toplevel: #variables: 1, #clauses: 4
+CNF finished
+#variables: 4603, #clauses: 14103, #literals: 36853, clause density: 3.0638713882250705
+#variables (Minisat): 4603, #clauses (Minisat): 13674, clause density: 2.970671301325223
+#clauses of length 1:	85
+#clauses of length 2:	6358
+#clauses of length 3:	6588
+#clauses of length 4:	1072
+
+Starting solver
+Solver finished in 9.4e-2 seconds (result: True)
+Starting decoder
+Decoder finished
+Test: True
+
+#######################################
+
+Model:
+a# * 1 |-> 0
+a# * * |-> 0
+
+
+f  |-> 1
+
+
+a * 0 |-> 0
+a * * |-> 0
+
+
+g  |-> 1
+
+
+Labeled Trs:
+a#^[1, 0] (f^[] (), a^[1, 0] (f^[] (), x1)) -> a#^[0, 1] (x1, g^[] ())
+a#^[1, 0] (f^[] (), a^[1, 1] (f^[] (), x1)) -> a#^[1, 1] (x1, g^[] ())
+a#^[0, 1] (x1, g^[] ()) -> a#^[1, 0] (f^[] (), a^[1, 0] (g^[] (), a^[1, 0] (f^[] (), x1)))
+a#^[1, 1] (x1, g^[] ()) -> a#^[1, 0] (f^[] (), a^[1, 0] (g^[] (), a^[1, 1] (f^[] (), x1)))
+a^[1, 0] (f^[] (), a^[1, 0] (f^[] (), x1)) -> a^[0, 1] (x1, g^[] ())
+a^[1, 0] (f^[] (), a^[1, 1] (f^[] (), x1)) -> a^[1, 1] (x1, g^[] ())
+a^[0, 1] (x1, g^[] ()) -> a^[1, 0] (f^[] (), a^[1, 0] (g^[] (), a^[1, 0] (f^[] (), x1)))
+a^[1, 1] (x1, g^[] ()) -> a^[1, 0] (f^[] (), a^[1, 0] (g^[] (), a^[1, 1] (f^[] (), x1)))
+
+1. Linear Interpretation:
+a#^[0, 0] : 9  +  x_2
+a#^[0, 1] : 19  +  x_2
+a#^[1, 0] : 12  +  x_1  +  x_2
+a#^[1, 1] : 23
+f^[] : 5
+a^[0, 0] : 0  +  x_1  +  x_2
+a^[0, 1] : 2  +  x_2
+a^[1, 0] : 1  +  x_1
+a^[1, 1] : 6
+g^[] : 4
+
+
+Deleted:
+a# (x1, g ()) -> a# (f (), a (g (), a (f (), x1)))
+
+
+Intermediate system:
+keep a#^[1, 0] (f^[] (), a^[1, 0] (f^[] (), x1)) -> a#^[0, 1] (x1, g^[] ())
+keep a#^[1, 0] (f^[] (), a^[1, 1] (f^[] (), x1)) -> a#^[1, 1] (x1, g^[] ())
+keep a#^[0, 1] (x1, g^[] ()) -> a#^[1, 0] (f^[] (), a^[1, 0] (g^[] (), a^[1, 0] (f^[] (), x1)))
+keep a#^[1, 1] (x1, g^[] ()) -> a#^[1, 0] (f^[] (), a^[1, 0] (g^[] (), a^[1, 1] (f^[] (), x1)))
+usable a^[1, 0] (f^[] (), a^[1, 0] (f^[] (), x1)) -> a^[0, 1] (x1, g^[] ())
+usable a^[1, 0] (f^[] (), a^[1, 1] (f^[] (), x1)) -> a^[1, 1] (x1, g^[] ())
+usable a^[0, 1] (x1, g^[] ()) -> a^[1, 0] (f^[] (), a^[1, 0] (g^[] (), a^[1, 0] (f^[] (), x1)))
+usable a^[1, 1] (x1, g^[] ()) -> a^[1, 0] (f^[] (), a^[1, 0] (g^[] (), a^[1, 1] (f^[] (), x1)))
+
+
+Intermediate system:
+keep a#^[1, 0] (f^[] (), a^[1, 0] (f^[] (), x1)) -> a#^[0, 1] (x1, g^[] ())
+keep a#^[1, 0] (f^[] (), a^[1, 1] (f^[] (), x1)) -> a#^[1, 1] (x1, g^[] ())
+delete a#^[0, 1] (x1, g^[] ()) -> a#^[1, 0] (f^[] (), a^[1, 0] (g^[] (), a^[1, 0] (f^[] (), x1)))
+delete a#^[1, 1] (x1, g^[] ()) -> a#^[1, 0] (f^[] (), a^[1, 0] (g^[] (), a^[1, 1] (f^[] (), x1)))
+usable a^[1, 0] (f^[] (), a^[1, 0] (f^[] (), x1)) -> a^[0, 1] (x1, g^[] ())
+usable a^[1, 0] (f^[] (), a^[1, 1] (f^[] (), x1)) -> a^[1, 1] (x1, g^[] ())
+usable a^[0, 1] (x1, g^[] ()) -> a^[1, 0] (f^[] (), a^[1, 0] (g^[] (), a^[1, 0] (f^[] (), x1)))
+usable a^[1, 1] (x1, g^[] ()) -> a^[1, 0] (f^[] (), a^[1, 0] (g^[] (), a^[1, 1] (f^[] (), x1)))
+
+YES
+<?xml version='1.0' encoding='UTF-8'  ?>
+
+
+<certificationProblem 
+><input 
+><trsInput 
+><trs 
+><rules 
+><rule 
+><lhs 
+><funapp 
+><name 
+>a</name
+><arg 
+><funapp 
+><name 
+>f</name></funapp></arg
+><arg 
+><funapp 
+solver finished, result: Undef
+><name 
+>a</name
+############### caught thread killed
+><arg 
+><funapp 
+><name 
+>f</name></funapp></arg
+><arg 
+><var 
+>x1</var></arg></funapp></arg></funapp></lhs
+><rhs 
+><funapp 
+><name 
+>a</name
+><arg 
+><var 
+>x1</var></arg
+><arg 
+><funapp 
+><name 
+>g</name></funapp></arg></funapp></rhs></rule
+><rule 
+><lhs 
+><funapp 
+><name 
+>a</name
+><arg 
+><var 
+>x1</var></arg
+><arg 
+><funapp 
+><name 
+>g</name></funapp></arg></funapp></lhs
+><rhs 
+><funapp 
+><name 
+>a</name
+><arg 
+><funapp 
+><name 
+>f</name></funapp></arg
+><arg 
+><funapp 
+><name 
+>a</name
+><arg 
+><funapp 
+><name 
+>g</name></funapp></arg
+><arg 
+><funapp 
+><name 
+>a</name
+><arg 
+><funapp 
+><name 
+>f</name></funapp></arg
+><arg 
+><var 
+>x1</var></arg></funapp></arg></funapp></arg></funapp></rhs></rule></rules></trs></trsInput></input
+><cpfVersion 
+>2.1</cpfVersion
+><proof 
+><trsTerminationProof 
+><dpTrans 
+><dps 
+><rules 
+><rule 
+><lhs 
+><funapp 
+><sharp 
+><name 
+>a</name></sharp
+><arg 
+><funapp 
+><name 
+>f</name></funapp></arg
+><arg 
+><funapp 
+><name 
+>a</name
+><arg 
+><funapp 
+><name 
+>f</name></funapp></arg
+><arg 
+><var 
+>x1</var></arg></funapp></arg></funapp></lhs
+><rhs 
+><funapp 
+><sharp 
+><name 
+>a</name></sharp
+><arg 
+><var 
+>x1</var></arg
+><arg 
+><funapp 
+><name 
+>g</name></funapp></arg></funapp></rhs></rule
+><rule 
+><lhs 
+><funapp 
+><sharp 
+><name 
+>a</name></sharp
+><arg 
+><var 
+>x1</var></arg
+><arg 
+><funapp 
+><name 
+>g</name></funapp></arg></funapp></lhs
+><rhs 
+><funapp 
+><sharp 
+><name 
+>a</name></sharp
+><arg 
+><funapp 
+><name 
+>f</name></funapp></arg
+><arg 
+><funapp 
+><name 
+>a</name
+><arg 
+><funapp 
+><name 
+>g</name></funapp></arg
+><arg 
+><funapp 
+><name 
+>a</name
+><arg 
+><funapp 
+><name 
+>f</name></funapp></arg
+><arg 
+><var 
+>x1</var></arg></funapp></arg></funapp></arg></funapp></rhs></rule
+><rule 
+><lhs 
+><funapp 
+><sharp 
+><name 
+>a</name></sharp
+><arg 
+><var 
+>x1</var></arg
+><arg 
+><funapp 
+><name 
+>g</name></funapp></arg></funapp></lhs
+><rhs 
+><funapp 
+><sharp 
+><name 
+>a</name></sharp
+><arg 
+><funapp 
+><name 
+>g</name></funapp></arg
+><arg 
+><funapp 
+><name 
+>a</name
+><arg 
+><funapp 
+><name 
+>f</name></funapp></arg
+><arg 
+><var 
+>x1</var></arg></funapp></arg></funapp></rhs></rule
+><rule 
+><lhs 
+><funapp 
+><sharp 
+><name 
+>a</name></sharp
+><arg 
+><var 
+>x1</var></arg
+><arg 
+><funapp 
+><name 
+>g</name></funapp></arg></funapp></lhs
+><rhs 
+><funapp 
+><sharp 
+><name 
+>a</name></sharp
+><arg 
+><funapp 
+><name 
+>f</name></funapp></arg
+><arg 
+><var 
+>x1</var></arg></funapp></rhs></rule></rules></dps
+><markedSymbols 
+>true</markedSymbols
+><dpProof 
+><semlabProc 
+><model 
+><finiteModel 
+matchbox2014: Prelude.head: empty list

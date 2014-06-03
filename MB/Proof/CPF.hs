@@ -7,6 +7,9 @@ import TPDB.Data
 import TPDB.DP 
 import MB.Proof.Type
 
+import MB.Proof.Doc () -- for print error messages
+import TPDB.Pretty ( render, pretty ) -- "
+
 import qualified TPDB.CPF.Proof.Type as C
 import qualified TPDB.CPF.Proof.Xml 
 
@@ -48,7 +51,8 @@ proof r = case r of
                                     , C.trsTerminationProof = proof $ reason p
                                     }
     Matrix_Interpretation_Natural min q -> 
-        C.RuleRemoval { C.rr_orderingConstraintProof = ocp C.Naturals min
+        C.RuleRemoval { C.rr_orderingConstraintProof = 
+                              ocp plain  C.Naturals min
                       , C.trs = input q
                       , C.trsTerminationProof = proof $ reason q
                       }
@@ -59,39 +63,74 @@ dpproof p = case reason p of
     No_Strict_Rules -> C.PIsEmpty
     Equivalent d p -> dpproof  p
     Matrix_Interpretation_Natural mia q -> 
-        C.RedPairProc { C.dp_orderingConstraintProof 
-                      = ocp C.Naturals $ msharp mia
-                      , C.red_pair_dps = C.DPS $ map rsharp $ filter strict $ rules $ input q
-                      , C.redpairproc_dpProof = dpproof q
+        C.RedPairProc { C.rppOrderingConstraintProof 
+                      = ocp sharp C.Naturals mia
+                      , C.rppDps = C.DPS $ map rsharp $ filter strict $ rules $ input q
+                      , C.rppDpProof = dpproof q
                       }
-    Matrix_Interpretation_Arctic mia q -> 
-        C.RedPairProc { C.dp_orderingConstraintProof 
-                      = ocp (C.Arctic C.Naturals) $ msharp mia
-                      , C.red_pair_dps = C.DPS $ map rsharp $ filter strict $ rules $ input q
-                      , C.redpairproc_dpProof = dpproof q
+    Matrix_Interpretation_Arctic mia usable q -> 
+        C.RedPairProc { C.rppOrderingConstraintProof 
+                      = ocp sharp (C.Arctic C.Naturals) mia
+                      , C.rppDps = C.DPS $ map rsharp $ filter strict $ rules $ input q
+                      , C.rppUsableRules = 
+                           fmap (C.DPS . map rsharp ) usable
+                      , C.rppDpProof = dpproof q
                       }
+    SCCs ps -> C.DepGraphProc $ do
+        p <- ps
+        return $ case p of
+            Left v -> C.DepGraphComponent
+               { C.dgcRealScc = False
+               , C.dgcDps = C.DPS $ map rsharp [ v ]
+               }
+            Right p -> C.DepGraphComponent 
+               { C.dgcRealScc = True 
+               , C.dgcDps = C.DPS $ map rsharp $ filter strict $ rules $ input p
+               , C.dgcDpProof = dpproof p
+               }
+    Usable_Rules p -> dpproof p
 
+    Cpf2Cpf _ f p -> f $ dpproof p
 
+    r -> error $ unlines [ "dpproof: missing CPF output for"
+                         , render $ pretty r 
+                         ]
+
+plain :: Identifier -> C.Symbol
+plain k = C.SymName k 
+
+sharp :: Marked Identifier -> C.Symbol
 sharp k =  case k of
-            Original o -> C.Plain o
-            Marked   o -> C.Sharp o
+            Original o ->              plain o
+            Marked   o -> C.SymSharp $ plain o
 
+deriving instance Eq C.Symbol
+deriving instance Ord C.Symbol
+deriving instance Eq C.Label
+deriving instance Ord C.Label
+
+{-
 msharp m = m { mapping = M.fromList $ do
     ( k, v ) <- M.toList $ mapping m
     return (sharp k, v) }
+-}
 
+rsharp :: Rule (Term Identifier (Marked Identifier)) 
+       -> Rule (Term Identifier C.Symbol)
 rsharp u = u { lhs = fmap sharp $ lhs u
              , rhs = fmap sharp $ rhs u
              }
 
-ocp dom mi = 
-        C.RedPair { C.interpretation = interpretation dom mi }
+ocp fsym dom mi = C.OCPRedPair 
+           $ C.RPInterpretation 
+           $ interpretation fsym dom mi 
 
-interpretation :: (XmlContent s, C.ToExotic e)
-               => C.Domain 
+interpretation :: ( C.ToExotic e)
+               => (s -> C.Symbol) 
+    -> C.Domain 
     -> Interpretation s e
     -> C.Interpretation 
-interpretation dom mi = C.Interpretation
+interpretation fsym dom mi = C.Interpretation
     { C.interpretation_type = C.Matrix_Interpretation
             { C.domain = case domain mi of
                   Int -> C.Naturals
@@ -101,7 +140,7 @@ interpretation dom mi = C.Interpretation
             , C.strictDimension = 1 -- FIXME
             }
     , C.interprets = map (interpret $ dimension mi)
-            $ M.toList $ mapping mi
+            $ M.toList $ M.mapKeys fsym $ mapping mi
     }
 
 

@@ -110,7 +110,9 @@ handle_dp encoded direct opts sys = do
         Just f -> do
             eprint $ pretty f
             let dict = L.linear $ M.matrix direct 
-            case remaining_compressed True dict (dim opts) f sys of
+                rc = remaining_compressed True dict (dim opts) f sys
+            eprint $ pretty rc
+            case rc of
                 Right sys' -> return 
                    $ Just ( Interpretation 
                             { dimension = dim opts

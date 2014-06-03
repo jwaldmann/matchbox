@@ -12,6 +12,8 @@ import qualified Satchmo.SMT.Exotic.Semiring.Arctic  as A
 import qualified Data.Map as M
 import TPDB.Pretty ( Doc )
 
+import qualified TPDB.CPF.Proof.Type as T
+
 -- * the data type
 
 data Claim = Termination | Top_Termination
@@ -36,7 +38,12 @@ data Reason v s = No_Strict_Rules
          (Interpretation s Integer) (Proof v s)
      | Matrix_Interpretation_Arctic  
          (Interpretation s (A.Arctic Integer))
+        (Maybe [ Rule (Term v s) ]) -- maybe mention usable rules
            (Proof v s)
+     | Usable_Rules (Proof v s)
+     | SCCs [ Either (Rule (Term v s)) (Proof v s) ]
      | Extra Doc (Proof v s)
+
+     | Cpf2Cpf Doc (T.DpProof -> T.DpProof) (Proof v s)
 
 

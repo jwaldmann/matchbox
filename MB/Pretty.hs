@@ -35,8 +35,8 @@ term_size t = length $ positions t
 rule_size u = term_size (lhs u) + term_size (rhs u)
 system_size s = sum $ map rule_size $ rules s
 
-instance Pretty a => Show (TPDB.DP.Marked a) where
-    show = render . pretty
+-- instance Pretty a => Show (TPDB.DP.Marked a) where
+--     show = render . pretty
 
 instance (Pretty k, Pretty v) =>  Pretty (M.Map k v) where
     pretty m = "M.Map" <+> vcat ( map pretty $ M.toList m )

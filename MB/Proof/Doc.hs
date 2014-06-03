@@ -52,13 +52,34 @@ instance (Pretty v, Pretty s) => Pretty (Reason v s) where
             , nest 4 $ pretty i
             , pretty p
             ]
-        Matrix_Interpretation_Arctic i p -> vcat
+        Matrix_Interpretation_Arctic i u p -> vcat
             [ "rule removal by matrix interpretation into arctic numbers"
             , nest 4 $ pretty i
+            , nest 4 $ case u of
+                   Nothing -> empty
+                   Just rs -> "usable rules" <+> vcat (map pretty rs)
             , pretty p
             ]
+        Usable_Rules p -> vcat
+            [ "restriction to usable rules"
+            , pretty p
+            ]
+        SCCs ps -> vcat
+            [ "EDG has" <+> (pretty $ length ps) <+> "SCCs"
+            , vcat $ do
+                  (k,p) <- zip [1 :: Int .. ] ps
+                  return $ "SCC" <+> pretty k <+> pretty p
+            ]
+
+        Cpf2Cpf info f p -> vcat 
+            [ "semanticLabeling" 
+            , nest 4 info
+            , pretty p 
+            ]
+
         Extra doc p -> vcat
             [ "extra proof method"
             , nest 4 doc
             , pretty p
             ]
+

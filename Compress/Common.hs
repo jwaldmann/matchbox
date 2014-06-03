@@ -199,10 +199,6 @@ deep_signature sys
 
 -- * Utilities
 
-instance Functor Rule where
-  fmap f u = u { lhs = f $ lhs u, rhs = f $ rhs u }
-
-
 -- | Returns left/right-hand sides of a list of rules
 fromRules :: [Rule a] -> [a]
 fromRules = concatMap (\rule -> [lhs rule, rhs rule])

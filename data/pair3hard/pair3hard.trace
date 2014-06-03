@@ -1,0 +1,420 @@
+Configuration:
+Config {modelBitWidth = 0, numPrecedences = 1, numPatterns = 0, precedenceDomainBitWidth = -1, argumentFilter = AFNormal, usePrecedence = False, emptyPrecedence = False, useInterpretation = True, beVerbose = True, outputCPF = False}
+DP-TRS:
+p# (a (x1), p (x2, p (x3, x4))) -> p# (x2, p (x1, p (a (x4), x4)))
+p# (a (x1), p (x2, p (x3, x4))) -> p# (x1, p (a (x4), x4))
+p# (a (x1), p (x2, p (x3, x4))) -> p# (a (x4), x4)
+p (a (x1), p (x2, p (x3, x4))) -> p (x2, p (x1, p (a (x4), x4)))
+
+Symbol Map:
+fromList [((nat 3 0),Right (Marked p)),((nat 3 1),Right (Original a)),((nat 3 2),Left x1),((nat 3 3),Right (Original p)),((nat 3 4),Left x2),((nat 3 5),Left x3),((nat 3 6),Left x4)]
+Start producing CNF
+Allocator: #variables: 23, #clauses: 0
+[[p#/2/[p/2/p.2].3]/1/a.1] (x1,
+                           x2, x3,
+                           x4) -> [p#/2/[p/2/p.2].3] (x2,
+                                                     x1, a (x4), x4)
+[[p#/2/[p/2/p.2].3]/1/a.1] (x1,
+                           x2, x3, x4) -> p# (x1,
+                                             [p/1/a.1] (x4, x4))
+[[p#/2/[p/2/p.2].3]/1/a.1] (x1,
+                           x2, x3, x4) -> p# (a (x4), x4)
+[p/2/p.2] (a (x1), x2, p (x3,
+                         x4)) ->= [p/2/p.2] (x2, x1,
+                                            [p/1/a.1] (x4, x4))
+total size 43
+"Options {dim = 1, bits = 8, compression = Simple, dp = True, fromtop = False, naive = False, mirror = False, mirror_labelled = False, parallel = False, label = Nothing, use_lpo = False, use_natural = False, use_arctic = False, printStatistics = False, cpf = False}"
+Count {elem_alloc = 8, elem_add = 14, elem_times = 24, matrix_alloc = fromList [((1,1),8)], matrix_add = fromList [((1,1),14)], matrix_times = fromList [((1,1,1),24)]}
+start producing CNF
+CNF finished vars 1833 clauses 6208
+starting solver
+solver finished, result: True
+starting decoder
+decoder finished
+Cache hits: 671 (24%), misses: 2091 (75%)
+M.Map (a,[ 1 ] * x1 + [ - ])
+      (p
+Toplevel: #variables: 1, #clauses: 4
+      ,[ 0 ] * x1 + [ 1 ] * x2 + [ - ])
+      (p#
+      ,[ 2 ] * x1 + [ 2 ] * x2 + [ - ])
+CNF finished
+Right ((RULES [[p#/2/[p/2/p.2].3]/1/a.1] (x1,
+#variables: 1853, #clauses: 5650, #literals: 14566, clause density: 3.0491095520777116
+                                         x2, x3,
+                                         x4) -> [p#/2/[p/2/p.2].3] (x2,
+                                                                   x1, a (x4),
+#variables (Minisat): 1853, #clauses (Minisat): 5235, clause density: 2.825148407987048
+                                                                   x4)
+              [p/2/p.2] (a (x1), x2, p (x3,
+                                       x4)) ->= [p/2/p.2] (x2, x1,
+#clauses of length 1:	69
+                                                          [p/1/a.1] (x4, x4))))
+#clauses of length 2:	2790
+#clauses of length 3:	2247
+#clauses of length 4:	544
+
+Starting solver
+Configuration:
+[p#/2/[p/2/p.2].3] (a (x1), x2,
+                   x3,
+Config {modelBitWidth = 0, numPrecedences = 1, numPatterns = 0, precedenceDomainBitWidth = -1, argumentFilter = AFNormal, usePrecedence = False, emptyPrecedence = False, useInterpretation = True, beVerbose = True, outputCPF = False}
+                   x4) -> [p#/2/[p/2/p.2].3] (x2,
+                                             x1, a (x4), x4)
+[[p/2/p.2]/3/p.2] (a (x1), x2,
+DP-TRS:
+                  x3,
+                  x4) ->= [[p/2/p.2]/3/p.2] (x2,
+                                            x1, a (x4), x4)
+p# (a (x1), p (x2, p (x3, x4))) -> p# (x2, p (x1, p (a (x4), x4)))
+total size 24
+p (a (x1), p (x2, p (x3, x4))) -> p (x2, p (x1, p (a (x4), x4)))
+
+"Options {dim = 1, bits = 8, compression = Simple, dp = True, fromtop = False, naive = False, mirror = False, mirror_labelled = False, parallel = False, label = Nothing, use_lpo = False, use_natural = False, use_arctic = False, printStatistics = False, cpf = False}"
+Symbol Map:
+Count {elem_alloc = 8, elem_add = 9, elem_times = 18, matrix_alloc = fromList [((1,1),8)], matrix_add = fromList [((1,1),9)], matrix_times = fromList [((1,1,1),18)]}
+fromList [((nat 3 0),Right (Marked p)),((nat 3 1),Right (Original a)),((nat 3 2),Left x1),((nat 3 3),Right (Original p)),((nat 3 4),Left x2),((nat 3 5),Left x3),((nat 3 6),Left x4)]
+Start producing CNF
+start producing CNF
+Allocator: #variables: 23, #clauses: 0
+############### caught thread killed
+CNF finished vars 1334 clauses 4436
+starting solver
+solver finished, result: False
+Cache hits: 308 (17%), misses: 1417 (82%)
+[p#/2/[p/2/p.2].3] (a (x1), x2,
+                   x3,
+Toplevel: #variables: 1, #clauses: 4
+                   x4) -> [p#/2/[p/2/p.2].3] (x2,
+                                             x1, a (x4), x4)
+[[p/2/p.2]/3/p.2] (a (x1), x2,
+CNF finished
+                  x3,
+                  x4) ->= [[p/2/p.2]/3/p.2] (x2,
+                                            x1, a (x4), x4)
+#variables: 1123, #clauses: 3516, #literals: 9230, clause density: 3.130899376669635
+total size 24
+#variables (Minisat): 1123, #clauses (Minisat): 3184, clause density: 2.8352626892252895
+"Options {dim = 2, bits = 8, compression = Simple, dp = True, fromtop = False, naive = False, mirror = False, mirror_labelled = False, parallel = False, label = Nothing, use_lpo = False, use_natural = False, use_arctic = False, printStatistics = False, cpf = False}"
+#clauses of length 1:	54
+Count {elem_alloc = 21, elem_add = 62, elem_times = 90, matrix_alloc = fromList [((1,1),1),((1,2),2),((2,1),2),((2,2),3)], matrix_add = fromList [((1,1),3),((1,2),1),((2,1),4),((2,2),1)], matrix_times = fromList [((1,2,1),3),((1,2,2),5),((2,2,1),4),((2,2,2),6)]}
+#clauses of length 2:	1618
+#clauses of length 3:	1436
+#clauses of length 4:	408
+start producing CNF
+
+Starting solver
+Solver finished in 4.001e-3 seconds (result: False)
+Configuration:
+Config {modelBitWidth = 1, numPrecedences = 1, numPatterns = 0, precedenceDomainBitWidth = -1, argumentFilter = AFNormal, usePrecedence = False, emptyPrecedence = False, useInterpretation = True, beVerbose = True, outputCPF = False}
+DP-TRS:
+p# (a (x1), p (x2, p (x3, x4))) -> p# (x2, p (x1, p (a (x4), x4)))
+p (a (x1), p (x2, p (x3, x4))) -> p (x2, p (x1, p (a (x4), x4)))
+
+Symbol Map:
+fromList [((nat 3 0),Right (Marked p)),((nat 3 1),Right (Original a)),((nat 3 2),Left x1),((nat 3 3),Right (Original p)),((nat 3 4),Left x2),((nat 3 5),Left x3),((nat 3 6),Left x4)]
+Start producing CNF
+Allocator: #variables: 88, #clauses: 0
+CNF finished vars 6339 clauses 21134
+starting solver
+solver finished, result: False
+[p#/2/[p/2/p.2].3] (a (x1), x2,
+                   x3,
+                   x4) -> [p#/2/[p/2/p.2].3] (x2,
+                                             x1, a (x4), x4)
+[[p/2/p.2]/3/p.2] (a (x1), x2,
+                  x3,
+                  x4) ->= [[p/2/p.2]/3/p.2] (x2,
+                                            x1, a (x4), x4)
+total size 24
+"Options {dim = 3, bits = 8, compression = Simple, dp = True, fromtop = False, naive = False, mirror = False, mirror_labelled = False, parallel = False, label = Nothing, use_lpo = False, use_natural = False, use_arctic = False, printStatistics = False, cpf = False}"
+Count {elem_alloc = 40, elem_add = 195, elem_times = 252, matrix_alloc = fromList [((1,1),1),((1,3),2),((3,1),2),((3,3),3)], matrix_add = fromList [((1,1),3),((1,3),1),((3,1),4),((3,3),1)], matrix_times = fromList [((1,3,1),3),((1,3,3),5),((3,3,1),4),((3,3,3),6)]}
+start producing CNF
+CNF finished vars 17476 clauses 58355
+starting solver
+solver finished, result: False
+[p#/2/[p/2/p.2].3] (a (x1), x2,
+                   x3,
+                   x4) -> [p#/2/[p/2/p.2].3] (x2,
+                                             x1, a (x4), x4)
+[[p/2/p.2]/3/p.2] (a (x1), x2,
+                  x3,
+                  x4) ->= [[p/2/p.2]/3/p.2] (x2,
+                                            x1, a (x4), x4)
+total size 24
+"Options {dim = 4, bits = 8, compression = Simple, dp = True, fromtop = False, naive = False, mirror = False, mirror_labelled = False, parallel = False, label = Nothing, use_lpo = False, use_natural = False, use_arctic = False, printStatistics = False, cpf = False}"
+Count {elem_alloc = 65, elem_add = 444, elem_times = 540, matrix_alloc = fromList [((1,1),1),((1,4),2),((4,1),2),((4,4),3)], matrix_add = fromList [((1,1),3),((1,4),1),((4,1),4),((4,4),1)], matrix_times = fromList [((1,4,1),3),((1,4,4),5),((4,4,1),4),((4,4,4),6)]}
+start producing CNF
+CNF finished vars 37203 clauses 124428
+starting solver
+Cache hits: 5667 (25%), misses: 16635 (74%)
+Toplevel: #variables: 1, #clauses: 4
+CNF finished
+#variables: 22576, #clauses: 67739, #literals: 173067, clause density: 3.000487243090007
+#variables (Minisat): 22576, #clauses (Minisat): 65716, clause density: 2.9108788093550673
+#clauses of length 1:	359
+#clauses of length 2:	33400
+#clauses of length 3:	30012
+#clauses of length 4:	3968
+
+Starting solver
+Solver finished in 0.764048 seconds (result: False)
+Configuration:
+Config {modelBitWidth = 1, numPrecedences = 2, numPatterns = 0, precedenceDomainBitWidth = -1, argumentFilter = AFNormal, usePrecedence = False, emptyPrecedence = False, useInterpretation = True, beVerbose = True, outputCPF = False}
+DP-TRS:
+p# (a (x1), p (x2, p (x3, x4))) -> p# (x2, p (x1, p (a (x4), x4)))
+p (a (x1), p (x2, p (x3, x4))) -> p (x2, p (x1, p (a (x4), x4)))
+
+Symbol Map:
+fromList [((nat 3 0),Right (Marked p)),((nat 3 1),Right (Original a)),((nat 3 2),Left x1),((nat 3 3),Right (Original p)),((nat 3 4),Left x2),((nat 3 5),Left x3),((nat 3 6),Left x4)]
+Start producing CNF
+Allocator: #variables: 166, #clauses: 0
+solver finished, result: False
+[p#/2/[p/2/p.2].3] (a (x1), x2,
+                   x3,
+                   x4) -> [p#/2/[p/2/p.2].3] (x2,
+                                             x1, a (x4), x4)
+[[p/2/p.2]/3/p.2] (a (x1), x2,
+                  x3,
+                  x4) ->= [[p/2/p.2]/3/p.2] (x2,
+                                            x1, a (x4), x4)
+total size 24
+"Options {dim = 5, bits = 8, compression = Simple, dp = True, fromtop = False, naive = False, mirror = False, mirror_labelled = False, parallel = False, label = Nothing, use_lpo = False, use_natural = False, use_arctic = False, printStatistics = False, cpf = False}"
+Count {elem_alloc = 96, elem_add = 845, elem_times = 990, matrix_alloc = fromList [((1,1),1),((1,5),2),((5,1),2),((5,5),3)], matrix_add = fromList [((1,1),3),((1,5),1),((5,1),4),((5,5),1)], matrix_times = fromList [((1,5,1),3),((1,5,5),5),((5,5,1),4),((5,5,5),6)]}
+start producing CNF
+CNF finished vars 67968 clauses 227633
+starting solver
+solver finished, result: False
+[p#/2/[p/2/p.2].3] (a (x1), x2,
+                   x3,
+                   x4) -> [p#/2/[p/2/p.2].3] (x2,
+                                             x1, a (x4), x4)
+[[p/2/p.2]/3/p.2] (a (x1), x2,
+                  x3,
+                  x4) ->= [[p/2/p.2]/3/p.2] (x2,
+                                            x1, a (x4), x4)
+total size 24
+"Options {dim = 6, bits = 8, compression = Simple, dp = True, fromtop = False, naive = False, mirror = False, mirror_labelled = False, parallel = False, label = Nothing, use_lpo = False, use_natural = False, use_arctic = False, printStatistics = False, cpf = False}"
+Count {elem_alloc = 133, elem_add = 1434, elem_times = 1638, matrix_alloc = fromList [((1,1),1),((1,6),2),((6,1),2),((6,6),3)], matrix_add = fromList [((1,1),3),((1,6),1),((6,1),4),((6,6),1)], matrix_times = fromList [((1,6,1),3),((1,6,6),5),((6,6,1),4),((6,6,6),6)]}
+start producing CNF
+CNF finished vars 112219 clauses 376250
+starting solver
+solver finished, result: False
+[p#/2/[p/2/p.2].3] (a (x1), x2,
+                   x3,
+                   x4) -> [p#/2/[p/2/p.2].3] (x2,
+                                             x1, a (x4), x4)
+[[p/2/p.2]/3/p.2] (a (x1), x2,
+                  x3,
+                  x4) ->= [[p/2/p.2]/3/p.2] (x2,
+                                            x1, a (x4), x4)
+total size 24
+"Options {dim = 7, bits = 8, compression = Simple, dp = True, fromtop = False, naive = False, mirror = False, mirror_labelled = False, parallel = False, label = Nothing, use_lpo = False, use_natural = False, use_arctic = False, printStatistics = False, cpf = False}"
+Count {elem_alloc = 176, elem_add = 2247, elem_times = 2520, matrix_alloc = fromList [((1,1),1),((1,7),2),((7,1),2),((7,7),3)], matrix_add = fromList [((1,1),3),((1,7),1),((7,1),4),((7,7),1)], matrix_times = fromList [((1,7,1),3),((1,7,7),5),((7,7,1),4),((7,7,7),6)]}
+start producing CNF
+Cache hits: 13493 (11%), misses: 100057 (88%)
+CNF finished vars 172404 clauses 578559
+Toplevel: #variables: 1, #clauses: 4
+starting solver
+CNF finished
+#variables: 561833, #clauses: 1683946, #literals: 4248040, clause density: 2.997235833423811
+#variables (Minisat): 561833, #clauses (Minisat): 1671043, clause density: 2.974269934304322
+#clauses of length 1:	2279
+#clauses of length 2:	815016
+#clauses of length 3:	850875
+#clauses of length 4:	15776
+
+Starting solver
+Solver finished in 4.280267 seconds (result: True)
+Starting decoder
+Decoder finished
+Test: True
+
+#######################################
+
+Model:
+p# 0 0 |-> 0
+p# 0 1 |-> 0
+p# 1 0 |-> 0
+p# 1 1 |-> 0
+
+
+a 0 |-> 1
+a 1 |-> 1
+
+
+p 0 0 |-> 0
+p 0 1 |-> 0
+p 1 0 |-> 0
+p 1 1 |-> 0
+
+
+Labeled Trs:
+p#^[1, 0] (a^[0] (x1), p^[0, 0] (x2, p^[0, 0] (x3, x4))) -> p#^[0, 0] (x2, p^[0, 0] (x1, p^[1, 0] (a^[0] (x4), x4)))
+p#^[1, 0] (a^[0] (x1), p^[0, 0] (x2, p^[0, 1] (x3, x4))) -> p#^[0, 0] (x2, p^[0, 0] (x1, p^[1, 1] (a^[1] (x4), x4)))
+p#^[1, 0] (a^[0] (x1), p^[0, 0] (x2, p^[1, 0] (x3, x4))) -> p#^[0, 0] (x2, p^[0, 0] (x1, p^[1, 0] (a^[0] (x4), x4)))
+p#^[1, 0] (a^[0] (x1), p^[0, 0] (x2, p^[1, 1] (x3, x4))) -> p#^[0, 0] (x2, p^[0, 0] (x1, p^[1, 1] (a^[1] (x4), x4)))
+p#^[1, 0] (a^[0] (x1), p^[1, 0] (x2, p^[0, 0] (x3, x4))) -> p#^[1, 0] (x2, p^[0, 0] (x1, p^[1, 0] (a^[0] (x4), x4)))
+p#^[1, 0] (a^[0] (x1), p^[1, 0] (x2, p^[0, 1] (x3, x4))) -> p#^[1, 0] (x2, p^[0, 0] (x1, p^[1, 1] (a^[1] (x4), x4)))
+p#^[1, 0] (a^[0] (x1), p^[1, 0] (x2, p^[1, 0] (x3, x4))) -> p#^[1, 0] (x2, p^[0, 0] (x1, p^[1, 0] (a^[0] (x4), x4)))
+p#^[1, 0] (a^[0] (x1), p^[1, 0] (x2, p^[1, 1] (x3, x4))) -> p#^[1, 0] (x2, p^[0, 0] (x1, p^[1, 1] (a^[1] (x4), x4)))
+p#^[1, 0] (a^[1] (x1), p^[0, 0] (x2, p^[0, 0] (x3, x4))) -> p#^[0, 0] (x2, p^[1, 0] (x1, p^[1, 0] (a^[0] (x4), x4)))
+p#^[1, 0] (a^[1] (x1), p^[0, 0] (x2, p^[0, 1] (x3, x4))) -> p#^[0, 0] (x2, p^[1, 0] (x1, p^[1, 1] (a^[1] (x4), x4)))
+p#^[1, 0] (a^[1] (x1), p^[0, 0] (x2, p^[1, 0] (x3, x4))) -> p#^[0, 0] (x2, p^[1, 0] (x1, p^[1, 0] (a^[0] (x4), x4)))
+p#^[1, 0] (a^[1] (x1), p^[0, 0] (x2, p^[1, 1] (x3, x4))) -> p#^[0, 0] (x2, p^[1, 0] (x1, p^[1, 1] (a^[1] (x4), x4)))
+p#^[1, 0] (a^[1] (x1), p^[1, 0] (x2, p^[0, 0] (x3, x4))) -> p#^[1, 0] (x2, p^[1, 0] (x1, p^[1, 0] (a^[0] (x4), x4)))
+p#^[1, 0] (a^[1] (x1), p^[1, 0] (x2, p^[0, 1] (x3, x4))) -> p#^[1, 0] (x2, p^[1, 0] (x1, p^[1, 1] (a^[1] (x4), x4)))
+p#^[1, 0] (a^[1] (x1), p^[1, 0] (x2, p^[1, 0] (x3, x4))) -> p#^[1, 0] (x2, p^[1, 0] (x1, p^[1, 0] (a^[0] (x4), x4)))
+p#^[1, 0] (a^[1] (x1), p^[1, 0] (x2, p^[1, 1] (x3, x4))) -> p#^[1, 0] (x2, p^[1, 0] (x1, p^[1, 1] (a^[1] (x4), x4)))
+p^[1, 0] (a^[0] (x1), p^[0, 0] (x2, p^[0, 0] (x3, x4))) -> p^[0, 0] (x2, p^[0, 0] (x1, p^[1, 0] (a^[0] (x4), x4)))
+p^[1, 0] (a^[0] (x1), p^[0, 0] (x2, p^[0, 1] (x3, x4))) -> p^[0, 0] (x2, p^[0, 0] (x1, p^[1, 1] (a^[1] (x4), x4)))
+p^[1, 0] (a^[0] (x1), p^[0, 0] (x2, p^[1, 0] (x3, x4))) -> p^[0, 0] (x2, p^[0, 0] (x1, p^[1, 0] (a^[0] (x4), x4)))
+p^[1, 0] (a^[0] (x1), p^[0, 0] (x2, p^[1, 1] (x3, x4))) -> p^[0, 0] (x2, p^[0, 0] (x1, p^[1, 1] (a^[1] (x4), x4)))
+p^[1, 0] (a^[0] (x1), p^[1, 0] (x2, p^[0, 0] (x3, x4))) -> p^[1, 0] (x2, p^[0, 0] (x1, p^[1, 0] (a^[0] (x4), x4)))
+p^[1, 0] (a^[0] (x1), p^[1, 0] (x2, p^[0, 1] (x3, x4))) -> p^[1, 0] (x2, p^[0, 0] (x1, p^[1, 1] (a^[1] (x4), x4)))
+p^[1, 0] (a^[0] (x1), p^[1, 0] (x2, p^[1, 0] (x3, x4))) -> p^[1, 0] (x2, p^[0, 0] (x1, p^[1, 0] (a^[0] (x4), x4)))
+p^[1, 0] (a^[0] (x1), p^[1, 0] (x2, p^[1, 1] (x3, x4))) -> p^[1, 0] (x2, p^[0, 0] (x1, p^[1, 1] (a^[1] (x4), x4)))
+p^[1, 0] (a^[1] (x1), p^[0, 0] (x2, p^[0, 0] (x3, x4))) -> p^[0, 0] (x2, p^[1, 0] (x1, p^[1, 0] (a^[0] (x4), x4)))
+p^[1, 0] (a^[1] (x1), p^[0, 0] (x2, p^[0, 1] (x3, x4))) -> p^[0, 0] (x2, p^[1, 0] (x1, p^[1, 1] (a^[1] (x4), x4)))
+p^[1, 0] (a^[1] (x1), p^[0, 0] (x2, p^[1, 0] (x3, x4))) -> p^[0, 0] (x2, p^[1, 0] (x1, p^[1, 0] (a^[0] (x4), x4)))
+p^[1, 0] (a^[1] (x1), p^[0, 0] (x2, p^[1, 1] (x3, x4))) -> p^[0, 0] (x2, p^[1, 0] (x1, p^[1, 1] (a^[1] (x4), x4)))
+p^[1, 0] (a^[1] (x1), p^[1, 0] (x2, p^[0, 0] (x3, x4))) -> p^[1, 0] (x2, p^[1, 0] (x1, p^[1, 0] (a^[0] (x4), x4)))
+p^[1, 0] (a^[1] (x1), p^[1, 0] (x2, p^[0, 1] (x3, x4))) -> p^[1, 0] (x2, p^[1, 0] (x1, p^[1, 1] (a^[1] (x4), x4)))
+p^[1, 0] (a^[1] (x1), p^[1, 0] (x2, p^[1, 0] (x3, x4))) -> p^[1, 0] (x2, p^[1, 0] (x1, p^[1, 0] (a^[0] (x4), x4)))
+p^[1, 0] (a^[1] (x1), p^[1, 0] (x2, p^[1, 1] (x3, x4))) -> p^[1, 0] (x2, p^[1, 0] (x1, p^[1, 1] (a^[1] (x4), x4)))
+
+1. Linear Interpretation:
+p#^[0, 0] : 12
+p#^[0, 1] : 0
+p#^[1, 0] : 13  +  x_1  +  x_2
+p#^[1, 1] : 21  +  x_2
+a^[0] : 0
+a^[1] : 4  +  x_1
+p^[0, 0] : 0  +  x_2
+p^[0, 1] : 2  +  x_2
+p^[1, 0] : 0  +  x_1  +  x_2
+p^[1, 1] : 2  +  x_2
+
+2. Linear Interpretation:
+p#^[0, 0] : 25
+p#^[0, 1] : 0  +  x_2
+p#^[1, 0] : 15  +  x_2
+p#^[1, 1] : 13  +  x_2
+a^[0] : 1
+a^[1] : 7  +  x_1
+p^[0, 0] : 6
+p^[0, 1] : 4
+p^[1, 0] : 8
+p^[1, 1] : 3
+
+
+Deleted:
+p# (a (x1), p (x2, p (x3, x4))) -> p# (x2, p (x1, p (a (x4), x4)))
+
+
+Intermediate system:
+keep p#^[1, 0] (a^[0] (x1), p^[0, 0] (x2, p^[0, 0] (x3, x4))) -> p#^[0, 0] (x2, p^[0, 0] (x1, p^[1, 0] (a^[0] (x4), x4)))
+keep p#^[1, 0] (a^[0] (x1), p^[0, 0] (x2, p^[0, 1] (x3, x4))) -> p#^[0, 0] (x2, p^[0, 0] (x1, p^[1, 1] (a^[1] (x4), x4)))
+keep p#^[1, 0] (a^[0] (x1), p^[0, 0] (x2, p^[1, 0] (x3, x4))) -> p#^[0, 0] (x2, p^[0, 0] (x1, p^[1, 0] (a^[0] (x4), x4)))
+keep p#^[1, 0] (a^[0] (x1), p^[0, 0] (x2, p^[1, 1] (x3, x4))) -> p#^[0, 0] (x2, p^[0, 0] (x1, p^[1, 1] (a^[1] (x4), x4)))
+keep p#^[1, 0] (a^[0] (x1), p^[1, 0] (x2, p^[0, 0] (x3, x4))) -> p#^[1, 0] (x2, p^[0, 0] (x1, p^[1, 0] (a^[0] (x4), x4)))
+keep p#^[1, 0] (a^[0] (x1), p^[1, 0] (x2, p^[0, 1] (x3, x4))) -> p#^[1, 0] (x2, p^[0, 0] (x1, p^[1, 1] (a^[1] (x4), x4)))
+keep p#^[1, 0] (a^[0] (x1), p^[1, 0] (x2, p^[1, 0] (x3, x4))) -> p#^[1, 0] (x2, p^[0, 0] (x1, p^[1, 0] (a^[0] (x4), x4)))
+keep p#^[1, 0] (a^[0] (x1), p^[1, 0] (x2, p^[1, 1] (x3, x4))) -> p#^[1, 0] (x2, p^[0, 0] (x1, p^[1, 1] (a^[1] (x4), x4)))
+keep p#^[1, 0] (a^[1] (x1), p^[0, 0] (x2, p^[0, 0] (x3, x4))) -> p#^[0, 0] (x2, p^[1, 0] (x1, p^[1, 0] (a^[0] (x4), x4)))
+keep p#^[1, 0] (a^[1] (x1), p^[0, 0] (x2, p^[0, 1] (x3, x4))) -> p#^[0, 0] (x2, p^[1, 0] (x1, p^[1, 1] (a^[1] (x4), x4)))
+keep p#^[1, 0] (a^[1] (x1), p^[0, 0] (x2, p^[1, 0] (x3, x4))) -> p#^[0, 0] (x2, p^[1, 0] (x1, p^[1, 0] (a^[0] (x4), x4)))
+keep p#^[1, 0] (a^[1] (x1), p^[0, 0] (x2, p^[1, 1] (x3, x4))) -> p#^[0, 0] (x2, p^[1, 0] (x1, p^[1, 1] (a^[1] (x4), x4)))
+keep p#^[1, 0] (a^[1] (x1), p^[1, 0] (x2, p^[0, 0] (x3, x4))) -> p#^[1, 0] (x2, p^[1, 0] (x1, p^[1, 0] (a^[0] (x4), x4)))
+keep p#^[1, 0] (a^[1] (x1), p^[1, 0] (x2, p^[0, 1] (x3, x4))) -> p#^[1, 0] (x2, p^[1, 0] (x1, p^[1, 1] (a^[1] (x4), x4)))
+keep p#^[1, 0] (a^[1] (x1), p^[1, 0] (x2, p^[1, 0] (x3, x4))) -> p#^[1, 0] (x2, p^[1, 0] (x1, p^[1, 0] (a^[0] (x4), x4)))
+keep p#^[1, 0] (a^[1] (x1), p^[1, 0] (x2, p^[1, 1] (x3, x4))) -> p#^[1, 0] (x2, p^[1, 0] (x1, p^[1, 1] (a^[1] (x4), x4)))
+usable p^[1, 0] (a^[0] (x1), p^[0, 0] (x2, p^[0, 0] (x3, x4))) -> p^[0, 0] (x2, p^[0, 0] (x1, p^[1, 0] (a^[0] (x4), x4)))
+usable p^[1, 0] (a^[0] (x1), p^[0, 0] (x2, p^[0, 1] (x3, x4))) -> p^[0, 0] (x2, p^[0, 0] (x1, p^[1, 1] (a^[1] (x4), x4)))
+usable p^[1, 0] (a^[0] (x1), p^[0, 0] (x2, p^[1, 0] (x3, x4))) -> p^[0, 0] (x2, p^[0, 0] (x1, p^[1, 0] (a^[0] (x4), x4)))
+usable p^[1, 0] (a^[0] (x1), p^[0, 0] (x2, p^[1, 1] (x3, x4))) -> p^[0, 0] (x2, p^[0, 0] (x1, p^[1, 1] (a^[1] (x4), x4)))
+usable p^[1, 0] (a^[0] (x1), p^[1, 0] (x2, p^[0, 0] (x3, x4))) -> p^[1, 0] (x2, p^[0, 0] (x1, p^[1, 0] (a^[0] (x4), x4)))
+usable p^[1, 0] (a^[0] (x1), p^[1, 0] (x2, p^[0, 1] (x3, x4))) -> p^[1, 0] (x2, p^[0, 0] (x1, p^[1, 1] (a^[1] (x4), x4)))
+usable p^[1, 0] (a^[0] (x1), p^[1, 0] (x2, p^[1, 0] (x3, x4))) -> p^[1, 0] (x2, p^[0, 0] (x1, p^[1, 0] (a^[0] (x4), x4)))
+usable p^[1, 0] (a^[0] (x1), p^[1, 0] (x2, p^[1, 1] (x3, x4))) -> p^[1, 0] (x2, p^[0, 0] (x1, p^[1, 1] (a^[1] (x4), x4)))
+usable p^[1, 0] (a^[1] (x1), p^[0, 0] (x2, p^[0, 0] (x3, x4))) -> p^[0, 0] (x2, p^[1, 0] (x1, p^[1, 0] (a^[0] (x4), x4)))
+usable p^[1, 0] (a^[1] (x1), p^[0, 0] (x2, p^[0, 1] (x3, x4))) -> p^[0, 0] (x2, p^[1, 0] (x1, p^[1, 1] (a^[1] (x4), x4)))
+usable p^[1, 0] (a^[1] (x1), p^[0, 0] (x2, p^[1, 0] (x3, x4))) -> p^[0, 0] (x2, p^[1, 0] (x1, p^[1, 0] (a^[0] (x4), x4)))
+usable p^[1, 0] (a^[1] (x1), p^[0, 0] (x2, p^[1, 1] (x3, x4))) -> p^[0, 0] (x2, p^[1, 0] (x1, p^[1, 1] (a^[1] (x4), x4)))
+usable p^[1, 0] (a^[1] (x1), p^[1, 0] (x2, p^[0, 0] (x3, x4))) -> p^[1, 0] (x2, p^[1, 0] (x1, p^[1, 0] (a^[0] (x4), x4)))
+usable p^[1, 0] (a^[1] (x1), p^[1, 0] (x2, p^[0, 1] (x3, x4))) -> p^[1, 0] (x2, p^[1, 0] (x1, p^[1, 1] (a^[1] (x4), x4)))
+usable p^[1, 0] (a^[1] (x1), p^[1, 0] (x2, p^[1, 0] (x3, x4))) -> p^[1, 0] (x2, p^[1, 0] (x1, p^[1, 0] (a^[0] (x4), x4)))
+usable p^[1, 0] (a^[1] (x1), p^[1, 0] (x2, p^[1, 1] (x3, x4))) -> p^[1, 0] (x2, p^[1, 0] (x1, p^[1, 1] (a^[1] (x4), x4)))
+
+
+Intermediate system:
+delete p#^[1, 0] (a^[0] (x1), p^[0, 0] (x2, p^[0, 0] (x3, x4))) -> p#^[0, 0] (x2, p^[0, 0] (x1, p^[1, 0] (a^[0] (x4), x4)))
+delete p#^[1, 0] (a^[0] (x1), p^[0, 0] (x2, p^[0, 1] (x3, x4))) -> p#^[0, 0] (x2, p^[0, 0] (x1, p^[1, 1] (a^[1] (x4), x4)))
+delete p#^[1, 0] (a^[0] (x1), p^[0, 0] (x2, p^[1, 0] (x3, x4))) -> p#^[0, 0] (x2, p^[0, 0] (x1, p^[1, 0] (a^[0] (x4), x4)))
+delete p#^[1, 0] (a^[0] (x1), p^[0, 0] (x2, p^[1, 1] (x3, x4))) -> p#^[0, 0] (x2, p^[0, 0] (x1, p^[1, 1] (a^[1] (x4), x4)))
+keep p#^[1, 0] (a^[0] (x1), p^[1, 0] (x2, p^[0, 0] (x3, x4))) -> p#^[1, 0] (x2, p^[0, 0] (x1, p^[1, 0] (a^[0] (x4), x4)))
+keep p#^[1, 0] (a^[0] (x1), p^[1, 0] (x2, p^[0, 1] (x3, x4))) -> p#^[1, 0] (x2, p^[0, 0] (x1, p^[1, 1] (a^[1] (x4), x4)))
+keep p#^[1, 0] (a^[0] (x1), p^[1, 0] (x2, p^[1, 0] (x3, x4))) -> p#^[1, 0] (x2, p^[0, 0] (x1, p^[1, 0] (a^[0] (x4), x4)))
+keep p#^[1, 0] (a^[0] (x1), p^[1, 0] (x2, p^[1, 1] (x3, x4))) -> p#^[1, 0] (x2, p^[0, 0] (x1, p^[1, 1] (a^[1] (x4), x4)))
+delete p#^[1, 0] (a^[1] (x1), p^[0, 0] (x2, p^[0, 0] (x3, x4))) -> p#^[0, 0] (x2, p^[1, 0] (x1, p^[1, 0] (a^[0] (x4), x4)))
+delete p#^[1, 0] (a^[1] (x1), p^[0, 0] (x2, p^[0, 1] (x3, x4))) -> p#^[0, 0] (x2, p^[1, 0] (x1, p^[1, 1] (a^[1] (x4), x4)))
+delete p#^[1, 0] (a^[1] (x1), p^[0, 0] (x2, p^[1, 0] (x3, x4))) -> p#^[0, 0] (x2, p^[1, 0] (x1, p^[1, 0] (a^[0] (x4), x4)))
+delete p#^[1, 0] (a^[1] (x1), p^[0, 0] (x2, p^[1, 1] (x3, x4))) -> p#^[0, 0] (x2, p^[1, 0] (x1, p^[1, 1] (a^[1] (x4), x4)))
+delete p#^[1, 0] (a^[1] (x1), p^[1, 0] (x2, p^[0, 0] (x3, x4))) -> p#^[1, 0] (x2, p^[1, 0] (x1, p^[1, 0] (a^[0] (x4), x4)))
+delete p#^[1, 0] (a^[1] (x1), p^[1, 0] (x2, p^[0, 1] (x3, x4))) -> p#^[1, 0] (x2, p^[1, 0] (x1, p^[1, 1] (a^[1] (x4), x4)))
+delete p#^[1, 0] (a^[1] (x1), p^[1, 0] (x2, p^[1, 0] (x3, x4))) -> p#^[1, 0] (x2, p^[1, 0] (x1, p^[1, 0] (a^[0] (x4), x4)))
+delete p#^[1, 0] (a^[1] (x1), p^[1, 0] (x2, p^[1, 1] (x3, x4))) -> p#^[1, 0] (x2, p^[1, 0] (x1, p^[1, 1] (a^[1] (x4), x4)))
+usable p^[1, 0] (a^[0] (x1), p^[0, 0] (x2, p^[0, 0] (x3, x4))) -> p^[0, 0] (x2, p^[0, 0] (x1, p^[1, 0] (a^[0] (x4), x4)))
+usable p^[1, 0] (a^[0] (x1), p^[0, 0] (x2, p^[0, 1] (x3, x4))) -> p^[0, 0] (x2, p^[0, 0] (x1, p^[1, 1] (a^[1] (x4), x4)))
+usable p^[1, 0] (a^[0] (x1), p^[0, 0] (x2, p^[1, 0] (x3, x4))) -> p^[0, 0] (x2, p^[0, 0] (x1, p^[1, 0] (a^[0] (x4), x4)))
+usable p^[1, 0] (a^[0] (x1), p^[0, 0] (x2, p^[1, 1] (x3, x4))) -> p^[0, 0] (x2, p^[0, 0] (x1, p^[1, 1] (a^[1] (x4), x4)))
+usable p^[1, 0] (a^[0] (x1), p^[1, 0] (x2, p^[0, 0] (x3, x4))) -> p^[1, 0] (x2, p^[0, 0] (x1, p^[1, 0] (a^[0] (x4), x4)))
+usable p^[1, 0] (a^[0] (x1), p^[1, 0] (x2, p^[0, 1] (x3, x4))) -> p^[1, 0] (x2, p^[0, 0] (x1, p^[1, 1] (a^[1] (x4), x4)))
+usable p^[1, 0] (a^[0] (x1), p^[1, 0] (x2, p^[1, 0] (x3, x4))) -> p^[1, 0] (x2, p^[0, 0] (x1, p^[1, 0] (a^[0] (x4), x4)))
+usable p^[1, 0] (a^[0] (x1), p^[1, 0] (x2, p^[1, 1] (x3, x4))) -> p^[1, 0] (x2, p^[0, 0] (x1, p^[1, 1] (a^[1] (x4), x4)))
+usable p^[1, 0] (a^[1] (x1), p^[0, 0] (x2, p^[0, 0] (x3, x4))) -> p^[0, 0] (x2, p^[1, 0] (x1, p^[1, 0] (a^[0] (x4), x4)))
+usable p^[1, 0] (a^[1] (x1), p^[0, 0] (x2, p^[0, 1] (x3, x4))) -> p^[0, 0] (x2, p^[1, 0] (x1, p^[1, 1] (a^[1] (x4), x4)))
+usable p^[1, 0] (a^[1] (x1), p^[0, 0] (x2, p^[1, 0] (x3, x4))) -> p^[0, 0] (x2, p^[1, 0] (x1, p^[1, 0] (a^[0] (x4), x4)))
+usable p^[1, 0] (a^[1] (x1), p^[0, 0] (x2, p^[1, 1] (x3, x4))) -> p^[0, 0] (x2, p^[1, 0] (x1, p^[1, 1] (a^[1] (x4), x4)))
+usable p^[1, 0] (a^[1] (x1), p^[1, 0] (x2, p^[0, 0] (x3, x4))) -> p^[1, 0] (x2, p^[1, 0] (x1, p^[1, 0] (a^[0] (x4), x4)))
+usable p^[1, 0] (a^[1] (x1), p^[1, 0] (x2, p^[0, 1] (x3, x4))) -> p^[1, 0] (x2, p^[1, 0] (x1, p^[1, 1] (a^[1] (x4), x4)))
+usable p^[1, 0] (a^[1] (x1), p^[1, 0] (x2, p^[1, 0] (x3, x4))) -> p^[1, 0] (x2, p^[1, 0] (x1, p^[1, 0] (a^[0] (x4), x4)))
+usable p^[1, 0] (a^[1] (x1), p^[1, 0] (x2, p^[1, 1] (x3, x4))) -> p^[1, 0] (x2, p^[1, 0] (x1, p^[1, 1] (a^[1] (x4), x4)))
+
+
+Intermediate system:
+delete p#^[1, 0] (a^[0] (x1), p^[0, 0] (x2, p^[0, 0] (x3, x4))) -> p#^[0, 0] (x2, p^[0, 0] (x1, p^[1, 0] (a^[0] (x4), x4)))
+delete p#^[1, 0] (a^[0] (x1), p^[0, 0] (x2, p^[0, 1] (x3, x4))) -> p#^[0, 0] (x2, p^[0, 0] (x1, p^[1, 1] (a^[1] (x4), x4)))
+delete p#^[1, 0] (a^[0] (x1), p^[0, 0] (x2, p^[1, 0] (x3, x4))) -> p#^[0, 0] (x2, p^[0, 0] (x1, p^[1, 0] (a^[0] (x4), x4)))
+delete p#^[1, 0] (a^[0] (x1), p^[0, 0] (x2, p^[1, 1] (x3, x4))) -> p#^[0, 0] (x2, p^[0, 0] (x1, p^[1, 1] (a^[1] (x4), x4)))
+delete p#^[1, 0] (a^[0] (x1), p^[1, 0] (x2, p^[0, 0] (x3, x4))) -> p#^[1, 0] (x2, p^[0, 0] (x1, p^[1, 0] (a^[0] (x4), x4)))
+delete p#^[1, 0] (a^[0] (x1), p^[1, 0] (x2, p^[0, 1] (x3, x4))) -> p#^[1, 0] (x2, p^[0, 0] (x1, p^[1, 1] (a^[1] (x4), x4)))
+delete p#^[1, 0] (a^[0] (x1), p^[1, 0] (x2, p^[1, 0] (x3, x4))) -> p#^[1, 0] (x2, p^[0, 0] (x1, p^[1, 0] (a^[0] (x4), x4)))
+delete p#^[1, 0] (a^[0] (x1), p^[1, 0] (x2, p^[1, 1] (x3, x4))) -> p#^[1, 0] (x2, p^[0, 0] (x1, p^[1, 1] (a^[1] (x4), x4)))
+delete p#^[1, 0] (a^[1] (x1), p^[0, 0] (x2, p^[0, 0] (x3, x4))) -> p#^[0, 0] (x2, p^[1, 0] (x1, p^[1, 0] (a^[0] (x4), x4)))
+delete p#^[1, 0] (a^[1] (x1), p^[0, 0] (x2, p^[0, 1] (x3, x4))) -> p#^[0, 0] (x2, p^[1, 0] (x1, p^[1, 1] (a^[1] (x4), x4)))
+delete p#^[1, 0] (a^[1] (x1), p^[0, 0] (x2, p^[1, 0] (x3, x4))) -> p#^[0, 0] (x2, p^[1, 0] (x1, p^[1, 0] (a^[0] (x4), x4)))
+delete p#^[1, 0] (a^[1] (x1), p^[0, 0] (x2, p^[1, 1] (x3, x4))) -> p#^[0, 0] (x2, p^[1, 0] (x1, p^[1, 1] (a^[1] (x4), x4)))
+delete p#^[1, 0] (a^[1] (x1), p^[1, 0] (x2, p^[0, 0] (x3, x4))) -> p#^[1, 0] (x2, p^[1, 0] (x1, p^[1, 0] (a^[0] (x4), x4)))
+delete p#^[1, 0] (a^[1] (x1), p^[1, 0] (x2, p^[0, 1] (x3, x4))) -> p#^[1, 0] (x2, p^[1, 0] (x1, p^[1, 1] (a^[1] (x4), x4)))
+delete p#^[1, 0] (a^[1] (x1), p^[1, 0] (x2, p^[1, 0] (x3, x4))) -> p#^[1, 0] (x2, p^[1, 0] (x1, p^[1, 0] (a^[0] (x4), x4)))
+delete p#^[1, 0] (a^[1] (x1), p^[1, 0] (x2, p^[1, 1] (x3, x4))) -> p#^[1, 0] (x2, p^[1, 0] (x1, p^[1, 1] (a^[1] (x4), x4)))
+usable p^[1, 0] (a^[0] (x1), p^[0, 0] (x2, p^[0, 0] (x3, x4))) -> p^[0, 0] (x2, p^[0, 0] (x1, p^[1, 0] (a^[0] (x4), x4)))
+usable p^[1, 0] (a^[0] (x1), p^[0, 0] (x2, p^[0, 1] (x3, x4))) -> p^[0, 0] (x2, p^[0, 0] (x1, p^[1, 1] (a^[1] (x4), x4)))
+usable p^[1, 0] (a^[0] (x1), p^[0, 0] (x2, p^[1, 0] (x3, x4))) -> p^[0, 0] (x2, p^[0, 0] (x1, p^[1, 0] (a^[0] (x4), x4)))
+usable p^[1, 0] (a^[0] (x1), p^[0, 0] (x2, p^[1, 1] (x3, x4))) -> p^[0, 0] (x2, p^[0, 0] (x1, p^[1, 1] (a^[1] (x4), x4)))
+usable p^[1, 0] (a^[0] (x1), p^[1, 0] (x2, p^[0, 0] (x3, x4))) -> p^[1, 0] (x2, p^[0, 0] (x1, p^[1, 0] (a^[0] (x4), x4)))
+usable p^[1, 0] (a^[0] (x1), p^[1, 0] (x2, p^[0, 1] (x3, x4))) -> p^[1, 0] (x2, p^[0, 0] (x1, p^[1, 1] (a^[1] (x4), x4)))
+usable p^[1, 0] (a^[0] (x1), p^[1, 0] (x2, p^[1, 0] (x3, x4))) -> p^[1, 0] (x2, p^[0, 0] (x1, p^[1, 0] (a^[0] (x4), x4)))
+usable p^[1, 0] (a^[0] (x1), p^[1, 0] (x2, p^[1, 1] (x3, x4))) -> p^[1, 0] (x2, p^[0, 0] (x1, p^[1, 1] (a^[1] (x4), x4)))
+usable p^[1, 0] (a^[1] (x1), p^[0, 0] (x2, p^[0, 0] (x3, x4))) -> p^[0, 0] (x2, p^[1, 0] (x1, p^[1, 0] (a^[0] (x4), x4)))
+usable p^[1, 0] (a^[1] (x1), p^[0, 0] (x2, p^[0, 1] (x3, x4))) -> p^[0, 0] (x2, p^[1, 0] (x1, p^[1, 1] (a^[1] (x4), x4)))
+usable p^[1, 0] (a^[1] (x1), p^[0, 0] (x2, p^[1, 0] (x3, x4))) -> p^[0, 0] (x2, p^[1, 0] (x1, p^[1, 0] (a^[0] (x4), x4)))
+usable p^[1, 0] (a^[1] (x1), p^[0, 0] (x2, p^[1, 1] (x3, x4))) -> p^[0, 0] (x2, p^[1, 0] (x1, p^[1, 1] (a^[1] (x4), x4)))
+usable p^[1, 0] (a^[1] (x1), p^[1, 0] (x2, p^[0, 0] (x3, x4))) -> p^[1, 0] (x2, p^[1, 0] (x1, p^[1, 0] (a^[0] (x4), x4)))
+usable p^[1, 0] (a^[1] (x1), p^[1, 0] (x2, p^[0, 1] (x3, x4))) -> p^[1, 0] (x2, p^[1, 0] (x1, p^[1, 1] (a^[1] (x4), x4)))
+usable p^[1, 0] (a^[1] (x1), p^[1, 0] (x2, p^[1, 0] (x3, x4))) -> p^[1, 0] (x2, p^[1, 0] (x1, p^[1, 0] (a^[0] (x4), x4)))
+usable p^[1, 0] (a^[1] (x1), p^[1, 0] (x2, p^[1, 1] (x3, x4))) -> p^[1, 0] (x2, p^[1, 0] (x1, p^[1, 1] (a^[1] (x4), x4)))
+
+solver finished, result: Undef
+############### caught thread killed

@@ -1,0 +1,58 @@
+YES
+system p (a (x1), p (x2, p (x3,
+                           x4))) -> p (x2, p (x1,
+                                             p (a (x4), x4)))
+       
+       total size 16
+is top-terminating because
+dependency pairs transformation
+system p# (a (x1), p (x2, p (x3,
+                            x4))) -> p# (x2, p (x1,
+                                               p (a (x4), x4)))
+       p# (a (x1), p (x2, p (x3,
+                            x4))) -> p# (x1, p (a (x4), x4))
+       p# (a (x1), p (x2, p (x3,
+                            x4))) -> p# (a (x4), x4)
+       p (a (x1), p (x2, p (x3,
+                           x4))) ->= p (x2, p (x1,
+                                              p (a (x4), x4)))
+       total size 58
+is top-terminating because
+rule removal by matrix interpretation into arctic numbers
+matrix interpretation domain Arctic dimension 1
+M.Map (a,[ 1 ] * x1 + [ - ])
+      (p
+      ,[ 0 ] * x1 + [ 1 ] * x2 + [ - ])
+      (p#
+      ,[ 2 ] * x1 + [ 2 ] * x2 + [ - ])
+usable rules p (a (x1), p (x2,
+                          p (x3, x4))) ->= p (x2, p (x1,
+                                                    p (a (x4), x4)))
+system p# (a (x1), p (x2, p (x3,
+                            x4))) -> p# (x2, p (x1,
+                                               p (a (x4), x4)))
+       p (a (x1), p (x2, p (x3,
+                           x4))) ->= p (x2, p (x1,
+                                              p (a (x4), x4)))
+       total size 32
+is top-terminating because
+semanticLabeling
+Config {modelBitWidth = 1, numPrecedences = 2, numPatterns = 0, precedenceDomainBitWidth = -1, argumentFilter = AFNormal, usePrecedence = False, emptyPrecedence = False, useInterpretation = True, beVerbose = True, outputCPF = False}
+system 
+       p (a (x1), p (x2, p (x3,
+                           x4))) ->= p (x2, p (x1,
+                                              p (a (x4), x4)))
+       total size 16
+is top-terminating because
+it contains no strict rules
+Proof outline
+top-terminating for TRS/DP with 1 strict (pairs) 0 relative (rules)
+DP transform
+    top-terminating for TRS/DP with 3 strict (pairs) 1 relative (rules)
+    matrix interpretation, domain Arctic dimension 1
+    for 1 usable rules
+        top-terminating for TRS/DP with 1 strict (pairs) 1 relative (rules)
+        Cpf2Cpf
+            Config {modelBitWidth = 1, numPrecedences = 2, numPatterns = 0, precedenceDomainBitWidth = -1, argumentFilter = AFNormal, usePrecedence = False, emptyPrecedence = False, useInterpretation = True, beVerbose = True, outputCPF = False}
+            top-terminating for TRS/DP with 0 strict (pairs) 1 relative (rules)
+            no strict pairs
