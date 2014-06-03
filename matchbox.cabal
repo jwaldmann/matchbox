@@ -45,7 +45,7 @@ source-repository head
   type: git
   location: git://github.com/jwaldmann/matchbox.git
 
-Executable matchbox
+Executable matchbox2014
   Main-Is:          MB.hs
   Ghc-options:        -W -O2 -fno-warn-incomplete-patterns -threaded -rtsopts
   Build-Depends:      base 

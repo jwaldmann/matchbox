@@ -8,7 +8,8 @@ cabal sandbox init --sandbox $box
 
 rm -rf build ; mkdir build ; pushd build
 
-for arch in minisat-haskell-bindings satchmo haskell-obdd smt-lib satchmo-smt haskell-tpdb transformer-combinators
+# for arch in minisat-haskell-bindings satchmo haskell-obdd smt-lib satchmo-smt haskell-tpdb transformer-combinators
+for arch in satchmo haskell-obdd smt-lib satchmo-smt haskell-tpdb transformer-combinators
 do
     git clone  https://github.com/jwaldmann/$arch.git
     pushd $arch
