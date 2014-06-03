@@ -12,7 +12,7 @@ import           CO4.Test.TermComp2014.Standalone
 import           CO4.Test.TermComp2014.Util (nodeArities)
 import           CO4.Test.TermComp2014.Config
 
-$( compileFile [OnlyAllocators, ImportPrelude] "tc/CO4/Test/TermComp2014/Standalone.hs" )
+$( compileFile [OnlyAllocators, ImportPrelude] "CO4/Test/TermComp2014/Standalone.hs" )
 
 allocator :: Config -> DPTrs () -> TAllocator Proof
 allocator config dpTrs = 

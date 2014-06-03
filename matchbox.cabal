@@ -1,5 +1,5 @@
 Name: matchbox
-Version: 2.0.2
+Version: 3.0.0
 Cabal-Version: >= 1.9.2
 License: GPL
 Build-type: Simple
@@ -38,8 +38,7 @@ description:
   .
   Usage:
   > matchbox --help
-  > matchbox --bits=3 --dim=4 -C data/z001.srs
-  > matchbox --bits=5 --dim=4 -C --dp-fromtop --cpf data/z002.srs | grep -v YES | ceta /dev/stdin
+  > matchbox  --cpf data/z002.srs | tail -n +2 | ceta /dev/stdin
   (requires <http://cl-informatik.uibk.ac.at/software/ceta/>)
 
 source-repository head
@@ -49,20 +48,12 @@ source-repository head
 Executable matchbox
   Main-Is:          MB.hs
   Ghc-options:        -W -O2 -fno-warn-incomplete-patterns -threaded -rtsopts
-  Build-Depends:      base >= 4.2 && < 5.0
-                    , containers >= 0.5
-                    , tpdb >= 0.7.1
-                    , HaXml
-                    , satchmo >= 2.6
-                    , satchmo-smt >= 0.3
-                    , co4 >= 0.0.62 , satchmo-core >= 0.6.8
-                    , text, wl-pprint-text
-                    , template-haskell		 
-                    , mtl
-                    , stm
-                    , array
-                    , transformer-combinators
-                    , hmatrix-glpk
-                    , ghc-prim
-                    , hashable                    
-
+  Build-Depends:      base 
+                    , containers
+                    , mtl, transformers, logict
+                    , satchmo-core
+                    , tpdb >= 0.9.5
+                    , co4 >= 0.0.75
+                    , satchmo-smt > 0.4, satchmo >= 2.8
+                    , array, hashable, HaXml, wl-pprint-text
+                    , async, stm
