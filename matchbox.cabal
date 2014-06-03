@@ -52,7 +52,7 @@ Executable matchbox
                     , containers
                     , mtl, transformers, logict
                     , satchmo-core
-                    , tpdb >= 0.9.5
+                    , tpdb >= 0.9.6
                     , co4 >= 0.0.75
                     , satchmo-smt > 0.4, satchmo >= 2.8
                     , array, hashable, HaXml, wl-pprint-text
