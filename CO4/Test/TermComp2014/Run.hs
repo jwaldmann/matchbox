@@ -35,7 +35,7 @@ runN config trs =
                                  . T.DpTrans (T.DPS tpdbStrictRules) True )
   where
     tpdbDp          = T.dp trs
-    tpdbStrictRules = filter T.strict $ toTPDBRules symbolMap (const . T.fromMarkedIdentifier) dp
+    tpdbStrictRules = filter T.strict $ unlabeledTrsToTPDBRules symbolMap T.fromMarkedIdentifier dp
     (dp, symbolMap) = fromTPDBTrs tpdbDp
 
     goDP dp = case hasMarkedRule dp of
@@ -61,8 +61,8 @@ run1 config trs = do
       in
         return $ Just (trs', proof)
 
-run1' :: SymbolMap -> Config -> DPTrs () 
-      -> IO (Maybe (DPTrs (), [DPRule ()], T.DpProof -> T.DpProof ))
+run1' :: SymbolMap -> Config -> UnlabeledTrs
+      -> IO (Maybe (UnlabeledTrs, [UnlabeledRule], T.DpProof -> T.DpProof ))
 run1' symbolMap config dp = 
   let mValues   = modelValues $ modelBitWidth config
       parameter = (dp, mValues)
