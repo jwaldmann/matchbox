@@ -6,7 +6,7 @@ where
 import qualified Data.Map as M
 import           CO4 hiding (Config)
 import           CO4.Prelude (kList,uList,allocatorList)
-import           CO4.PreludeNat (Nat,nat,uNat,knownNat)
+import           CO4.PreludeNat (Nat,nat,uNat)
 import           CO4.Util (bitWidth)
 import           CO4.Test.TermComp2014.Standalone 
 import           CO4.Test.TermComp2014.Util (nodeArities)
@@ -14,16 +14,16 @@ import           CO4.Test.TermComp2014.Config
 
 $( compileFile [OnlyAllocators, ImportPrelude] "CO4/Test/TermComp2014/Standalone.hs" )
 
-allocator :: Config -> DPTrs () -> TAllocator Proof
-allocator config dpTrs = 
-  knownProof (modelAllocator config dpTrs)
-             (kList (numPrecedences config) $ usableOrderAllocator config dpTrs )
+allocator :: Config -> UnlabeledTrs -> TAllocator Proof
+allocator config trs = 
+  knownProof (modelAllocator config trs)
+             (kList (numPrecedences config) $ usableOrderAllocator config trs )
 
-usableOrderAllocator :: Config -> DPTrs () -> TAllocator (UsableOrder MSL)
-usableOrderAllocator config dpTrs =
-    knownTuple2 (usableMapAllocator config dpTrs) (orderAllocator config dpTrs)
+usableOrderAllocator :: Config -> UnlabeledTrs -> TAllocator (UsableOrder SymLab)
+usableOrderAllocator config trs =
+    knownTuple2 (usableMapAllocator config trs) (orderAllocator config trs)
 
-usableMapAllocator :: Config -> DPTrs () -> TAllocator (UsableSymbol MSL)
+usableMapAllocator :: Config -> UnlabeledTrs -> TAllocator (UsableSymbol SymLab)
 usableMapAllocator config = allocatorList . concatMap goArity . M.toList . nodeArities
   where
     n                 = modelBitWidth config
@@ -34,17 +34,17 @@ usableMapAllocator config = allocatorList . concatMap goArity . M.toList . nodeA
       return $ knownTuple2 (knownTuple2 (kSymbolAllocator s) (kLabelAllocator args))
                            complete
 
-orderAllocator :: Config -> DPTrs () -> TAllocator (TerminationOrder MSL)
-orderAllocator config dpTrs = 
+orderAllocator :: Config -> UnlabeledTrs -> TAllocator (TerminationOrder SymLab)
+orderAllocator config trs = 
     case (usePrecedence config, useInterpretation config) of
         (True,False) -> 
-             knownFilterAndPrec (filterAllocator config dpTrs) (precedenceAllocator config dpTrs)
+             knownFilterAndPrec (filterAllocator config trs) (precedenceAllocator config trs)
         (False,True) -> 
-             knownLinearInt (interpretationAllocator config dpTrs)
+             knownLinearInt (interpretationAllocator config trs)
         (True,True) -> 
              error "FIXME: have the solver choose the order type"
 
-filterAllocator :: Config -> DPTrs () -> TAllocator (ArgFilter MSL)
+filterAllocator :: Config -> UnlabeledTrs -> TAllocator (ArgFilter SymLab)
 filterAllocator config = allocatorList . concatMap goArity . M.toList . nodeArities
   where
     n                 = modelBitWidth config
@@ -74,7 +74,7 @@ filterAllocator config = allocatorList . concatMap goArity . M.toList . nodeArit
     kIndex 0         = knownThis
     kIndex i         = knownNext $ kIndex $ i - 1
 
-interpretationAllocator :: Config -> DPTrs () -> TAllocator (LinearInterpretation MSL)
+interpretationAllocator :: Config -> UnlabeledTrs -> TAllocator (LinearInterpretation SymLab)
 interpretationAllocator config trs = allocatorList $ concatMap goArity arities
   where
     arities                = M.toList $ nodeArities trs
@@ -93,7 +93,7 @@ interpretationAllocator config trs = allocatorList $ concatMap goArity arities
                        ) 
              $ linfun arity
 
-modelAllocator :: Config -> DPTrs () -> TAllocator (Model Symbol)
+modelAllocator :: Config -> UnlabeledTrs -> TAllocator (Model Symbol)
 modelAllocator config = allocatorList . map goArity . M.toList . nodeArities
   where
     {-
@@ -128,7 +128,7 @@ modelAllocator config = allocatorList . map goArity . M.toList . nodeArities
                 p = if  k < numPatterns config then uPattern else knownAny
             return $ knownTuple2 ( kList arity p)  uval 
 
-precedenceAllocator :: Config -> DPTrs () -> TAllocator (Precedence MSL)
+precedenceAllocator :: Config -> UnlabeledTrs -> TAllocator (Precedence SymLab)
 precedenceAllocator config trs = 
     if emptyPrecedence config 
     then knownEmptyPrecedence

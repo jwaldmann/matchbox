@@ -7,7 +7,6 @@ import           Control.Monad.State
 import           Data.List (nub)
 import           Data.Either (partitionEithers)
 import           Data.Tuple (swap)
-import           Data.Maybe (mapMaybe)
 import qualified Data.Map as M
 import qualified Data.Set as S
 import qualified TPDB.Data as TPDB
@@ -36,7 +35,7 @@ fromTPDBTrs trs = (Trs rules', M.fromList $ map swap $ M.toList symbolMap)
       return Var `ap` goSymbol (Left v)
 
     goTerm (TPDB.Node v args) = 
-      return Node `ap` goSymbol (Right v) `ap` return () `ap` mapM goTerm args
+      return Node `ap` goSymbol (Right v) `ap` mapM goTerm args
 
     goSymbol i = gets (M.lookup i) >>= \case
       Nothing -> do n <- gets M.size
@@ -52,9 +51,10 @@ fromTPDBTrs trs = (Trs rules', M.fromList $ map swap $ M.toList symbolMap)
         goRule rule = (goTerm $ TPDB.lhs rule) ++ (goTerm $ TPDB.rhs rule)
         goTerm term = (map Left $ TPDB.lvars term) ++ (map Right $ TPDB.lsyms term)
 
-toTPDBRules :: SymbolMap -> (TPDB.Marked TPDB.Identifier -> label -> a) -> DPTrs label
-            -> [TPDB.Rule (TPDB.Term TPDB.Identifier a)]
-toTPDBRules symbolMap f (Trs rules) = map goRule rules
+labeledTrsToTPDBRules :: SymbolMap -> (TPDB.Marked TPDB.Identifier -> label -> a) 
+                      -> LabeledTrs label
+                      -> [TPDB.Rule (TPDB.Term TPDB.Identifier a)]
+labeledTrsToTPDBRules symbolMap f (Trs rules) = map goRule rules
   where
     goRule (Rule isMarked lhs rhs) = TPDB.Rule 
       (goTerm lhs) (goTerm rhs)
@@ -63,58 +63,68 @@ toTPDBRules symbolMap f (Trs rules) = map goRule rules
     goTerm (Var s) = case M.lookup s symbolMap of
       (Just (Left i)) -> TPDB.Var i
     
-    goTerm (Node s label args) = case M.lookup s symbolMap of
+    goTerm (Node (s,label) args) = case M.lookup s symbolMap of
       (Just (Right i)) -> TPDB.Node (f i label) $ map goTerm args
+
+unlabeledTrsToTPDBRules :: SymbolMap -> (TPDB.Marked TPDB.Identifier -> a) 
+                        -> UnlabeledTrs -> [TPDB.Rule (TPDB.Term TPDB.Identifier a)]
+unlabeledTrsToTPDBRules symbolMap f (Trs rules) = 
+  labeledTrsToTPDBRules symbolMap (const . f) labeledTrs
+  where
+    labeledTrs                   = Trs $ map labeledRule rules
+    labeledRule (Rule m lhs rhs) = Rule m (labeledTerm lhs) (labeledTerm rhs)
+    labeledTerm (Var v)          = Var v
+    labeledTerm (Node s args)    = Node (s,()) $ map labeledTerm args
 
 modelValues :: Int -> [Domain]
 modelValues n = map (nat n) [0..(2^n)-1]
 
-variableSet :: Ord v => Trs v s l -> S.Set v
+variableSet :: Ord v => Trs v s -> S.Set v
 variableSet (Trs rules) = S.unions $ map goRule rules
   where
     goRule (Rule _ l r) = variableSet' l `S.union` (variableSet' r)
 
-variableSet' :: Ord v => Term v s l -> S.Set v
-variableSet' (Var v)          = S.singleton v
-variableSet' (Node _  _ args) = S.unions $ map variableSet' args
+variableSet' :: Ord v => Term v s -> S.Set v
+variableSet' (Var v)        = S.singleton v
+variableSet' (Node _  args) = S.unions $ map variableSet' args
 
-nodeArities :: Ord node => Trs v node l -> M.Map node Int
+nodeArities :: Ord node => Trs v node -> M.Map node Int
 nodeArities (Trs rules) = M.fromListWith (\a b -> assert (a == b) a) 
                         $ concatMap goRule rules
   where 
-    goRule (Rule _ l r)    = (goTerm l) ++ (goTerm r)
-    goTerm (Var {})        = []
-    goTerm (Node v _ args) = (v, length args) : (concatMap goTerm args)
+    goRule (Rule _ l r)  = (goTerm l) ++ (goTerm r)
+    goTerm (Var {})      = []
+    goTerm (Node v args) = (v, length args) : (concatMap goTerm args)
 
-isVar :: Term n v l -> Bool
+isVar :: Term n v -> Bool
 isVar (Var _) = True
 isVar _       = False
 
-isSubterm :: (Eq v, Eq n, Eq l) => Term v n l -> Term v n l -> Bool
+isSubterm :: (Eq v, Eq n) => Term v n -> Term v n -> Bool
 isSubterm subterm = go
   where
-    go t@(Var _)       = t == subterm
-    go t@(Node _ _ ts) = (t == subterm) || (any go ts)
+    go t@(Var _)     = t == subterm
+    go t@(Node _ ts) = (t == subterm) || (any go ts)
 
-isStrictSubterm :: (Eq v, Eq n, Eq l) => Term v n l -> Term v n l -> Bool
+isStrictSubterm :: (Eq v, Eq n) => Term v n -> Term v n -> Bool
 isStrictSubterm subterm term = (term /= subterm) && (isSubterm subterm term)
 
-subterms :: Term v n l -> [Term v n l]
+subterms :: Term v n -> [Term v n]
 subterms = go
   where
-    go t@(Var _)       = [t]
-    go t@(Node _ _ ts) = t : (concatMap go ts)
+    go t@(Var _)     = [t]
+    go t@(Node _ ts) = t : (concatMap go ts)
 
-ungroupTrs :: GroupedTrs v n l -> Trs v n l
+ungroupTrs :: GroupedTrs v n -> Trs v n
 ungroupTrs (GroupedTrs rules) = Trs $ concat rules
 
-intermediates :: Trs v n l -> GroupedTrs Symbol Symbol Label -> [UsableOrder MSL]
-              -> [TaggedGroupedDPTrs Label]
+intermediates :: Trs v n -> GroupedTrs Symbol SymLab -> [UsableOrder SymLab]
+              -> [TaggedGroupedLabeledTrs Label]
 intermediates (Trs rules) g @ (GroupedTrs labeledRules) orders =
     assert (length rules == length labeledRules)
     $ scanl step (tagAll g) orders
 
-removeMarkedUntagged :: Trs v n l -> TaggedGroupedTrs v' n' l' -> (Trs v n l, [Rule v n l])
+removeMarkedUntagged :: Trs v n -> TaggedGroupedTrs v' n' -> (Trs v n, [Rule v n])
 removeMarkedUntagged (Trs rules) (TaggedGroupedTrs labeledRules) =  (Trs keep, delete)
   where
     (delete, keep) = partitionEithers $ zipWith check rules labeledRules
@@ -123,20 +133,20 @@ removeMarkedUntagged (Trs rules) (TaggedGroupedTrs labeledRules) =  (Trs keep, d
       then Left  rule -- delete
       else Right rule -- keep
 
-removeMarkedUntagged' :: TaggedGroupedTrs v n l -> GroupedTrs v n l
+removeMarkedUntagged' :: TaggedGroupedTrs v n -> GroupedTrs v n
 removeMarkedUntagged' (TaggedGroupedTrs rules) = GroupedTrs $ map check rules
   where
     check = map snd . filter (not . isMarkedUntagged)
 
-isMarkedUntagged :: (Bool, Rule v n l) -> Bool
+isMarkedUntagged :: (Bool, Rule v n) -> Bool
 isMarkedUntagged (isTagged, Rule isMarked _ _) = isMarked && not isTagged
 
-hasMarkedRule :: DPTrs label -> Bool
+hasMarkedRule :: Trs v n -> Bool
 hasMarkedRule (Trs rules) = any goRule rules
   where
     goRule (Rule isMarked _ _) = isMarked
 
-isValidTrs :: Ord v => Trs v s l -> Bool
+isValidTrs :: Ord v => Trs v s -> Bool
 isValidTrs (Trs rules) = all isValidRule rules
   where
     isValidRule (Rule _ lhs rhs) = (not $ isVar lhs) 

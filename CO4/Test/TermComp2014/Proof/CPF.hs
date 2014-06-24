@@ -22,13 +22,13 @@ import Prelude hiding (lookup)
 
 type Arities = M.Map Symbol Int
 
-toCpfProof :: SymbolMap -> (DPTrs (), [Domain]) -> Proof -> T.DpProof -> T.DpProof
+toCpfProof :: SymbolMap -> (UnlabeledTrs, [Domain]) -> Proof -> T.DpProof -> T.DpProof
 toCpfProof symbolMap (trs, modelValues) (Proof model orders) innerProof = 
   semLabProof
   where
     arities           = nodeArities trs
     (labeledTrs,True) = makeLabeledTrs model trs modelValues
-    labeledUR         = T.DPS $ toTPDBRules symbolMap (flip addCpfLabel') 
+    labeledUR         = T.DPS $ labeledTrsToTPDBRules symbolMap (flip addCpfLabel') 
                               $ filterUsable 
                               $ steps (tagAll labeledTrs) orders
     
@@ -48,17 +48,17 @@ toCpfProof symbolMap (trs, modelValues) (Proof model orders) innerProof =
       $ filter (\(isTagged, Rule isMarked _ _ ) -> not isMarked && isTagged) 
       $ concat rs
 
-toCpfSemLabProof :: SymbolMap -> GroupedDPTrs Label -> Model Symbol -> T.DpProof -> T.DpProof
+toCpfSemLabProof :: SymbolMap -> GroupedLabeledTrs Label -> Model Symbol -> T.DpProof -> T.DpProof
 toCpfSemLabProof symbolMap trs model = 
   T.SemLabProc model' dps trs'
   where
     model' = toCpfModel symbolMap model
     trs'   = T.DPS $ filter (not . T.strict) all
     dps    = T.DPS $ filter T.strict all
-    all    = toTPDBRules symbolMap (flip addCpfLabel') $ ungroupTrs trs
+    all    = labeledTrsToTPDBRules symbolMap (flip addCpfLabel') $ ungroupTrs trs
 
-toCpfRedPairProof :: SymbolMap -> Arities -> TaggedGroupedDPTrs Label
-                  -> UsableOrder MSL -> T.DPS -> T.DpProof -> T.DpProof
+toCpfRedPairProof :: SymbolMap -> Arities -> TaggedGroupedLabeledTrs Label
+                  -> UsableOrder SymLab -> T.DPS -> T.DpProof -> T.DpProof
 toCpfRedPairProof symbolMap arities labeledTrs order usableRules innerProof = 
   T.RedPairProc { T.rppOrderingConstraintProof = ocp 
                 , T.rppDps                     = dps 
@@ -69,19 +69,19 @@ toCpfRedPairProof symbolMap arities labeledTrs order usableRules innerProof =
     ocp = toCpfOrderingConstraintProof symbolMap arities order
     dps = T.DPS
         $ filter T.strict
-        $ toTPDBRules symbolMap (flip addCpfLabel')
+        $ labeledTrsToTPDBRules symbolMap (flip addCpfLabel')
         $ ungroupTrs 
         $ removeMarkedUntagged' labeledTrs
 
-toCpfUnlabProof :: SymbolMap -> DPTrs () -> TaggedGroupedDPTrs Label -> T.DpProof 
+toCpfUnlabProof :: SymbolMap -> UnlabeledTrs -> TaggedGroupedLabeledTrs Label -> T.DpProof 
                 -> T.DpProof
 toCpfUnlabProof symbolMap trs labeledTrs innerProof =
   T.UnlabProc { T.ulpDps = T.DPS 
                          $ filter T.strict
-                         $ toTPDBRules symbolMap (const . T.fromMarkedIdentifier)
+                         $ unlabeledTrsToTPDBRules symbolMap T.fromMarkedIdentifier
                          $ fst
                          $ removeMarkedUntagged trs labeledTrs
-              , T.ulpTrs     = T.DPS $ toTPDBRules symbolMap (const . T.fromMarkedIdentifier) trs
+              , T.ulpTrs     = T.DPS $ unlabeledTrsToTPDBRules symbolMap T.fromMarkedIdentifier trs
               , T.ulpDpProof = innerProof
               }
 
@@ -89,10 +89,9 @@ toCpfModel :: SymbolMap -> Model Symbol -> T.Model
 toCpfModel symbolMap model = T.FiniteModel (2^bitWidth) $ map toInterpret model
   where
     bitWidth = width $ snd $ head $ snd $ head model
-    indexArgs (ps,v) = (zip [1..] ps, v)
     toInterpret (sym, intpr) = T.Interpret (toCpfSymbol symbolMap sym) arity
                              $ T.ArithFunction 
-                             $ toArithFunction1 bitWidth arity 
+                             $ toArithFunction1 bitWidth 
                              $ expandArithFunction bitWidth arity
                              $ nubBy ((==) `on` fst) 
                              $ intpr
@@ -109,7 +108,7 @@ expandArithFunction bw ar ints = do
     let val = lookup (\ xs ys -> and $ zipWith (eqPattern (==)) xs ys) argPat ints
     return ( argPat , val )
 
-toArithFunction1 bitWidth arity ints = T.AFSum $ do
+toArithFunction1 bitWidth ints = T.AFSum $ do
     let toNatural n = assert (width n <= bitWidth) $ T.AFNatural $ value n
     (argPat,val) <- ints
     let go [] = toNatural val
@@ -120,7 +119,7 @@ toArithFunction1 bitWidth arity ints = T.AFSum $ do
 -- for debugging:
 deriving instance Show TPDB.CPF.Proof.Type.ArithFunction
 
-toArithFunction0 bitWidth arity ints = goInts ints
+toArithFunction0 bitWidth ints = goInts ints
           where
             toNatural n      = assert (width n <= bitWidth) $ T.AFNatural $ value n
 
@@ -138,7 +137,7 @@ toArithFunction0 bitWidth arity ints = goInts ints
                 (same,other) = partition (\i -> head (fst i) == d) ints
                 same'        = map (\(ps,v) -> (tail ps, v)) same
 
-toCpfOrderingConstraintProof :: SymbolMap -> Arities -> UsableOrder MSL
+toCpfOrderingConstraintProof :: SymbolMap -> Arities -> UsableOrder SymLab
                              -> T.OrderingConstraintProof
 toCpfOrderingConstraintProof symbolMap arities uo = case uo of
   (_, LinearInt lint ) -> 
