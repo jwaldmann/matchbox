@@ -14,9 +14,14 @@ import qualified MB.Proof as P
 
 import qualified Compress.Common as CC
 
-import qualified Satchmo.SMT.Exotic.Arctic  as A
--- import qualified Satchmo.SMT.Exotic.Semiring.Arctic  as SA
--- import qualified Satchmo.SMT.Arctic  as SA
+-- import qualified Satchmo.SMT.Exotic.Arctic  as A
+import qualified Boolector.Arctic  as A
+
+import qualified Satchmo.SMT.Exotic.Semiring.Arctic  as SA
+
+import qualified Satchmo.SMT.Arctic  as SA
+
+
 import Satchmo.SMT.Dictionary (Domain(..))
 
 import Control.Monad.Trans.Cont

@@ -124,7 +124,7 @@ decomp succ fail sys =
 
 matrices  =  capture $ foldr1 orelse
     $ map (\(d,b) -> matrix_arc d b) 
-    $ do d <- [1 .. ] ; return ( d, 8 )
+    $ do d <- [1 .. ] ; return ( d, 3 )
 
 for_usable_rules method = \ sys -> do
     let restricted = TPDB.DP.Usable.restrict sys

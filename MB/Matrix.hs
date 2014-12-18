@@ -9,6 +9,8 @@ import MB.Proof (Interpretation (..))
 
 import qualified MB.Count
 
+import MB.Solver 
+
 import TPDB.Data
 import TPDB.Pretty
 import qualified TPDB.DP
@@ -43,8 +45,9 @@ import Data.Hashable
 -- (because we might want to avoid re-compression).
 
 handle :: (Show s, Hashable s, Ord v, Show v, Pretty v, Pretty s, Ord s
-          , S.Semiring val, Pretty val)
-       => (Int -> D.Dictionary Satchmo.SAT.Mini.SAT num val B.Boolean )
+          , S.Semiring val, Pretty val
+          , Solver m )
+       => (Int -> D.Dictionary m num val bool )
        -> D.Dictionary (Either String) val val Bool
        -> Options -> TRS v (CC.Sym s)
        -> IO ( Maybe ( Interpretation s val
@@ -57,7 +60,7 @@ handle encoded direct opts sys = do
             system MB.Count.linear (dim opts) sys
     hPutStrLn stderr $ show count
 
-    out <- Satchmo.SAT.Mini.solve $ do
+    out <- solve $ do
         let ldict = L.linear mdict
             mdict = M.matrix idict
             idict = encoded (bits opts)
@@ -85,10 +88,12 @@ handle encoded direct opts sys = do
         Nothing -> return Nothing
 
 handle_dp :: (Show s, Hashable s, Ord v, Show v, Pretty v, Pretty s, Ord s
-          , Pretty val, S.Semiring val)
-       => (Int -> D.Dictionary Satchmo.SAT.Mini.SAT num val B.Boolean )
+          , Pretty val, S.Semiring val
+          , Solver m )
+       => (Int -> D.Dictionary m num val bool )
        -> D.Dictionary (Either String) val val Bool
-       -> Options -> TRS v (CC.Sym (TPDB.DP.Marked s))
+       -> Options
+       -> TRS v (CC.Sym (TPDB.DP.Marked s))
        -> IO ( Maybe ( Interpretation (TPDB.DP.Marked s) val
                      , TRS v (CC.Sym (TPDB.DP.Marked s))))
 handle_dp encoded direct opts sys = do
@@ -99,7 +104,7 @@ handle_dp encoded direct opts sys = do
             system_dp MB.Count.linear (dim opts) sys
     hPutStrLn stderr $ show count
 
-    out <- Satchmo.SAT.Mini.solve $ do
+    out <- solve $ do
         let ldict = L.linear mdict
             mdict = M.matrix idict
             idict = encoded (bits opts) 
