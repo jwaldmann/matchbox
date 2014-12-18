@@ -104,9 +104,9 @@ sharp k =  case k of
             Original o ->              plain o
             Marked   o -> C.SymSharp $ plain o
 
-deriving instance Eq C.Symbol
+-- deriving instance Eq C.Symbol
 deriving instance Ord C.Symbol
-deriving instance Eq C.Label
+-- deriving instance Eq C.Label
 deriving instance Ord C.Label
 
 {-

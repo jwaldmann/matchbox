@@ -16,7 +16,7 @@ import qualified Compress.Common as CC
 
 import qualified Satchmo.SMT.Exotic.Arctic  as A
 -- import qualified Satchmo.SMT.Exotic.Semiring.Arctic  as SA
-import qualified Satchmo.SMT.Arctic  as SA
+-- import qualified Satchmo.SMT.Arctic  as SA
 import Satchmo.SMT.Dictionary (Domain(..))
 
 import Control.Monad.Trans.Cont

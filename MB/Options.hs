@@ -1,6 +1,7 @@
 module MB.Options where
 
 import System.Console.GetOpt
+import System.Environment
 
 data Compression = None 
                  | Simple
@@ -97,3 +98,15 @@ options =
        ( NoArg ( \ opts -> opts { cpf = True }))
        "proof output in CPF (XML) format"
     ]
+
+parse :: IO (Options, String)
+parse = do
+    args    <- getArgs
+
+    let syntaxMsg = "[OPTION ...] FILE"
+
+    case getOpt Permute options args of
+        (o,[n],[]) -> 
+            return (  foldl (\c o -> o c) options0 o, n )
+        (_,_,msgs) ->
+            error $ (unlines msgs) ++ (usageInfo syntaxMsg options)

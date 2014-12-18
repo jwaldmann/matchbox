@@ -5,8 +5,8 @@
 {-# language LambdaCase #-}
 {-# language NoMonomorphismRestriction #-}
 
-import CO4.Test.TermComp2014.Run (run1)
-import CO4.Test.TermComp2014.Config 
+-- import CO4.Test.TermComp2014.Run (run1)
+-- import CO4.Test.TermComp2014.Config 
 
 import MB.Arctic
 import MB.Logic
@@ -44,7 +44,8 @@ main = do
     hSetBuffering stdout LineBuffering
     hSetBuffering stderr LineBuffering
 
-    (config,filePath) <- parseConfig
+    (config,filePath) <- O.parse -- parseConfig
+    
     trs <- TPDB.Input.get_trs filePath
     out <- run $ handle_both
                $ trs -- { rules = map sortVariables $ rules trs }
@@ -52,7 +53,7 @@ main = do
         Nothing    -> do putStrLn "MAYBE"
         Just proof -> do  
             putStrLn "YES" 
-            if outputCPF config
+            if O.cpf config
               then do
                 displayIO stdout $ renderCompact $ document 
                               $ P.tox $ P.rtoc proof
@@ -87,8 +88,8 @@ handle sys = do
 handle_scc  = orelse nomarkedrules 
             $ decomp handle_scc 
 
-            $ andthen0 ( parallel_or 
-                [ for_usable_rules matrices , semanticlabs ]) 
+            -- $ andthen0 ( parallel_or [ for_usable_rules matrices , semanticlabs ])
+            $ andthen0 (for_usable_rules matrices) 
             $  apply handle_scc
 
 --            $ orelse_andthen (for_usable_rules matrices) (apply handle_scc) 
@@ -150,6 +151,8 @@ matrix_arc dim bits sys = do
 
 -- | this is the connection to tc/CO4/Test/TermComp2014/Main
 
+{-
+
 semanticlabs = capture $ foldr1 orelse
     $ map (\(b,n) -> semanticlab $ defaultConfig 
         { modelBitWidth = b
@@ -170,3 +173,5 @@ semanticlab config = mkWork $ \ sys -> do
             , P.claim = P.Top_Termination
             , P.reason = P.Cpf2Cpf (text $ show config) f p
             } )
+
+-}
