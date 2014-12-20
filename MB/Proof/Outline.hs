@@ -32,6 +32,14 @@ outreason r = case r of
                      Just us -> "for" <+> pretty (length us) <+> "usable rules" 
              , indent 4 $ outline p
              ]
+    Matrix_Interpretation_Natural  i u p -> 
+        vcat ["matrix interpretation, domain" <+> text  ( show $ domain i)
+                      <+> "dimension" <+> pretty (dimension i)
+             , case u of 
+                     Nothing -> empty 
+                     Just us -> "for" <+> pretty (length us) <+> "usable rules" 
+             , indent 4 $ outline p
+             ]
     SCCs cs ->  vcat ["EDG decomposed in SCCs" 
                      , indent 4 $ vcat $ do Right c <- cs ; return $ outline c
                      ]
