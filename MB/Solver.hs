@@ -11,5 +11,5 @@ instance Solver Satchmo.SAT.Mini.SAT where
 
 instance Solver Boolector.Boolector where
     solve = Boolector.withBoolector
-    
 
+    

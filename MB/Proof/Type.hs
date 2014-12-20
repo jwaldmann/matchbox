@@ -35,7 +35,9 @@ data Reason v s = No_Strict_Rules
      | DP_Transform (Proof v (Marked s ))
      | Mirror_Transform (Proof v s)
      | Matrix_Interpretation_Natural
-         (Interpretation s Integer) (Proof v s)
+         (Interpretation s Integer)
+         (Maybe [ Rule (Term v s) ]) -- maybe mention usable rules
+         (Proof v s)
      | Matrix_Interpretation_Arctic  
          (Interpretation s (A.Arctic Integer))
         (Maybe [ Rule (Term v s) ]) -- maybe mention usable rules

@@ -9,6 +9,7 @@
 -- import CO4.Test.TermComp2014.Config 
 
 import MB.Arctic
+import MB.Natural
 import MB.Logic
 import qualified MB.Options as O
 
@@ -123,7 +124,7 @@ decomp succ fail sys =
                      }
 
 matrices  =  capture $ foldr1 orelse
-    $ map (\(d,b) -> matrix_arc d b) 
+    $ map (\(d,b) -> matrix_nat d b) 
     $ do d <- [1 .. ] ; return ( d, 3 )
 
 for_usable_rules method = \ sys -> do
@@ -146,6 +147,20 @@ matrix_arc dim bits sys = do
         csys = RS { rules = CC.roots rs
                                , separate = separate sys }
     (csys', f) <- mkWork ( matrix_arctic_dp dim bits ) csys
+    let sys' = CC.expand_all_trs csys'
+    return ( sys', f )
+
+matrix_nat dim bits sys = do
+    let c = O.Paper
+        (cost, rs) = ( case c of
+                       O.None -> CS.nocompress 
+                       O.Simple -> CS.compress 
+                       O.Paper -> CP.compress CP.Simple
+                       O.PaperIter -> CP.compress CP.Iterative
+                     ) $ rules sys
+        csys = RS { rules = CC.roots rs
+                               , separate = separate sys }
+    (csys', f) <- mkWork ( matrix_natural_dp dim bits ) csys
     let sys' = CC.expand_all_trs csys'
     return ( sys', f )
 

@@ -50,7 +50,7 @@ proof r = case r of
     Mirror_Transform p -> C.StringReversal { C.trs = input  p
                                     , C.trsTerminationProof = proof $ reason p
                                     }
-    Matrix_Interpretation_Natural min q -> 
+    Matrix_Interpretation_Natural min Nothing q -> 
         C.RuleRemoval { C.rr_orderingConstraintProof = 
                               ocp plain  C.Naturals min
                       , C.trs = input q
@@ -62,10 +62,12 @@ dpproof :: Proof Identifier (Marked Identifier)
 dpproof p = case reason p of
     No_Strict_Rules -> C.PIsEmpty
     Equivalent d p -> dpproof  p
-    Matrix_Interpretation_Natural mia q -> 
+    Matrix_Interpretation_Natural mia usable q -> 
         C.RedPairProc { C.rppOrderingConstraintProof 
                       = ocp sharp C.Naturals mia
                       , C.rppDps = C.DPS $ map rsharp $ filter strict $ rules $ input q
+                      , C.rppUsableRules = 
+                           fmap (C.DPS . map rsharp ) usable
                       , C.rppDpProof = dpproof q
                       }
     Matrix_Interpretation_Arctic mia usable q -> 

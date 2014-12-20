@@ -47,9 +47,12 @@ instance (Pretty v, Pretty s) => Pretty (Reason v s) where
             [ "mirror transformation"
             , pretty p
             ]
-        Matrix_Interpretation_Natural i p -> vcat
+        Matrix_Interpretation_Natural i u p -> vcat
             [ "rule removal by matrix interpretation into natural numbers"
             , nest 4 $ pretty i
+            , nest 4 $ case u of
+                   Nothing -> empty
+                   Just rs -> "usable rules" <+> vcat (map pretty rs)
             , pretty p
             ]
         Matrix_Interpretation_Arctic i u p -> vcat

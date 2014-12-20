@@ -1,7 +1,7 @@
 {-# language NoMonomorphismRestriction #-}
 {-# language OverloadedStrings #-}
 
-module MB.Arctic where
+module MB.Natural where
 
 import TPDB.Data
 import TPDB.Pretty
@@ -14,15 +14,11 @@ import qualified MB.Proof as P
 
 import qualified Compress.Common as CC
 
--- import qualified Satchmo.SMT.Exotic.Arctic  as A
-import qualified Boolector.Arctic.Binary  as A
-
-import qualified Satchmo.SMT.Exotic.Semiring.Arctic  as SA
-
-import qualified Satchmo.SMT.Arctic  as SA
+import qualified Boolector.Natural.Binary  as N
 
 
 import Satchmo.SMT.Dictionary (Domain(..))
+import qualified Satchmo.SMT.Integer as SI
 
 import Control.Monad.Trans.Cont
 import Control.Monad.Trans.Maybe
@@ -32,23 +28,14 @@ import Control.Monad (when)
 
 
 -- matrix_arctic_dp :: Int -> Int -> TRS v c -> Work (TRS v x) Doc
-matrix_arctic_dp dim bits = original_matrix_arctic_dp
+matrix_natural_dp dim bits = original_matrix_natural_dp
       ( O.options0 { O.dim = dim, O.bits = bits, O.compression = O.Simple, O.dp = True })
 
-original_matrix_arctic_dp opts = 
-      remover_arctic ( "matrix_arctic_dp" :: Doc ) CC.expand_all_trs
-    $ MB.Matrix.handle_dp A.dict SA.direct opts
+original_matrix_natural_dp opts = 
+      remover_natural ( "matrix_natural_dp" :: Doc ) CC.expand_all_trs
+    $ MB.Matrix.handle_dp N.dict SI.direct opts
 
-
-{-
-remover_arctic :: ( )
-        => Doc
-        -> ( TRS v s -> TRS v u )
-        -> ( TRS v s -> IO (Maybe (Interpretation u (A.Arctic Integer), TRS v t)))
-        -> Lifter (TRS v s) (TRS v t) (Proof v u)
--}
-
-remover_arctic msg unpack h  sys = do
+remover_natural msg unpack h  sys = do
     let usable = filter ( not . strict ) $ rules $ unpack sys
     out <- h sys
     return $ case out of 
@@ -62,7 +49,7 @@ remover_arctic msg unpack h  sys = do
                Proof 
                { input = unpack sys
                , claim = Top_Termination
-               , reason = Matrix_Interpretation_Arctic m (Just usable) out
+               , reason = Matrix_Interpretation_Natural m (Just usable) out
                }
                    )
 
