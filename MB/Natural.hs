@@ -33,7 +33,10 @@ matrix_natural_dp dim bits = original_matrix_natural_dp
 
 original_matrix_natural_dp opts = 
       remover_natural ( "matrix_natural_dp" :: Doc ) CC.expand_all_trs
-    $ MB.Matrix.handle_dp N.dict SI.direct opts
+    $ MB.Matrix.handle_dp
+       N.dict -- Boolector
+       -- SI.binary_fixed -- Satchmo
+       SI.direct opts
 
 remover_natural msg unpack h  sys = do
     let usable = filter ( not . strict ) $ rules $ unpack sys

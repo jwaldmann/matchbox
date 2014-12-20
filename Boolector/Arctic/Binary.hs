@@ -15,29 +15,30 @@ dict bits = D.Dictionary
     , D.nbits = bits
     , D.nconstant = \ v -> case v of
          A.Minus_Infinite -> A <$> B.true  <*> B.zero bits
-         A.Finite n -> A <$> B.false <*> B.unsignedInt (fromIntegral n) bits
+         A.Finite n -> A <$> B.false <*> B.int (fromIntegral n) bits
     , D.decode = \ a -> do
          m <- B.bval $ minf a
          if m then return A.Minus_Infinite
-         else A.Finite <$> B.val ( contents a )
+         else A.Finite <$> B.signedVal ( contents a )
     , D.add = \ x y -> do
-         g <- B.and =<< sequence [ finite x, finite y, B.ugt (contents x) (contents y) ]
+         g <- B.and =<< sequence [ finite x, finite y, B.sgt (contents x) (contents y) ]
          take_left <- g B.|| minf y
          s <- B.cond take_left (contents x) (contents y)
          m <- minf x B.&& minf y
          return $ A m s
     , D.times = \ x y -> do
          s <- B.add   (contents x) (contents y)
-         o <- B.uaddo (contents x) (contents y)
+         o <- B.saddo (contents x) (contents y)
          m <- minf x B.|| minf y
          B.assert =<< B.implies o m
          return $ A m s
-    , D.positive = \ x -> B.not $ minf x
+    , D.positive = \ x -> do
+         B.and =<< sequence [ B.not $ minf x, B.not =<< B.slice (contents x) (bits-1) (bits-1) ]
     , D.gt = \ x y -> do
-         g <- B.and =<< sequence [ finite x, finite y, B.ugt (contents x) (contents y) ]
+         g <- B.and =<< sequence [ finite x, finite y, B.sgt (contents x) (contents y) ]
          g B.|| minf y
     , D.ge = \ x y -> do
-         g <- B.and =<< sequence [ finite x, finite y, B.ugte (contents x) (contents y) ]
+         g <- B.and =<< sequence [ finite x, finite y, B.sgte (contents x) (contents y) ]
          g B.|| minf y
     , D.neq = \ x y -> do
          c <- B.and =<< sequence [ finite x, finite y, B.eq (contents x) (contents y) ]
