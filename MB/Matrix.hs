@@ -19,13 +19,14 @@ import qualified Compress.Common as CC
 -- import qualified Compress.Simple as CS
 -- import qualified Compress.Paper as CP
 
-import qualified Satchmo.SMT.Exotic.Semiring as S
-import qualified Satchmo.SMT.Dictionary as D
-import qualified Satchmo.SMT.Integer as I
-import qualified Satchmo.SMT.Linear as L
-import qualified Satchmo.SMT.Matrix as M
-import qualified Satchmo.Boolean as B
-import qualified Satchmo.SAT.Mini
+import qualified SMT.Dictionary as D
+import qualified SMT.Semiring as S
+
+-- import qualified Satchmo.SMT.Integer as I
+import qualified SMT.Linear as L
+import qualified SMT.Matrix as M
+-- import qualified Satchmo.Boolean as B
+-- import qualified Satchmo.SAT.Mini
 
 import qualified Data.Map as M
 import qualified Data.Set as S

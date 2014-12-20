@@ -14,11 +14,11 @@ import qualified MB.Proof as P
 
 import qualified Compress.Common as CC
 
-import qualified Boolector.Natural.Binary  as N
+import qualified SMT.Boolector.Natural.Binary  as N
+import qualified SMT.Semiring.Integer ()
 
-
-import Satchmo.SMT.Dictionary (Domain(..))
-import qualified Satchmo.SMT.Integer as SI
+import SMT.Dictionary (Domain(..))
+import qualified SMT.Plain.Integer as SI
 
 import Control.Monad.Trans.Cont
 import Control.Monad.Trans.Maybe

@@ -3,11 +3,11 @@ module MB.Proof.Type where
 import TPDB.Data hiding ( Termination )
 import TPDB.DP (Marked )
 
-import Satchmo.SMT.Dictionary (Domain)
-import qualified Satchmo.SMT.Linear as L
-import qualified Satchmo.SMT.Matrix as M
+import SMT.Dictionary (Domain)
+import qualified SMT.Linear as L
+import qualified SMT.Matrix as M
 
-import qualified Satchmo.SMT.Exotic.Semiring.Arctic  as A
+import qualified SMT.Semiring.Arctic  as A
 
 import qualified Data.Map as M
 import TPDB.Pretty ( Doc )

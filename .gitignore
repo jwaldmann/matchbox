@@ -4,3 +4,5 @@
 *.so.*
 *.zip
 *.exe
+build
+dist

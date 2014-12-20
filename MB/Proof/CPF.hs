@@ -13,10 +13,10 @@ import TPDB.Pretty ( render, pretty ) -- "
 import qualified TPDB.CPF.Proof.Type as C
 import qualified TPDB.CPF.Proof.Xml 
 
-import Satchmo.SMT.Dictionary (Domain (..))
-import qualified Satchmo.SMT.Linear as L
-import qualified Satchmo.SMT.Matrix as M
-import qualified Satchmo.SMT.Exotic.Semiring.Arctic  as A
+import SMT.Dictionary (Domain (..))
+import qualified SMT.Linear as L
+import qualified SMT.Matrix as M
+import qualified SMT.Semiring.Arctic  as A
 
 import qualified Data.Map as M
 import Text.XML.HaXml.XmlContent

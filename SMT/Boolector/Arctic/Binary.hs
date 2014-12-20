@@ -1,7 +1,7 @@
-module Boolector.Arctic.Binary where
+module SMT.Boolector.Arctic.Binary where
 
-import qualified Satchmo.SMT.Dictionary as D
-import qualified Satchmo.SMT.Exotic.Semiring.Arctic as A
+import qualified SMT.Dictionary as D
+import qualified SMT.Semiring.Arctic as A
        
 import qualified Boolector as B
 import Control.Applicative

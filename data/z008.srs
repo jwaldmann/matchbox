@@ -1,0 +1,7 @@
+(RULES
+a s  -> s a ,
+b a b s  -> a b s a, 
+b a b b  -> a b a b ,
+a b a a  -> b a b a ,
+)
+(COMMENT Exercise 8.9.7, TERESE book page 470)

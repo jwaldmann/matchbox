@@ -1,5 +1,5 @@
 Name: matchbox
-Version: 3.0.0
+Version: 4.0.0
 Cabal-Version: >= 1.9.2
 License: GPL
 Build-type: Simple
@@ -45,15 +45,18 @@ source-repository head
   type: git
   location: git://github.com/jwaldmann/matchbox.git
 
-Executable matchbox2014
+Executable matchbox2015
   Main-Is:          MB.hs
   Ghc-options:        -W -O2 -fno-warn-incomplete-patterns -threaded -rtsopts
+  Extensions: DoAndIfThenElse
   Build-Depends:      base 
                     , containers
                     , mtl, transformers, logict
-                    , satchmo-core
+                    -- , satchmo-core
                     , tpdb >= 0.9.6
-                    , co4 >= 0.0.75
-                    , satchmo-smt > 0.4, satchmo >= 2.8
+                    -- , co4 >= 0.0.75
+                    -- , satchmo-smt > 0.4
+                    , satchmo >= 2.8
+                    , boolector
                     , array, hashable, HaXml, wl-pprint-text
                     , async, stm

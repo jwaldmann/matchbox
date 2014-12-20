@@ -15,14 +15,11 @@ import qualified MB.Proof as P
 import qualified Compress.Common as CC
 
 -- import qualified Satchmo.SMT.Exotic.Arctic  as A
-import qualified Boolector.Arctic.Binary  as A
+import qualified SMT.Boolector.Arctic.Binary  as A
+import qualified SMT.Plain.Arctic  as SA
+-- import qualified SMT.Arctic  as SA
+import SMT.Dictionary (Domain(..))
 
-import qualified Satchmo.SMT.Exotic.Semiring.Arctic  as SA
-
-import qualified Satchmo.SMT.Arctic  as SA
-
-
-import Satchmo.SMT.Dictionary (Domain(..))
 
 import Control.Monad.Trans.Cont
 import Control.Monad.Trans.Maybe

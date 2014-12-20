@@ -2,11 +2,11 @@
 
 module MB.Count where
 
-import qualified Satchmo.SMT.Dictionary as D
-import qualified Satchmo.SMT.Matrix as M
-import qualified Satchmo.SMT.Linear as L
+import qualified SMT.Dictionary as D
+import qualified SMT.Matrix as M
+import qualified SMT.Linear as L
 
-import qualified Satchmo.SMT.Exotic.Semiring as S
+import qualified SMT.Semiring as S
 
 import Control.Monad.State.Strict
 import qualified Data.Map.Strict as M

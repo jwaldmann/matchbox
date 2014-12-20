@@ -8,11 +8,11 @@ import qualified TPDB.DP
 import TPDB.Data ( strict, rules, positions, lhs, rhs )
 
 
-import qualified Satchmo.SMT.Exotic.Semiring.Arctic as A
+import qualified SMT.Semiring.Arctic as A
 
-import qualified Satchmo.SMT.Integer as I
-import qualified Satchmo.SMT.Linear as L
-import qualified Satchmo.SMT.Matrix as M
+-- import qualified SMT.Integer as I
+import qualified SMT.Linear as L
+import qualified SMT.Matrix as M
 
 import qualified Data.Map as M
 import Data.List ( transpose, partition )
