@@ -10,6 +10,6 @@ instance Solver Satchmo.SAT.Mini.SAT where
     solve = Satchmo.SAT.Mini.solve
 
 instance Solver Boolector.Boolector where
-    solve = Boolector.withBoolector
+    solve = Boolector.withBoolectorAsync
 
     
