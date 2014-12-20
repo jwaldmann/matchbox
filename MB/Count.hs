@@ -42,6 +42,10 @@ elt = D.Dictionary
       , D.number = modify $ \ c -> c { elem_alloc = succ $ elem_alloc c }
       , D.add = \ _ _ -> modify $ \ c -> c { elem_add = succ $ elem_add c }
       , D.times = \ _ _ -> modify $ \ c -> c { elem_times = succ $ elem_times c }
+      , D.dot_product = \ xs ys -> modify $ \ c ->
+           c { elem_add = elem_add c + length xs
+             , elem_times = elem_times c + length xs
+             }               
       , D.positive = \ _ -> return ()
       , D.and = \ _ -> return ()
       , D.ge = \ _ _ -> return ()

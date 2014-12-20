@@ -125,7 +125,7 @@ decomp succ fail sys =
 
 matrices config =  capture $ foldr1 orelse
     -- $ map (\(d,b) -> capture $ parallel_or [ matrix_nat d b, matrix_arc d b ] ) 
-    $ map (\(d,b) -> matrix_arc d b ) 
+    $ map (\(d,b) -> matrix_nat d b ) 
     $ do d <- [1 .. ] ; return ( d, O.bits config )
 
 for_usable_rules method = \ sys -> do

@@ -115,7 +115,8 @@ matrix  d = Dictionary
                     bfoldM (D.add d) xys
             css <- forM (contents a) $ \ row ->
                forM (transpose $ contents b) $ \ col ->
-               dot row col
+                  dot -- D.dot_product d
+                  row col
             return $ Matrix { dim = (to a,from b)
                             , contents = css }
     , strictly_greater = \ a b -> case D.domain d of

@@ -12,6 +12,7 @@ data Dictionary m num val bool = Dictionary
     , decode :: num -> m val
     , add :: num -> num -> m num
     , times :: num -> num -> m num
+    , dot_product :: [num] -> [num] -> m num  
     , positive :: num -> m bool
     , gt :: num -> num -> m bool
     , ge :: num -> num -> m bool

@@ -15,6 +15,7 @@ direct = Dictionary
     , bconstant = \ b -> return b
     , add   = \ x y -> return $ x + y
     , times = \ x y -> return $ x * y
+    , dot_product = \ xs ys -> return $ sum $ zipWith (*) xs ys
     , positive = \ x -> return $ x > 0 
     , gt = \ x y -> return $ x > y
     , ge = \ x y -> return $ x >= y 
