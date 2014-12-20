@@ -48,7 +48,7 @@ main = do
     (config,filePath) <- O.parse -- parseConfig
     
     trs <- TPDB.Input.get_trs filePath
-    out <- run $ handle_both
+    out <- run $ handle_both config
                $ trs -- { rules = map sortVariables $ rules trs }
     case out of
         Nothing    -> do putStrLn "MAYBE"
@@ -67,31 +67,31 @@ main = do
                 hPutStrLn stdout "Proof outline"
                 hPutDoc stdout $ outline proof ; hPutStrLn stdout ""
 
-handle_both sys = case TPDB.Mirror.mirror sys of
-     Nothing -> handle sys
+handle_both config sys = case TPDB.Mirror.mirror sys of
+     Nothing -> handle config sys
      Just sys' -> parallel_or0 
-         [ handle sys
-         , do p <- handle sys' 
+         [ handle config sys
+         , do p <- handle config sys' 
               return $ P.Proof { P.input = sys
                      , P.claim = P.Termination
                      , P.reason = P.Mirror_Transform p 
                      }
          ]
 
-handle sys = do
+handle config sys = do
     let dp = TPDB.DP.Transform.dp sys 
-    proof <- handle_scc dp
+    proof <- handle_scc config dp
     return $ P.Proof { P.input =  sys
                   , P.claim = P.Top_Termination
                   , P.reason = P.DP_Transform proof 
                   }
 
-handle_scc  = orelse nomarkedrules 
-            $ decomp handle_scc 
+handle_scc config  = orelse nomarkedrules 
+            $ decomp (handle_scc config)
 
             -- $ andthen0 ( parallel_or [ for_usable_rules matrices , semanticlabs ])
-            $ andthen0 (for_usable_rules matrices) 
-            $  apply handle_scc
+            $ andthen0 (for_usable_rules $ matrices config) 
+            $  apply (handle_scc config)
 
 --            $ orelse_andthen (for_usable_rules matrices) (apply handle_scc) 
 --            $ orelse_andthen semanticlabs (apply handle_scc)
@@ -123,9 +123,10 @@ decomp succ fail sys =
                      , P.reason = P.SCCs proofs
                      }
 
-matrices  =  capture $ foldr1 orelse
-    $ map (\(d,b) -> matrix_arc d b) 
-    $ do d <- [1 .. ] ; return ( d, 3 )
+matrices config =  capture $ foldr1 orelse
+    -- $ map (\(d,b) -> capture $ parallel_or [ matrix_nat d b, matrix_arc d b ] ) 
+    $ map (\(d,b) -> matrix_arc d b ) 
+    $ do d <- [1 .. ] ; return ( d, O.bits config )
 
 for_usable_rules method = \ sys -> do
     let restricted = TPDB.DP.Usable.restrict sys
