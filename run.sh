@@ -9,7 +9,7 @@ do
 	out=run/$sys
 	mkdir -p $(dirname $out)
 	echo -n $sys $solver :
-	timeout 60 matchbox2015 -b4 --$solver $sys 2>$out.err 1>$out.out
+	timeout 60 matchbox2015 -b4 --$solver $TPDB/$sys 2>$out.err 1>$out.out
 	head -1 $out.out
     done
 done
