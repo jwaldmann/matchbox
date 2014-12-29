@@ -14,8 +14,8 @@ import qualified MB.Proof as P
 
 import qualified Compress.Common as CC
 
-import qualified SMT.Boolector.Natural.Binary  as N
--- import qualified SMT.Satchmo.Integer as N
+-- import qualified SMT.Boolector.Natural.Binary  as N
+import qualified SMT.Satchmo.Integer as N
 
 import qualified SMT.Semiring.Integer ()
 
