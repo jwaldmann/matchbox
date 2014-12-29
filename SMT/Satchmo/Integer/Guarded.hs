@@ -1,4 +1,4 @@
-module SMT.Satchmo.Integer where
+module SMT.Satchmo.Integer.Guarded where
 
 import Prelude hiding ( not, and, or )
 import qualified Prelude
@@ -14,44 +14,74 @@ import qualified Satchmo.Boolean as B
 import qualified Satchmo.Binary as Bin
 import qualified Satchmo.Binary.Op.Fixed  
 
-import Control.Monad ( forM )
+import Control.Monad ( forM, replicateM )
 import Control.Applicative
 import qualified Data.Map.Strict as M
+import Data.Function (on )       
 
+data Number = Number { bits :: [B.Boolean], guards :: [B.Boolean] }
+
+guarded bs = do
+    let work [b] = return [b]
+        work (b:bs) = do
+            gs <- work bs
+            g <- B.or [ b, head gs ]
+            return $ g : gs    
+    gs <- work bs
+    return $ Number { bits = bs, guards = gs }
+
+get_guard n i =
+    if i < length (guards n)
+    then return $ guards n !! i
+    else B.constant False
+    
+unknown bits = do
+    bs <- replicateM bits B.boolean
+    guarded bs
+    
 dict :: Int 
-  -> Dictionary Satchmo.SAT.Mini.SAT Bin.Number Integer B.Boolean
-dict bits = Dictionary
-    { info = unwords [ "binary", "bits:", show bits, "(fixed)" ]
+  -> Dictionary Satchmo.SAT.Mini.SAT Number Integer B.Boolean
+dict w = Dictionary
+    { info = unwords [ "binary", "bits:", show w, "(fixed, with guards)" ]
     , domain = SMT.Dictionary.Int
-    , nbits = bits
-    , number = Bin.number bits
-    , decode = Satchmo.Code.decode
-    , nconstant = Bin.constant
+    , nbits = w
+    , number = unknown w
+    , decode = Satchmo.Code.decode . Bin.make . bits
+    , nconstant = \ n -> guarded =<< fmap Bin.bits ( Bin.constant n )
     , boolean = B.boolean
     , bconstant = B.constant
-    , add = \ x y -> Bin.make <$> plus bits (Bin.bits x) (Bin.bits y)
-    , times = \ x y -> Bin.make <$> times0 bits (Bin.bits x) (Bin.bits y)
-    , dot_product = undefined -- Satchmo.Binary.Op.Fixed.dot_product bits
-    , positive = \ n -> B.or $ Bin.bits n
-    , gt = Bin.gt
-    , ge = Bin.ge
-    , neq = Bin.eq
+    , add = \ x y -> do
+        n <- guarded =<<  plus w (bits x) (bits y)
+        forM (zip3 (guards x) (guards y) (guards n)) $ \ (x,y,z) -> do
+             B.assert [ B.not x, z ] ; B.assert [ B.not y, z ]
+        forM (zip3 (guards x) (guards y) (tail $ guards n)) $ \ (x,y,z') -> do
+             B.assert [ x, y, B.not z' ] 
+        return n
+    , times = \ x y -> do
+        n <- guarded =<< times0 w (bits x) (bits y)
+        zss <- forM (zip [0..] $ guards x) $ \ (i,x) ->
+            forM (zip [0..] $ guards y) $ \ (j,y) -> do
+                z <- B.and[x,y] ; return (i+j, [z])
+        let m = M.fromListWith (++) $ concat zss
+        forM (M.toList m) $ \ (i,zs) -> do
+            o <- B.or zs
+            g <- get_guard n i ; B.assert [ B.not o, g ]
+            g' <- get_guard n $ i + 2 ; B.assert [ B.not g', o ]
+        return n
+    , dot_product = undefined -- Satchmo.Binary.Op.Fixed.dot_product w
+    , positive = \ n -> B.or $ bits n
+    , gt = Bin.gt `on` ( Bin.make . bits )
+    , ge = Bin.ge `on` ( Bin.make . bits )
+    , neq = Bin.eq `on` ( Bin.make . bits )
     , and = B.and, or = B.or, not = return . B.not, beq = B.equals2, assert = B.assert
     }
 
-times0 bits [] ys = return []
-times0 bits xs [] = return []
-times0 bits (x:xs) ys = do
+times0 w [] ys = return []
+times0 w xs [] = return []
+times0 w (x:xs) ys = do
     z : zs <- forM ys $ \ y -> B.and [x,y]
-    later <- times0 (bits-1) xs ys
-    (:) <$> return z <*> plus (bits - 1) zs later
-
-times1 bits [] ys = return []
-times1 bits xs [] = return []
-times1 bits (x:xs) ys = do
-    z : zs <- forM ys $ \ y -> B.and [x,y]
-    later <- times1 (bits-1) ys xs
-    (:) <$> return z <*> plus (bits - 1) zs later
+    later <- times0 (w-1) xs ys
+    (:) <$> return z <*> plus (w - 1) zs later
 
 times2 bits xs ys = do
     zss <- forM (zip [0..] xs) $ \ (i,x) ->
@@ -81,24 +111,24 @@ times2 bits xs ys = do
                 reduce m'
     reduce $ start
 
-plus bits xs ys = do
+plus w xs ys = do
     let go    0 c xs ys = do
             forM ( c : xs ++ ys ) $ \ z -> B.assert [ B.not z ]
             return []
-        go bits c [] [] = do
+        go w c [] [] = do
             return [c]
-        go bits c (x:xs) [] = do
+        go w c (x:xs) [] = do
             (r,c) <- half_adder c x
-            (:) <$> return r <*> go (bits-1) c xs []
-        go bits c [] (y:ys) = do
+            (:) <$> return r <*> go (w-1) c xs []
+        go w c [] (y:ys) = do
             (r,c) <- half_adder c y
-            (:) <$> return r <*> go (bits-1) c [] ys
-        go bits c (x:xs) (y:ys) = do
+            (:) <$> return r <*> go (w-1) c [] ys
+        go w c (x:xs) (y:ys) = do
             (r,c) <- full_adder x y c
-            rs <- go (bits-1) c xs ys
+            rs <- go (w-1) c xs ys
             return $ r : rs
     z <- B.constant False
-    go bits z xs ys
+    go w z xs ys
 
 -- | (result, carry)
 -- 0 extra vars, 7 clauses    
@@ -122,28 +152,5 @@ full_adder_0 x y z = do
         B.assert [ r, c, B.not z ]
     return (r,c)
 
--- | no extra vars, 16 clauses
-full_adder_1 x y z = do
-    r <- B.fun3 (\a b c -> odd $ sum $ map fromEnum [a,b,c]) x y z
-    c <- B.fun3 (\a b c -> (> 1) $ sum $ map fromEnum [a,b,c]) x y z
-    return (r,c)
 
--- | 3 extra vars, 21 clauses
-full_adder_2 x y z = do
-    r <- B.fun3 (\a b c -> odd $ sum $ map fromEnum [a,b,c]) x y z
-    c <- sequence [ B.and [x,y] , B.and[y,z], B.and[z,x] ] >>= B.or
-    return (r,c)
-
-full_adder_3 p1 p2 p3 = do
-    p4 <- B.boolean ; p5 <- B.boolean
-    B.assert [B.not p2,p4,p5]
-    B.assert [p2,B.not p4,B.not p5]
-    B.assert [B.not p1,B.not p3,p5]
-    B.assert [B.not p1,B.not p2,B.not p3,p4]
-    B.assert [B.not p1,B.not p2,p3,B.not p4]
-    B.assert [B.not p1,p2,p3,p4]
-    B.assert [p1,p3,B.not p5]
-    B.assert [p1,B.not p2,B.not p3,B.not p4]
-    B.assert [p1,p2,B.not p3,p4]
-    B.assert [p1,p2,p3,B.not p4]
-    return ( p4, p5 )
+       

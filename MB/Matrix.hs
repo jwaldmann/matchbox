@@ -3,7 +3,8 @@
 
 module MB.Matrix where
 
-import MB.Options
+import qualified MB.Options as O
+import MB.Options (dim, bits, Options)       
 import MB.Pretty
 import MB.Proof (Interpretation (..))
 
@@ -102,14 +103,14 @@ handle_dp encoded direct opts sys = do
     eprint $ show opts
 
     let count = MB.Count.run $ do
-            system_dp MB.Count.linear (dim opts) sys
+            system_dp MB.Count.linear opts sys
     hPutStrLn stderr $ show count
 
     out <- solve $ do
         let ldict = L.linear mdict
             mdict = M.matrix idict
             idict = encoded (bits opts) 
-        funmap <- system_dp ldict (dim opts) sys
+        funmap <- system_dp ldict opts sys
         return $ mdecode ldict $ originals_only funmap
 
     case out of
@@ -198,7 +199,8 @@ system dict dim sys = do
 
 -- | assert that at least one rule can be removed.
 -- returns interpretation of function symbols.
-system_dp dict dim sys = do
+system_dp dict opts sys = do
+    let dim = O.dim opts      
     let (originals, digrams) = CC.deep_signature  sys
     opairs <- forM originals $ \ (f,ar) -> do
         let topdim = case f of

@@ -8,9 +8,15 @@ data Compression = None
                  | Paper  | PaperIter                 
    deriving (Eq, Ord, Show)
 
+data Solver = Boolector
+            | Satchmo
+            | Satchmo_Guarded
+   deriving (Eq, Ord, Show)     
+   
 data Options =
      Options { dim :: Int
              , bits :: Int
+             , solver :: Solver
              , compression :: Compression
              , dp :: Bool
              , fromtop :: Bool
@@ -29,6 +35,7 @@ data Options =
 
 options0 = Options 
          { dim = 5, bits = 3
+         , solver = Satchmo_Guarded
          , compression = None
          , dp = False 
          , fromtop = False
@@ -50,6 +57,16 @@ options =
     , Option [ 'b' ] [ "bits" ]
        ( ReqArg ( \ s opts -> opts { bits = read s }) "Int" ) "bit width"
 
+    , Option [ ] [ "boolector" ]
+       (NoArg ( \ opts -> opts { solver = Boolector } ))
+       "use Boolector SMT solver"
+    , Option [ ] [ "satchmo" ]
+       (NoArg ( \ opts -> opts { solver = Satchmo } ))
+       "use Satchmo SMT solver (bitblasting via minisat)"
+    , Option [ ] [ "guarded-satchmo" ]
+       (NoArg ( \ opts -> opts { solver = Satchmo_Guarded } ))
+       "use Satchmo SMT solver (bitblasting via minisat) (with guard bits)"
+    
     , Option [ 'l' ] [ "label" ]
        ( ReqArg ( \ s opts -> opts { label = Just $ read $ "(" ++ s ++ ")" }) "Int,Int" ) 
        "-l x,y : label by model with x bits and y interpretations before unlabeling"

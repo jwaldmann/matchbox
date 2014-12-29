@@ -125,7 +125,7 @@ decomp succ fail sys =
 
 matrices config =  capture $ foldr1 orelse
     -- $ map (\(d,b) -> capture $ parallel_or [ matrix_nat d b, matrix_arc d b ] ) 
-    $ map (\(d,b) -> matrix_nat d b ) 
+    $ map (\(d,b) -> matrix_nat config d b ) 
     $ do d <- [1 .. ] ; return ( d, O.bits config )
 
 for_usable_rules method = \ sys -> do
@@ -151,7 +151,7 @@ matrix_arc dim bits sys = do
     let sys' = CC.expand_all_trs csys'
     return ( sys', f )
 
-matrix_nat dim bits sys = do
+matrix_nat config dim bits sys = do
     let c = O.Paper
         (cost, rs) = ( case c of
                        O.None -> CS.nocompress 
@@ -161,7 +161,7 @@ matrix_nat dim bits sys = do
                      ) $ rules sys
         csys = RS { rules = CC.roots rs
                                , separate = separate sys }
-    (csys', f) <- mkWork ( matrix_natural_dp dim bits ) csys
+    (csys', f) <- mkWork ( matrix_natural_dp config dim bits ) csys
     let sys' = CC.expand_all_trs csys'
     return ( sys', f )
 
