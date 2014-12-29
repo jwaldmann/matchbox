@@ -21,12 +21,13 @@ import Data.Function (on )
 
 data Number = Number { bits :: [B.Boolean], guards :: [B.Boolean] }
 
+guarded [] = return $ Number { bits = [], guards = [] }     
 guarded bs = do
     let work [b] = return [b]
         work (b:bs) = do
             gs <- work bs
             g <- B.or [ b, head gs ]
-            return $ g : gs    
+            return $ g : gs
     gs <- work bs
     return $ Number { bits = bs, guards = gs }
 
@@ -70,8 +71,18 @@ dict w = Dictionary
         return n
     , dot_product = undefined -- Satchmo.Binary.Op.Fixed.dot_product w
     , positive = \ n -> B.or $ bits n
-    , gt = Bin.gt `on` ( Bin.make . bits )
-    , ge = Bin.ge `on` ( Bin.make . bits )
+    , gt = \ x y -> do
+          out <- ( Bin.gt `on` ( Bin.make . bits ) ) x y
+          forM ( zip (guards x) (guards y) ) $ \ (x,y) -> do
+              B.assert [ B.not x, y,       out ]
+              B.assert [ x, B.not y, B.not out ]
+          return out
+    , ge = \ x y -> do
+          out <- ( Bin.ge `on` ( Bin.make . bits ) ) x y
+          forM ( zip (guards x) (guards y) ) $ \ (x,y) -> do
+              B.assert [ B.not x, y,       out ]
+              B.assert [ x, B.not y, B.not out ]
+          return out
     , neq = Bin.eq `on` ( Bin.make . bits )
     , and = B.and, or = B.or, not = return . B.not, beq = B.equals2, assert = B.assert
     }
