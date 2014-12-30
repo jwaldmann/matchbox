@@ -1,6 +1,6 @@
 #!/bin/bash
 
-TPDB=$HOME/tpdb/tpdb-4.0/SRS/Zantema
+TPDB=$HOME/tpdb/tpdb-4.0/SRS
 
 for sys in $(cd $TPDB ; find . -name "*.srs")
 do
