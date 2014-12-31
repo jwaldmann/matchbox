@@ -2,12 +2,12 @@
 
 # this script puts the matchbox executable
 # in a zip file that can be submitted
-# to the termcomp execution platform
+# to the starexec execution platform
 
 source=MB.hs
 exe=MB.exe
 
-target=matchbox-nocompres
+target=matchbox2015
 # target=matchbox-compress
 
 # name of the binary in the release package 
@@ -18,31 +18,26 @@ ghc --make  \
     -O2 -funbox-strict-fields -rtsopts -threaded \
     $source -o $exe
 
-# the release will be place in this directory
 dir=$target-$(date -I)
-echo $dir
 
-rm -rf $dir 
+rm -rf $dir
 mkdir -p $dir
+mkdir -p $dir/bin
 
-cp -v $exe $dir/$exe
-strip $dir/$exe
+cp -v $exe $dir/bin/$exe
+strip $dir/bin/$exe
 
 cp -v release/README $dir
-cp -v -P release/lib*.so.* $dir
-cp -v release/$target.sh $dir/runme
-
-chmod -v +x $dir/runme
+cp -v -P release/lib*.so* $dir/bin/
+cp -v release/starexec_run_*.sh $dir/bin/
 
 rm -f $dir.zip
 
-# (cd $dir ; zip -r - .) > $dir.zip
-zip -r - $dir > $dir.zip
-
-rm -rf $dir
+(cd $dir ; zip -r - .) > $dir.zip
 
 # (mkdir $dir ; cd $dir ; unzip  ../$dir.zip)
-unzip $dir.zip
+# unzip $dir.zip
 
 ls -l $dir
 ls -l $dir.zip
+unzip -l $dir.zip
