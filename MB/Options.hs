@@ -72,6 +72,7 @@ options =
        (NoArg ( \ opts -> opts { solver = Satchmo_Guarded } ))
        "use Satchmo SMT solver (bitblasting via minisat) (with guard bits)"
 
+
     , Option [ ] [ "binary" ]
         (NoArg ( \ opts -> opts { encoding = Binary } ))
         "bitblast numbers to binary"
@@ -93,10 +94,10 @@ options =
              "(with l) use LPO"
     , Option [ 'n' ] ["natural" ] 
              (NoArg ( \ opts -> opts { use_natural = True } ) )
-             "(with l) use natural matrix interpretations"
+             "use natural matrix interpretations"
     , Option [ 'a' ] ["arctic" ] 
              (NoArg ( \ opts -> opts { use_arctic = True } ) )
-             "(with l) use arctic matrix interpretations"
+             "use arctic matrix interpretations"
 
     , Option [ 'm' ] [ "mirror" ]
        ( NoArg ( \ opts -> opts { mirror = True })) "if input is SRS, then mirror lhs and rhs"   

@@ -126,7 +126,11 @@ decomp succ fail sys =
 matrices config =  capture $ foldr1 orelse
     -- $ map (\(d,b) -> capture $ parallel_or [ matrix_nat d b, matrix_arc d b ] ) 
     -- $ map (\(d,b) -> matrix_nat config d b )
-    $ map (\(d,b) -> matrix_arc config d b ) 
+    $ map (\(d,b) -> 
+         if O.use_natural config then matrix_nat config d b 
+         else if O.use_arctic config then matrix_arc config d b 
+         else error "use -n or -a options"
+        ) 
     $ do d <- [1 .. ] ; return ( d, O.bits config )
 
 for_usable_rules method = \ sys -> do
