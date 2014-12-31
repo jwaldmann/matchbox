@@ -14,8 +14,11 @@ import qualified MB.Proof as P
 
 import qualified Compress.Common as CC
 
--- import qualified Satchmo.SMT.Exotic.Arctic  as A
-import qualified SMT.Boolector.Arctic.Binary  as A
+import qualified SMT.Satchmo.Arctic.Unary  as SAU
+
+import qualified SMT.Boolector.Arctic.Binary  as BAB
+import qualified SMT.Boolector.Arctic.Unary   as BAU
+
 import qualified SMT.Plain.Arctic  as SA
 -- import qualified SMT.Arctic  as SA
 import SMT.Dictionary (Domain(..))
@@ -29,12 +32,17 @@ import Control.Monad (when)
 
 
 -- matrix_arctic_dp :: Int -> Int -> TRS v c -> Work (TRS v x) Doc
-matrix_arctic_dp dim bits = original_matrix_arctic_dp
-      ( O.options0 { O.dim = dim, O.bits = bits, O.compression = O.Simple, O.dp = True })
+matrix_arctic_dp opts dim bits = original_matrix_arctic_dp
+      ( opts { O.dim = dim, O.bits = bits, O.compression = O.Simple, O.dp = True })
 
 original_matrix_arctic_dp opts = 
       remover_arctic ( "matrix_arctic_dp" :: Doc ) CC.expand_all_trs
-    $ MB.Matrix.handle_dp A.dict SA.direct opts
+    $ case O.solver opts of
+      O.Satchmo -> case O.encoding opts of
+         O.Unary  -> MB.Matrix.handle_dp SAU.dict SA.direct opts        
+      O.Boolector -> case O.encoding opts of
+         O.Binary -> MB.Matrix.handle_dp BAB.dict SA.direct opts
+         O.Unary  -> MB.Matrix.handle_dp BAU.dict SA.direct opts
 
 
 {-

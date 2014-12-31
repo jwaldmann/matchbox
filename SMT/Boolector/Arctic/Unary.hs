@@ -1,13 +1,17 @@
-module Boolector.Arctic.Unary where
+module SMT.Boolector.Arctic.Unary where
 
-import qualified Satchmo.SMT.Dictionary as D
-import qualified Satchmo.SMT.Exotic.Semiring.Arctic as A
+import qualified SMT.Dictionary as D
+import qualified SMT.Semiring.Arctic as A
        
 import qualified Boolector as B
+
+import Control.Monad ( forM )
 import Control.Applicative
+import qualified Data.Map.Strict as M
 
 -- | number X is represented as bitvector with (X+1) ones,
--- starting from LSB. 
+-- starting from LSB:
+-- minf = 0..0 , 0 = 10..0, 1 = 110 .. 0, 2 = 1110 .. 0
 
 dict :: Int 
      -> D.Dictionary B.Boolector A ( A.Arctic Integer ) B.Node
@@ -20,30 +24,37 @@ dict bits = D.Dictionary
          A.Minus_Infinite -> A <$> B.zero bits
          A.Finite n -> A <$> B.unsignedInt (pred $ 2 ^ succ n) bits
     , D.decode = \ a -> do
-         f <- B.bval $ contents a
+         f <- B.val $ contents a
          if 0 == f then return A.Minus_Infinite
          else let h f = if f > 0 then succ $ h $ div f 2 else -1
               in  return $ A.Finite $ h f
     , D.add = \ x y -> do
          A <$> (contents x B.|| contents y)
     , D.times = \ x y -> do
-         s <- B.add   (contents x) (contents y)
-         o <- B.uaddo (contents x) (contents y)
-         m <- minf x B.|| minf y
-         B.assert =<< B.implies o m
-         return $ A m s
-    , D.positive = \ x -> B.slice (contents x) 0 0 
+{-
+         f <- B.and =<< sequence [ finite x, finite y ]
+         bs <- forM ( zip [0..] $ tail $ contents x) $ \(i,x)->
+               forM ( zip [0..] $ tail $ contents y) $ \(j,y)->
+               do z <- B.and [x,y,f]; return (i+j,[z])
+         let (lo,hi) = splitAt (bits-1)
+               $ map snd $ M.toAscList 
+               $ M.fromListWith (++) $ concat bs
+         forM hi $ \ zs -> forM zs $ \ z -> 
+             B.assert =<< B.not z
+         A <$> sequence ( return f : map B.or lo )
+-}
+         undefined
+    , D.positive = finite
     , D.gt = \ x y -> do
-         delta <- B.
-         g <- B.and =<< sequence [ finite x, finite y, B.ugt (contents x) (contents y) ]
-         g B.|| minf y
+         ny <- B.not $ contents y
+         regular <- B.and [contents x, ny] >>= B.redor
+         special <- infinite y
+         B.or [ regular, special ]
     , D.ge = \ x y -> do
-         g <- B.and =<< sequence [ finite x, finite y, B.ugte (contents x) (contents y) ]
-         g B.|| minf y
-    , D.neq = \ x y -> do
-         c <- B.and =<< sequence [ finite x, finite y, B.eq (contents x) (contents y) ]
-         e <- minf x B.&& minf y
-         c B.|| e
+         nx <- B.not $ contents x
+         B.and [nx, contents y] >>= B.redor >>= B.not
+    , D.neq = \ x y -> undefined 
+
     , D.boolean = B.var 1
     , D.bconstant = \ b -> if b then B.true else B.false
     , D.and = B.and
@@ -54,5 +65,8 @@ dict bits = D.Dictionary
     }
 
 data A = A { contents :: B.Node }
+
+finite n = B.slice (contents n) 0 0
+infinite n = finite n >>= B.not
 
 

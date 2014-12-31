@@ -12,11 +12,15 @@ data Solver = Boolector
             | Satchmo
             | Satchmo_Guarded
    deriving (Eq, Ord, Show)     
-   
+
+data Encoding = Binary | Unary
+   deriving (Eq, Ord, Show)     
+
 data Options =
      Options { dim :: Int
              , bits :: Int
              , solver :: Solver
+             , encoding :: Encoding  
              , compression :: Compression
              , dp :: Bool
              , fromtop :: Bool
@@ -36,6 +40,7 @@ data Options =
 options0 = Options 
          { dim = 5, bits = 3
          , solver = Satchmo_Guarded
+         , encoding = Binary
          , compression = None
          , dp = False 
          , fromtop = False
@@ -66,7 +71,15 @@ options =
     , Option [ ] [ "guarded-satchmo" ]
        (NoArg ( \ opts -> opts { solver = Satchmo_Guarded } ))
        "use Satchmo SMT solver (bitblasting via minisat) (with guard bits)"
-    
+
+    , Option [ ] [ "binary" ]
+        (NoArg ( \ opts -> opts { encoding = Binary } ))
+        "bitblast numbers to binary"
+    , Option [ ] [ "unary" ]
+        (NoArg ( \ opts -> opts { encoding = Unary } ))
+        "bitblast numbers to unary"
+      
+      
     , Option [ 'l' ] [ "label" ]
        ( ReqArg ( \ s opts -> opts { label = Just $ read $ "(" ++ s ++ ")" }) "Int,Int" ) 
        "-l x,y : label by model with x bits and y interpretations before unlabeling"
