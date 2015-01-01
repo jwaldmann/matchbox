@@ -59,7 +59,7 @@ dict w = Dictionary
              B.assert [ x, y, B.not z' ] 
         return n
     , times = \ x y -> do
-        n <- guarded =<< times0 w (bits x) (bits y)
+        n <- guarded =<< times2 w (bits x) (bits y)
         zss <- forM (zip [0..] $ guards x) $ \ (i,x) ->
             forM (zip [0..] $ guards y) $ \ (j,y) -> do
                 z <- B.and[x,y] ; return (i+j, [z])
@@ -105,8 +105,8 @@ times2 bits xs ys = do
             if i <= bits then case zs of
                 (p : q : r : ss) | False  -> do
                     (r,c) <- full_adder p q r
-                    reduce -- $ M.insert i (ss ++ [r])
-                           $ M.insert i (r : ss )
+                    reduce $ M.insert i (ss ++ [r])
+                           -- $ M.insert i (r : ss )
                            $ M.insertWith (++) (i+1) [c]
                            $ m'                    
                 (p : q : rs) -> do
