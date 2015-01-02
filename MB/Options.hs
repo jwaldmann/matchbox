@@ -14,6 +14,8 @@ data Solver = Boolector
    deriving (Eq, Ord, Show)     
 
 data Encoding = Binary | Unary
+              | Interval_Plain | Interval_Fibs
+              | Interval_Twos | Interval_Threes
    deriving (Eq, Ord, Show)     
 
 data Options =
@@ -79,6 +81,19 @@ options =
     , Option [ ] [ "unary" ]
         (NoArg ( \ opts -> opts { encoding = Unary } ))
         "bitblast numbers to unary"
+
+    , Option [ ] [ "plain" ]
+        (NoArg ( \ opts -> opts { encoding = Interval_Plain }))
+        "interval bitblasting for [0,1,..]"
+    , Option [ ] [ "fibonacci" ]
+        (NoArg ( \ opts -> opts { encoding = Interval_Fibs }))
+        "interval bitblasting for Fibonacci numbers"
+    , Option [ ] [ "twos" ]
+        (NoArg ( \ opts -> opts { encoding = Interval_Twos }))
+        "interval bitblasting for powers of 2"
+    , Option [ ] [ "threes" ]
+        (NoArg ( \ opts -> opts { encoding = Interval_Threes }))
+        "interval bitblasting for powers of 3"
       
       
     , Option [ 'l' ] [ "label" ]

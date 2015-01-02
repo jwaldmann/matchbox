@@ -15,13 +15,14 @@ import qualified MB.Proof as P
 import qualified Compress.Common as CC
 
 import qualified SMT.Boolector.Natural.Binary as B  
-import qualified SMT.Satchmo.Integer as S
-import qualified SMT.Satchmo.Integer.Guarded as SG
+import qualified SMT.Satchmo.Integer as SI
+import qualified SMT.Satchmo.Integer.Interval as SII
+import qualified SMT.Satchmo.Integer.Guarded as SIG
 
 import qualified SMT.Semiring.Integer ()
 
 import SMT.Dictionary (Domain(..))
-import qualified SMT.Plain.Integer as SI
+import qualified SMT.Plain.Integer as SPI
 
 import Control.Monad.Trans.Cont
 import Control.Monad.Trans.Maybe
@@ -38,9 +39,19 @@ matrix_natural_dp opts dim bits = original_matrix_natural_dp
 original_matrix_natural_dp opts = 
       remover_natural ( "matrix_natural_dp" :: Doc ) CC.expand_all_trs
     $ case O.solver opts of
-        O.Boolector -> MB.Matrix.handle_dp B.dict SI.direct opts
-        O.Satchmo   -> MB.Matrix.handle_dp S.dict SI.direct opts
-        O.Satchmo_Guarded -> MB.Matrix.handle_dp SG.dict SI.direct opts
+        O.Boolector -> MB.Matrix.handle_dp B.dict SPI.direct opts
+        O.Satchmo   -> case O.encoding opts of
+          O.Binary -> MB.Matrix.handle_dp SI.dict SPI.direct opts
+          O.Interval_Plain ->
+              MB.Matrix.handle_dp SII.dict_plain SPI.direct opts
+          O.Interval_Fibs ->
+              MB.Matrix.handle_dp SII.dict_fibs SPI.direct opts
+          O.Interval_Twos ->
+              MB.Matrix.handle_dp SII.dict_twos SPI.direct opts
+          O.Interval_Threes ->
+              MB.Matrix.handle_dp SII.dict_threes SPI.direct opts
+              
+        O.Satchmo_Guarded -> MB.Matrix.handle_dp SIG.dict SPI.direct opts
 
 remover_natural msg unpack h  sys = do
     let usable = filter ( not . strict ) $ rules $ unpack sys

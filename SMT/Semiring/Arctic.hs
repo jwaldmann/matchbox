@@ -1,6 +1,7 @@
 module SMT.Semiring.Arctic where
 
 import SMT.Semiring.Class
+import Data.Ix
 
 data Arctic a = Minus_Infinite | Finite a deriving (Eq, Ord)
 
@@ -13,6 +14,14 @@ instance Show a => Show ( Arctic a ) where
     show a = case a of
         Minus_Infinite -> "-"
         Finite x -> show x
+
+-- | NOTE: range is partial:
+-- range (Minus_Infinite, Finite _) is undefined.
+
+instance Ix a => Ix (Arctic a) where
+    inRange (lo,hi) x = lo <= x && x <= hi
+    range (Minus_Infinite,Minus_Infinite) = [Minus_Infinite]
+    range (Finite lo, Finite hi) = map Finite $ range (lo,hi)
 
 instance (Ord a, Num a) => Semiring (Arctic a) where
     strictness _ = Half
