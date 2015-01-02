@@ -65,9 +65,10 @@ dict w = Dictionary
                 z <- B.and[x,y] ; return (i+j, [z])
         let m = M.fromListWith (++) $ concat zss
         forM (M.toList m) $ \ (i,zs) -> do
-            o <- B.or zs
-            g <- get_guard n i ; B.assert [ B.not o, g ]
-            g' <- get_guard n $ i + 2 ; B.assert [ B.not g', o ]
+            g <- get_guard n i
+            B.assert $ g : map B.not zs
+            g' <- get_guard n $ i + 2
+            B.assert $ B.not g' : zs
         return n
     , dot_product = undefined -- Satchmo.Binary.Op.Fixed.dot_product w
     , positive = \ n -> B.or $ bits n
