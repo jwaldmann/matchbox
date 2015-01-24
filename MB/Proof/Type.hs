@@ -27,8 +27,18 @@ data Proof v s = Proof
 data Interpretation s e = Interpretation 
         { dimension :: Int
         , domain :: Domain
-        , mapping :: M.Map s (L.Linear (M.Matrix e)) 
+        , mapping :: M.Map s (L.Linear (M.Matrix e))
+        , constraint :: Maybe (Constraint s e)
         }
+
+data Constraint s e =
+  Constraint { restriction_factor :: M.Matrix e
+             , restriction_absolute :: M.Matrix e -- vector
+             , nonemptiness_certificate :: M.Matrix e -- actually, vector
+             , mapping_certificate :: M.Map s (M.Matrix e)
+             , compat_certificates :: [ M.Matrix e ]
+             }
+        
 
 data Reason v s = No_Strict_Rules
      | Equivalent Doc (Proof v s)
