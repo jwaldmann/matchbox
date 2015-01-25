@@ -36,8 +36,7 @@ instance (Pretty s, Pretty e ) =>
 
 instance (Pretty s, Pretty e) => Pretty (Constraint s e) where
     pretty c = "Constraint" <+> vcat
-      [ "restriction_factor" <+> pretty (restriction_factor c)
-      , "restriction_absolute" <+> pretty (restriction_absolute c)
+      [ "restriction" <+> pretty (restriction c)
       , "nonemptiness_certificate" <+> pretty (nonemptiness_certificate c )
       , "mapping_certificate" <+> pretty (mapping_certificate c)
       , "compatibility_certificate" <+> pretty (compatibility_certificate c)

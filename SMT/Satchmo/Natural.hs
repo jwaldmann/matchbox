@@ -25,6 +25,7 @@ dict bits = Dictionary
     , domain = SMT.Dictionary.Int
     , nbits = bits
     , number = Bin.number bits
+    , any_number = Bin.number bits
     , decode = Satchmo.Code.decode
     , nconstant = Bin.constant
     , boolean = B.boolean

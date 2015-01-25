@@ -32,9 +32,8 @@ data Interpretation s e = Interpretation
         }
 
 data Constraint s e =
-  Constraint { restriction_factor :: M.Matrix e
-             , restriction_absolute :: M.Matrix e -- vector
-             , nonemptiness_certificate :: M.Matrix e -- actually, vector
+  Constraint { restriction :: L.Linear (M.Matrix e) -- ^ unary
+             , nonemptiness_certificate :: M.Matrix e -- ^ vector
              , mapping_certificate :: M.Map s (M.Matrix e)
              , compatibility_certificate :: [ M.Matrix e ]
              }

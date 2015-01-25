@@ -5,6 +5,7 @@ import qualified SMT.Matrix as M
 import qualified SMT.Semiring as S
 
 import Control.Monad ( forM )
+import Control.Applicative
 import Data.List ( transpose )
 
 import Prelude hiding ( abs )
@@ -21,8 +22,11 @@ data Dictionary m num val bool =
      Dictionary { domain :: D.Domain
                 , make :: Int -> (Int,Int) 
                       -> m (Linear num)
+                , any_make :: Int -> (Int,Int) 
+                      -> m (Linear num)
                 , decode :: 
-                    Linear num -> m (Linear val) 
+                    Linear num -> m (Linear val)
+                , apply :: Linear num -> [num] -> m num    
                 , substitute ::
                       Linear num -> [Linear num]
                       -> m (Linear num)
@@ -31,6 +35,8 @@ data Dictionary m num val bool =
                 , strictly_monotone :: 
                       Linear num -> m bool
                 , positive :: 
+                      Linear num -> m bool
+                , nonnegative :: 
                       Linear num -> m bool
                 , weakly_greater :: Linear num 
                       -> Linear num -> m bool 
@@ -41,7 +47,7 @@ data Dictionary m num val bool =
                 , bconstant :: Bool -> m bool
                 } 
 
-linear :: Monad m
+linear :: (Monad m, Applicative m)
        => M.Dictionary m num val bool
        -> Dictionary m (M.Matrix num) (M.Matrix val) bool
 linear d = Dictionary
@@ -52,11 +58,22 @@ linear d = Dictionary
         a <- M.make d (to, 1)
         return $ Linear { dim=(to,from)
                         , abs = a, lin = ms }
+    , any_make = \ ar (to, from) -> do
+        ms <- forM [ 1 .. ar ] $ \ i -> 
+            M.any_make d (to,from)
+        a <- M.any_make d (to, 1)
+        return $ Linear { dim=(to,from)
+                        , abs = a, lin = ms }
     , decode = \ f -> do
         a <- M.decode d $ abs f
         ls <- forM (lin f) $ M.decode d 
         return $ Linear { dim = dim f
                         , abs = a, lin = ls }
+
+    , apply = \ f ms -> do
+        as <- strictZipWithM "apply" (M.times d) (lin f) ms
+        M.bfoldM (M.add d) $ abs f : as
+      
     , substitute = \ f gs -> do
         as <- strictZipWithM "sub.1"
              (M.times d) (lin f) (map abs gs)
@@ -80,6 +97,10 @@ linear d = Dictionary
             a <- M.positive d $ abs f
             ms <- forM ( lin f ) $ M.positive d
             M.or d $ a : ms
+    , nonnegative = \ f -> case M.domain d of
+        D.Int -> do
+            ms <- forM ( abs f : lin f ) $ M.positive d
+            M.and d ms
 {-
     , strictly_monotone = \ f -> do
         ms <- forM ( lin f ) $ M.strictly_monotone d
@@ -124,3 +145,6 @@ zipWithM f xs ys = case (xs,ys) of
         z <- f x y
         return $ z : zs
     _ -> return []
+
+
+  

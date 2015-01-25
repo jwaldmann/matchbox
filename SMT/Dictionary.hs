@@ -17,6 +17,7 @@ data Dictionary m num val bool = Dictionary
     , times :: num -> num -> m num
     , dot_product :: [num] -> [num] -> m num  
     , positive :: num -> m bool
+    , nonnegative :: num -> m bool
     , gt :: num -> num -> m bool
     , ge :: num -> num -> m bool
     -- | numeric equal (not: not equal)

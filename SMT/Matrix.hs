@@ -4,6 +4,7 @@ import qualified SMT.Dictionary as D
 import qualified SMT.Semiring as S
 
 import Control.Monad ( forM )
+import Control.Applicative
 import Data.List ( transpose )
 
 data Matrix a 
@@ -20,12 +21,15 @@ to = fst . dim ; from = snd . dim
 data Dictionary m num val bool =
      Dictionary { domain :: D.Domain
                 , make :: (Int,Int) -> m (Matrix num)
+                , any_make :: (Int,Int) -> m (Matrix num) 
                 , decode :: 
                       Matrix num -> m (Matrix val)
                 , weakly_monotone :: 
                       Matrix num -> m bool
                 , strictly_monotone :: 
                       Matrix num -> m bool
+                , nonnegative ::
+                     Matrix num -> m bool
                 , positive :: 
                       Matrix num -> m bool
                 , add :: Matrix num -> Matrix num
@@ -58,7 +62,7 @@ expand d a = case a of
         return $ Matrix {dim=dim a, contents = cs}
     Matrix {} -> return a
        
-matrix :: (Monad m, S.Semiring val)
+matrix :: (Monad m, Applicative m, S.Semiring val)
        => D.Dictionary m num val bool
        -> Dictionary m num val bool
 matrix  d = Dictionary
@@ -67,6 +71,12 @@ matrix  d = Dictionary
          cs <- forM [1..to] $ \ r ->
                forM [1..from] $ \ c ->
                     D.number d
+         return $ Matrix { dim = (to,from)
+                         , contents = cs} 
+    , any_make = \ (to, from) -> do
+         cs <- forM [1..to] $ \ r ->
+               forM [1..from] $ \ c ->
+                    D.any_number d
          return $ Matrix { dim = (to,from)
                          , contents = cs} 
     , decode = \ m -> case m of 
@@ -84,6 +94,12 @@ matrix  d = Dictionary
           if to m > 0 && from m > 0 
           then D.positive d $ head $ head $ contents m
           else error $ "Matrix.positive " ++ show (dim m)
+    , nonnegative = \ m -> case m of
+        Zero {} -> D.bconstant d True
+        Unit {} -> D.bconstant d True
+        Matrix {} ->
+          D.and d =<< forM (contents m) ( \ line ->
+          D.and d =<< forM line ( \ x -> D.nonnegative d x ))
     , add = \ a b -> case (a,b) of
         _ | dim a /= dim b -> 
               error $ "Satchmo.SMT.Matrix.add dimension error: " ++ show (dim a,dim b)
