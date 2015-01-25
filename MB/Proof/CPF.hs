@@ -34,7 +34,7 @@ rtoc p = C.CertificationProblem
     , C.cpfVersion = "2.1"
     , C.proof = C.TrsTerminationProof $ proof $ reason p 
     , C.origin = C.ProofOrigin 
-               $ C.Tool { C.name = "matchbox", C.version = "03-February-2013" }
+               $ C.Tool { C.name = "matchbox", C.version = "015" }
     }
 
 proof :: Reason Identifier Identifier
@@ -50,12 +50,13 @@ proof r = case r of
     Mirror_Transform p -> C.StringReversal { C.trs = input  p
                                     , C.trsTerminationProof = proof $ reason p
                                     }
-    Matrix_Interpretation_Natural min Nothing q -> 
+    Matrix_Interpretation_Natural min _ q -> 
         C.RuleRemoval { C.rr_orderingConstraintProof = 
                               ocp plain  C.Naturals min
                       , C.trs = input q
                       , C.trsTerminationProof = proof $ reason q
                       }
+    _ -> error $ "CPF.proof: " ++ show (pretty r)
 
 dpproof :: Proof Identifier (Marked Identifier) 
         -> C.DpProof
