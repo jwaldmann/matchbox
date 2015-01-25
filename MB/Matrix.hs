@@ -73,22 +73,25 @@ handle encoded direct opts sys = do
     case out of
         Just (f,con) -> do
             eprint $ pretty f
-            let dict = L.linear $ M.matrix direct
-            case remaining_compressed False dict (dim opts) f sys of
+            let mcon = do
+                  guard $ O.constraints opts > 0
+                  return con
+            let ldict = L.linear mdict
+                mdict = M.matrix direct
+            case remaining_compressed False (ldict, mdict) (dim opts) (f,con) sys of
                 Right sys' -> return 
                    $ Just ( Interpretation 
                             { dimension = dim opts
                             , domain = D.domain direct
                             , mapping = f
-                            , constraint = do
-                                 guard $ O.constraints opts > 0
-                                 return con
+                            , constraint = mcon
                             }
                           , sys' )
                 Left err -> error $ render $ vcat
                     [ "verification error"
                     , "input system: " <+> pretty sys
                     , "interpretation: " <+> pretty f
+                    , "constraint: " <+> pretty con
                     , "message:" <+> vcat (map text $ lines  err)
                     ]
         Nothing -> return Nothing
@@ -135,8 +138,10 @@ handle_dp encoded direct opts sys = do
     case out of
         Just f -> do
             eprint $ pretty f
-            let dict = L.linear $ M.matrix direct 
-                rc = remaining_compressed True dict (dim opts) f sys
+            let con = undefined
+            let mdict = M.matrix direct 
+                ldict = L.linear mdict
+                rc = remaining_compressed True (ldict,mdict) (dim opts) (f,con) sys
             eprint $ pretty rc
             case rc of
                 Right sys' -> return 
@@ -158,15 +163,15 @@ handle_dp encoded direct opts sys = do
 
 -- | check that all rules are weakly decreasing.
 -- returns the system with the rules that are not strictly decreasing.
-remaining_compressed top dict dim funmap sys = do
-    uss <- forM ( rules sys ) $ \ u -> do
-        s <- traced_rule top dict dim funmap $ fmap CC.expand_all u 
+remaining_compressed top dicts dim (funmap,con) sys = do
+    uss <- forM ( zip (rules sys) (compatibility_certificate con) ) $ \ (u,c) -> do
+        s <- traced_rule top dicts dim (funmap,con) ( fmap CC.expand_all u, c)
         return ( u, s )
     return $ sys { rules = map fst $ filter (not . snd) uss }
 
-remaining top dict dim funmap sys = do
-    uss <- forM ( rules sys ) $ \ u -> do
-        s <- traced_rule top dict dim funmap u 
+remaining top dicts dim (funmap,con) sys = do
+    uss <- forM ( zip ( rules sys) (compatibility_certificate con) ) $ \ (u,c) -> do
+        s <- traced_rule top dicts dim (funmap,con) (u,c) 
         return ( u, s )
     return $ sys { rules = map fst $ filter (not . snd) uss }
 
@@ -175,22 +180,30 @@ traced doc con = case con of
     Left msg -> 
         Left $ show $ vcat [ doc , text msg ]
 
-traced_rule top dict dim funmap u = do
+traced_rule top (ldict,mdict) dim (funmap,con) (u,us) = do
     let vs = S.union (vars $ lhs u) (vars $ rhs u)
         varmap = M.fromList $ zip (S.toList vs) [0..]
-    l <- term dict dim funmap varmap $ lhs u
-    r <- term dict dim funmap varmap $ rhs u
-    w <- L.weakly_greater dict l r
+    l <- term ldict dim funmap varmap $ lhs u
+    r <- term ldict dim funmap varmap $ rhs u
+
+    let res = restriction con
+        [c] = L.lin res ; numc = L.to res
+    let b = L.abs res
+    sus <- foldM (M.add mdict) (M.Zero (dim,numc)) us
+    susb <- M.times mdict sus b
+    rhs <- M.add mdict (L.abs r) susb
+    ge <- M.weakly_greater mdict (L.abs l) rhs
+    gt <- M.strictly_greater mdict (L.abs l) rhs
     traced ( vcat [ "rule:" <+> pretty u
                   , "left:" <+> pretty l
                   , "right: " <+> pretty r
                   ]
-           ) $ L.assert dict [w] 
+           ) $ L.assert ldict [ge] 
     case relation u of
-        Strict -> L.strictly_greater dict l r
+        Strict -> return gt
         Weak   -> case top of
-            False -> L.strictly_greater dict l r
-            True  -> L.bconstant dict  False -- cannot remove
+            False -> return gt
+            True  -> L.bconstant ldict  False -- cannot remove
 
 mapdecode dec f = do
     pairs <- forM ( M.toList f) $ \ (k,v) -> do
