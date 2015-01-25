@@ -25,6 +25,8 @@ data Options =
              , encoding :: Encoding  
              , compression :: Compression
              , constraints :: Int
+             , remove_all :: Bool
+             , triangular :: Bool
              , dp :: Bool
              , fromtop :: Bool
              , naive :: Bool
@@ -46,6 +48,8 @@ options0 = Options
          , encoding = Binary
          , compression = None
          , constraints = 0
+         , remove_all = False
+         , triangular = False
          , dp = False 
          , fromtop = False
          , naive = False
@@ -100,6 +104,14 @@ options =
     , Option [] [ "constraints" ]
         ( ReqArg ( \ s opts -> opts { constraints = read s } ) "Int" )
       "number of constraints for polyhedral domain"
+
+    , Option [] [ "all" ]
+        ( NoArg ( \ opts -> opts { remove_all = True } ) )
+        "remove all rules at once"
+      
+    , Option [] [ "triangular" ]
+        ( NoArg ( \ opts -> opts { triangular = True } ) )
+        "use upper triangular shape (with --all, proves polynomial complexity)"
       
     , Option [ 'l' ] [ "label" ]
        ( ReqArg ( \ s opts -> opts { label = Just $ read $ "(" ++ s ++ ")" }) "Int,Int" ) 

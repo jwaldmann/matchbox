@@ -21,6 +21,7 @@ to = fst . dim ; from = snd . dim
 data Dictionary m num val bool =
      Dictionary { domain :: D.Domain
                 , make :: (Int,Int) -> m (Matrix num)
+                , triangular :: (Int,Int) -> m (Matrix num)
                 , any_make :: (Int,Int) -> m (Matrix num) 
                 , decode :: 
                       Matrix num -> m (Matrix val)
@@ -73,6 +74,14 @@ matrix  d = Dictionary
                     D.number d
          return $ Matrix { dim = (to,from)
                          , contents = cs} 
+    , triangular = \ (to, from) -> do
+         cs <- forM [1..to] $ \ r ->
+               forM [1..from] $ \ c -> do
+                    if r < c then D.number d
+                    else if r == c then D.smallnumber d
+                    else D.nconstant d S.zero
+         return $ Matrix { dim = (to,from)
+                         , contents = cs} 
     , any_make = \ (to, from) -> do
          cs <- forM [1..to] $ \ r ->
                forM [1..from] $ \ c ->
@@ -123,6 +132,8 @@ matrix  d = Dictionary
                  return $ b { dim = (to a, from b) }
         (_, Unit{}) -> 
                  return $ a { dim = (to a, from b) }
+        (Matrix{}, Matrix{}) | from a == 0 -> do
+          return $ Zero (to a, from b)
         (Matrix{},Matrix{}) -> do
             let 
                 dot xs ys = do

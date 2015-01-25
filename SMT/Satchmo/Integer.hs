@@ -32,6 +32,7 @@ dict bits = let n = N.dict bits in Dictionary
     , domain = SMT.Dictionary.Int
     , nbits = bits
     , number = Difference <$> number n <*> nconstant n 0
+    , smallnumber = Difference <$> smallnumber n <*> nconstant n 0
     , any_number =
       -- TODO possible require that one of them is zero:
       Difference <$> number n <*> number n
@@ -47,6 +48,7 @@ dict bits = let n = N.dict bits in Dictionary
          Difference <$> ( app2 (add n)(times n ax bx)(times n ay by ))
                     <*> ( app2 (add n)(times n ax by)(times n ay bx ))
     , positive = \ (Difference x y) -> gt n x y
+    , nonnegative = \ (Difference x y) -> ge n x y
     , gt =  \ (Difference ax ay) (Difference bx by) ->
          app2 (gt n) (add n ax by) ( add n ay bx)
     , ge = \ (Difference ax ay) (Difference bx by) ->

@@ -8,6 +8,8 @@ data Dictionary m num val bool = Dictionary
     , domain :: Domain
       -- | build a non-negative number
     , number   :: m num
+      -- | zero or one
+    , smallnumber :: m num
       -- | build any number (possibly negative)
     , any_number :: m num
     , nbits :: Int

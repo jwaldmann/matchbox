@@ -35,7 +35,7 @@ data Constraint s e =
   Constraint { restriction :: L.Linear (M.Matrix e) -- ^ unary
              , nonemptiness_certificate :: M.Matrix e -- ^ vector
              , mapping_certificate :: M.Map s [M.Matrix e]
-             , compatibility_certificate :: [ M.Matrix e ]
+             , compatibility_certificate :: [[ M.Matrix e ]]
              }
         
 

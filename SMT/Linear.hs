@@ -22,6 +22,8 @@ data Dictionary m num val bool =
      Dictionary { domain :: D.Domain
                 , make :: Int -> (Int,Int) 
                       -> m (Linear num)
+                , triangular :: Int -> (Int,Int) 
+                      -> m (Linear num)
                 , any_make :: Int -> (Int,Int) 
                       -> m (Linear num)
                 , decode :: 
@@ -55,6 +57,12 @@ linear d = Dictionary
     , make = \ ar (to, from) -> do
         ms <- forM [ 1 .. ar ] $ \ i -> 
             M.make d (to,from)
+        a <- M.make d (to, 1)
+        return $ Linear { dim=(to,from)
+                        , abs = a, lin = ms }
+    , triangular = \ ar (to, from) -> do
+        ms <- forM [ 1 .. ar ] $ \ i -> 
+            M.triangular d (to,from)
         a <- M.make d (to, 1)
         return $ Linear { dim=(to,from)
                         , abs = a, lin = ms }
@@ -99,7 +107,7 @@ linear d = Dictionary
             M.or d $ a : ms
     , nonnegative = \ f -> case M.domain d of
         D.Int -> do
-            ms <- forM ( abs f : lin f ) $ M.positive d
+            ms <- forM ( abs f : lin f ) $ M.nonnegative d
             M.and d ms
 {-
     , strictly_monotone = \ f -> do

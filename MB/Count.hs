@@ -38,8 +38,9 @@ elt :: D.Dictionary (State Count) () () ()
 elt = D.Dictionary
       { D.domain = D.Int -- that's a lie
       , D.nconstant = \ n -> return ()
-      , D.bconstant = \ b -> return ()
+      , D.bconstant = \ b -> return ()                             
       , D.number = modify $ \ c -> c { elem_alloc = succ $ elem_alloc c }
+      , D.smallnumber = modify $ \ c -> c { elem_alloc = succ $ elem_alloc c }
       , D.any_number = modify $ \ c -> c { elem_alloc = succ $ elem_alloc c }
       , D.add = \ _ _ -> modify $ \ c -> c { elem_add = succ $ elem_add c }
       , D.times = \ _ _ -> modify $ \ c -> c { elem_times = succ $ elem_times c }
@@ -48,6 +49,7 @@ elt = D.Dictionary
              , elem_times = elem_times c + length xs
              }               
       , D.positive = \ _ -> return ()
+      , D.nonnegative = \ _ -> return ()
       , D.and = \ _ -> return ()
       , D.ge = \ _ _ -> return ()
       , D.gt = \ _ _ -> return ()

@@ -80,7 +80,9 @@ handle encoded direct opts sys = do
                             { dimension = dim opts
                             , domain = D.domain direct
                             , mapping = f
-                            , constraint = Just con
+                            , constraint = do
+                                 guard $ O.constraints opts > 0
+                                 return con
                             }
                           , sys' )
                 Left err -> error $ render $ vcat
@@ -101,7 +103,7 @@ cdecode l m con = Constraint
     <$> L.decode l (restriction con)
     <*> M.decode m (nonemptiness_certificate con)
     <*> mapdecode (mapM (M.decode m)) ( mapping_certificate con )
-    <*> mapM (M.decode m) ( compatibility_certificate con )
+    <*> mapM (mapM (M.decode m)) ( compatibility_certificate con )
 
 
 handle_dp :: (Show s, Hashable s, Ord v, Show v, Pretty v, Pretty s, Ord s
@@ -225,7 +227,9 @@ system dict mdict opts sys = do
     L.assert dict [ nn ]
            
     opairs <- forM originals $ \ (f,ar) -> do
-        l <- L.make dict ar (dim , dim)
+        l <- if O.triangular opts
+             then  L.triangular dict ar (dim , dim)
+             else  L.make dict ar (dim , dim)
         s <- L.positive dict l
         L.assert dict [s]
         return (f, l)
@@ -244,22 +248,26 @@ system dict mdict opts sys = do
       ca <- M.times mdict c $ L.abs l
       lhs <- M.add mdict ca b
       wsb <- forM ws $ \ w -> M.times mdict w b
-      rhs <- foldM (M.add mdict) (M.Zero (1,numc)) wsb
+      rhs <- foldM (M.add mdict) (M.Zero (numc,1)) wsb
       ge <- M.weakly_greater mdict lhs rhs
       M.assert mdict [ ge ]
       return (f, ws)
       )
         
     funmap <- foldM (digger dict) (M.fromList opairs) digrams
-    flags <- forM (rules sys) 
-             $ rule dict dim funmap
-    L.assert dict flags
+    flagcerts <- forM (rules sys) 
+             $ rule dict mdict dim funmap res
+
+    let combine =  case O.remove_all opts of
+          True -> M.and ; False -> M.or
+    good <- combine mdict $ map fst flagcerts
+    M.assert mdict [ good ]
     
     let con = Constraint
            { restriction = res
            , nonemptiness_certificate = L.abs emp
            , mapping_certificate = mapcert
-           , compatibility_certificate = []
+           , compatibility_certificate = map snd flagcerts
            }
 
     return (funmap, con)
@@ -309,14 +317,30 @@ digger dict m (CC.Dig d, _) = do
            (CC.Dig d) fg m
 
 -- | asserts weak decrease and returns strict decrease
-rule dict dim funmap u = do
+rule dict mdict dim funmap res u = do
     let vs = S.union (vars $ lhs u) (vars $ rhs u)
         varmap = M.fromList $ zip (S.toList vs) [0..]
     l <- term dict dim funmap varmap $ lhs u
     r <- term dict dim funmap varmap $ rhs u
-    w <- L.weakly_greater dict l r
-    L.assert dict [w]
-    L.strictly_greater dict l r
+
+    let [c] = L.lin res ; numc = L.to res
+    us <- forM (zip (L.lin l) (L.lin r)) $ \ (lm,rm) -> do
+      u <- M.make mdict (dim, numc)
+      uc <- M.times mdict u c
+      rhs <- M.add mdict rm uc
+      ge <- M.weakly_greater mdict lm rhs
+      M.assert mdict [ge]
+      return u
+
+    let b = L.abs res
+    sus <- foldM (M.add mdict) (M.Zero (dim,numc)) us
+    susb <- M.times mdict sus b
+    rhs <- M.add mdict (L.abs r) susb
+    ge <- M.weakly_greater mdict (L.abs l) rhs
+    M.assert mdict [ge]
+    gt <- M.strictly_greater mdict (L.abs l) rhs
+    
+    return (gt, us)
 
 -- | asserts weak decrease and 
 -- returns strict decrease (for strict rules)

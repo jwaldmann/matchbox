@@ -63,6 +63,7 @@ instance Pretty e => Pretty (M.Matrix e) where
                     $ map (map pretty ) 
                     $ M.contents m ) <+> "]"
 
+besides []  = empty
 besides docs = foldl1 (beside " ") docs
 
 beside sep x y = vcat $ 
