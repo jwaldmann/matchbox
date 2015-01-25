@@ -51,6 +51,7 @@ elt = D.Dictionary
       , D.positive = \ _ -> return ()
       , D.nonnegative = \ _ -> return ()
       , D.and = \ _ -> return ()
+      , D.or = \ _ -> return ()
       , D.ge = \ _ _ -> return ()
       , D.gt = \ _ _ -> return ()
       , D.assert = \ _ -> return ()
