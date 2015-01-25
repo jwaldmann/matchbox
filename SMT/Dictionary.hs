@@ -6,7 +6,10 @@ data Domain = Int | Arctic | Tropical | Fuzzy
 data Dictionary m num val bool = Dictionary
     { info :: String
     , domain :: Domain
+      -- | build a non-negative number
     , number   :: m num
+      -- | build any number (possibly negative)
+    , any_number :: m num
     , nbits :: Int
     , nconstant :: val -> m num
     , decode :: num -> m val
