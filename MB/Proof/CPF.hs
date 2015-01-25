@@ -133,7 +133,9 @@ interpretation :: ( C.ToExotic e)
     -> C.Domain 
     -> Interpretation s e
     -> C.Interpretation 
-interpretation fsym dom mi = C.Interpretation
+interpretation fsym dom mi = case constraint mi of
+  Just c -> error "MB.Proof.CFP: non-empty constraint"
+  Nothing -> C.Interpretation
     { C.interpretation_type = C.Matrix_Interpretation
             { C.domain = case domain mi of
                   Int -> C.Naturals

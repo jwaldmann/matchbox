@@ -1,4 +1,4 @@
-module SMT.Satchmo.Integer where
+module SMT.Satchmo.Natural where
 
 import Prelude hiding ( not, and, or )
 import qualified Prelude

@@ -15,9 +15,9 @@ import qualified MB.Proof as P
 import qualified Compress.Common as CC
 
 import qualified SMT.Boolector.Natural.Binary as B  
-import qualified SMT.Satchmo.Integer as SI
-import qualified SMT.Satchmo.Integer.Interval as SII
-import qualified SMT.Satchmo.Integer.Guarded as SIG
+import qualified SMT.Satchmo.Natural as SI
+import qualified SMT.Satchmo.Natural.Interval as SII
+import qualified SMT.Satchmo.Natural.Guarded as SIG
 
 import qualified SMT.Semiring.Integer ()
 

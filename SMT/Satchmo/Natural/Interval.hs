@@ -1,6 +1,6 @@
 {-# language PatternSignatures #-}
 
-module SMT.Satchmo.Integer.Interval where
+module SMT.Satchmo.Natural.Interval where
 
 import qualified SMT.Satchmo.Interval as I
 import qualified SMT.Semiring.Class as C
