@@ -24,7 +24,7 @@ data Options =
              , solver :: Solver
              , encoding :: Encoding  
              , compression :: Compression
-             , use_constraints :: Maybe Int
+             , constraints :: Int
              , dp :: Bool
              , fromtop :: Bool
              , naive :: Bool
@@ -45,7 +45,7 @@ options0 = Options
          , solver = Satchmo_Guarded
          , encoding = Binary
          , compression = None
-         , use_constraints = Nothing
+         , constraints = 0
          , dp = False 
          , fromtop = False
          , naive = False
@@ -98,7 +98,7 @@ options =
         "interval bitblasting for powers of 3"
 
     , Option [] [ "constraints" ]
-        ( ReqArg ( \ s opts -> opts { use_constraints = Just $ read s } ) "Int" )
+        ( ReqArg ( \ s opts -> opts { constraints = read s } ) "Int" )
       "number of constraints for polyhedral domain"
       
     , Option [ 'l' ] [ "label" ]

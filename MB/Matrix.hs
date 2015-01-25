@@ -57,23 +57,21 @@ handle encoded direct opts sys = do
     eprint $ show opts
 
     let count = MB.Count.run $ do
-          fmap fst $  system MB.Count.linear opts sys
+          fmap fst $  system MB.Count.linear MB.Count.matrix opts sys
     hPutStrLn stderr $ show count
 
     out <- solve $ do
         let ldict = L.linear mdict
             mdict = M.matrix idict
             idict = encoded (bits opts)
-        (funmap, mcon) <- system ldict opts sys
+        (funmap, con) <- system ldict mdict opts sys
         return $ do
           f <- mapdecode (L.decode ldict) (originals_only funmap)
-          mc <- case mcon of
-            Nothing -> return Nothing
-            Just con -> Just <$> cdecode ldict mdict con 
-          return (f, mc)
+          c <- cdecode ldict mdict con 
+          return (f, c)
 
     case out of
-        Just (f,mcon) -> do
+        Just (f,con) -> do
             eprint $ pretty f
             let dict = L.linear $ M.matrix direct
             case remaining_compressed False dict (dim opts) f sys of
@@ -82,7 +80,7 @@ handle encoded direct opts sys = do
                             { dimension = dim opts
                             , domain = D.domain direct
                             , mapping = f
-                            , constraint = mcon
+                            , constraint = Just con
                             }
                           , sys' )
                 Left err -> error $ render $ vcat
@@ -102,7 +100,7 @@ cdecode :: (Ord s, Applicative m, Monad m)
 cdecode l m con = Constraint
     <$> L.decode l (restriction con)
     <*> M.decode m (nonemptiness_certificate con)
-    <*> mapdecode (M.decode m) ( mapping_certificate con )
+    <*> mapdecode (mapM (M.decode m)) ( mapping_certificate con )
     <*> mapM (M.decode m) ( compatibility_certificate con )
 
 
@@ -212,34 +210,59 @@ system :: L.Dictionary m (M.Matrix num) (M.Matrix val) bool
             , Maybe (Constraint s  num)
             )
 -}
-system dict opts sys = do
+system dict mdict opts sys = do
     let dim = O.dim opts
     let (originals, digrams) = CC.deep_signature  sys
     
-    mcon <- case O.use_constraints opts of
-      Nothing -> return Nothing
-      Just c -> do
-        res <- L.any_make dict 1 (c,dim)
-        emp <- L.make dict 0 (dim,dim)
-        femp <- L.substitute dict res [emp]
-        nn <- L.nonnegative dict femp
-        L.assert dict [ nn ]
-        return $ Just $ Constraint
-           { restriction = res
-           , nonemptiness_certificate = L.abs emp
-           , mapping_certificate = M.empty
-           , compatibility_certificate = []
-           }
+    -- restriction (written as linear function, res(x) >= 0)
+    let numc = O.constraints opts
+    res <- L.any_make dict 1 (numc,dim)
+
+    -- non-emptiness certificate
+    emp <- L.make dict 0 (dim,dim)
+    femp <- L.substitute dict res [emp]
+    nn <- L.nonnegative dict femp
+    L.assert dict [ nn ]
+           
     opairs <- forM originals $ \ (f,ar) -> do
         l <- L.make dict ar (dim , dim)
         s <- L.positive dict l
         L.assert dict [s]
         return (f, l)
+
+    -- mapping certificate
+    mapcert <- M.fromList <$> forM opairs ( \ (CC.Orig f,l) -> do
+      let [c] = L.lin res
+      ws <- forM (L.lin l) $ \ m -> do
+        w <- M.make mdict (numc,numc)
+        cm <- M.times mdict c m
+        wc <- M.times mdict w c
+        ge <- M.weakly_greater mdict cm wc
+        M.assert mdict [ ge ]
+        return w
+      let b = L.abs res
+      ca <- M.times mdict c $ L.abs l
+      lhs <- M.add mdict ca b
+      wsb <- forM ws $ \ w -> M.times mdict w b
+      rhs <- foldM (M.add mdict) (M.Zero (1,numc)) wsb
+      ge <- M.weakly_greater mdict lhs rhs
+      M.assert mdict [ ge ]
+      return (f, ws)
+      )
+        
     funmap <- foldM (digger dict) (M.fromList opairs) digrams
     flags <- forM (rules sys) 
              $ rule dict dim funmap
-    L.assert dict flags 
-    return (funmap, mcon)
+    L.assert dict flags
+    
+    let con = Constraint
+           { restriction = res
+           , nonemptiness_certificate = L.abs emp
+           , mapping_certificate = mapcert
+           , compatibility_certificate = []
+           }
+
+    return (funmap, con)
 
 -- | assert that at least one rule can be removed.
 -- returns interpretation of function symbols.
