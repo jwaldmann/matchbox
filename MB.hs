@@ -48,8 +48,9 @@ main = do
     (config,filePath) <- O.parse -- parseConfig
     
     trs <- TPDB.Input.get_trs filePath
-    out <- run $ handle_both config
-               $ trs -- { rules = map sortVariables $ rules trs }
+    out <- run $ case O.dp config of
+      False -> handle_direct config trs
+      True -> handle_both config trs      
     case out of
         Nothing    -> do putStrLn "MAYBE"
         Just proof -> do  
@@ -68,17 +69,22 @@ main = do
                 hPutDoc stdout $ outline proof ; hPutStrLn stdout ""
 
 handle_both config sys = case TPDB.Mirror.mirror sys of
-     Nothing -> handle config sys
+     Nothing -> handle_dp config sys
      Just sys' -> parallel_or0 
-         [ handle config sys
-         , do p <- handle config sys' 
+         [ handle_dp config sys
+         , do p <- handle_dp config sys' 
               return $ P.Proof { P.input = sys
                      , P.claim = P.Termination
                      , P.reason = P.Mirror_Transform p 
                      }
          ]
 
-handle config sys = do
+handle_direct config = orelse nostrictrules
+    $ andthen0 ( matrices_direct config )
+    $ apply ( handle_direct config )
+
+  
+handle_dp config sys = do
     let dp = TPDB.DP.Transform.dp sys 
     proof <- handle_scc config dp
     return $ P.Proof { P.input =  sys
@@ -90,7 +96,7 @@ handle_scc config  = orelse nomarkedrules
             $ decomp (handle_scc config)
 
             -- $ andthen0 ( parallel_or [ for_usable_rules matrices , semanticlabs ])
-            $ andthen0 (for_usable_rules $ matrices config) 
+            $ andthen0 (for_usable_rules $ matrices_dp config) 
             $  apply (handle_scc config)
 
 --            $ orelse_andthen (for_usable_rules matrices) (apply handle_scc) 
@@ -104,6 +110,14 @@ nomarkedrules dp = do
     return $ P.Proof 
             { P.input = dp
             , P.claim = P.Top_Termination
+            , P.reason = P.No_Strict_Rules 
+            }
+
+nostrictrules dp = do
+    guard $ null $ filter strict $ rules dp 
+    return $ P.Proof 
+            { P.input = dp
+            , P.claim = P.Termination
             , P.reason = P.No_Strict_Rules 
             }
 
@@ -123,12 +137,23 @@ decomp succ fail sys =
                      , P.reason = P.SCCs proofs
                      }
 
-matrices config =  capture $ foldr1 orelse
+
+matrices_direct config =  capture $ foldr1 orelse
     -- $ map (\(d,b) -> capture $ parallel_or [ matrix_nat d b, matrix_arc d b ] ) 
     -- $ map (\(d,b) -> matrix_nat config d b )
     $ map (\(d,b) -> 
-         if O.use_natural config then matrix_nat config d b 
-         else if O.use_arctic config then matrix_arc config d b 
+         if O.use_natural config then matrix_nat_direct config d b 
+         else error "use --nat option"
+        ) 
+    $ do d <- [1 .. ] ; return ( d, O.bits config )
+
+
+matrices_dp config =  capture $ foldr1 orelse
+    -- $ map (\(d,b) -> capture $ parallel_or [ matrix_nat d b, matrix_arc d b ] ) 
+    -- $ map (\(d,b) -> matrix_nat config d b )
+    $ map (\(d,b) -> 
+         if O.use_natural config then matrix_nat_dp config d b 
+         else if O.use_arctic config then matrix_arc_dp config d b 
          else error "use -n or -a options"
         ) 
     $ do d <- [1 .. ] ; return ( d, O.bits config )
@@ -142,7 +167,7 @@ for_usable_rules method = \ sys -> do
                ++ filter (not . strict) ( rules sys ) }
     return ( result, f )
 
-matrix_arc config dim bits sys = do
+matrix_arc_dp config dim bits sys = do
     let c = O.Paper
         (cost, rs) = ( case c of
                        O.None -> CS.nocompress 
@@ -156,7 +181,22 @@ matrix_arc config dim bits sys = do
     let sys' = CC.expand_all_trs csys'
     return ( sys', f )
 
-matrix_nat config dim bits sys = do
+matrix_nat_direct config dim bits sys = do
+    let c = O.Paper
+        (cost, rs) = ( case c of
+                       O.None -> CS.nocompress 
+                       O.Simple -> CS.compress 
+                       O.Paper -> CP.compress CP.Simple
+                       O.PaperIter -> CP.compress CP.Iterative
+                     ) $ rules sys
+        csys = RS { rules = CC.roots rs
+                               , separate = separate sys }
+    (csys', f) <- mkWork ( matrix_natural_direct config dim bits ) csys
+    let sys' = CC.expand_all_trs csys'
+    return ( sys', f )
+    
+
+matrix_nat_dp config dim bits sys = do
     let c = O.Paper
         (cost, rs) = ( case c of
                        O.None -> CS.nocompress 

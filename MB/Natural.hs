@@ -31,10 +31,16 @@ import Data.Hashable
 import Control.Monad (when)
 
 
--- matrix_arctic_dp :: Int -> Int -> TRS v c -> Work (TRS v x) Doc
-matrix_natural_dp opts dim bits = original_matrix_natural_dp
-      ( -- O.options0
-        opts{  O.dim = dim, O.bits = bits, O.compression = O.Simple, O.dp = True })
+matrix_natural_direct opts dim bits = original_matrix_natural_direct
+      ( opts{  O.dim = dim, O.bits = bits, O.compression = O.Simple, O.dp = False })
+
+
+matrix_natural_dp opts dim bits = original_matrix_natural_dp 
+      ( opts{  O.dim = dim, O.bits = bits, O.compression = O.Simple, O.dp = True })
+
+original_matrix_natural_direct opts =
+    remover_natural ("matrix_natural_direct" :: Doc) CC.expand_all_trs
+  $ MB.Matrix.handle SI.dict SPI.direct opts
 
 original_matrix_natural_dp opts = 
       remover_natural ( "matrix_natural_dp" :: Doc ) CC.expand_all_trs

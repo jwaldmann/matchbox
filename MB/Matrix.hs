@@ -79,6 +79,7 @@ handle encoded direct opts sys = do
                             { dimension = dim opts
                             , domain = D.domain direct
                             , mapping = f
+                            , constraint = Nothing
                             }
                           , sys' )
                 Left err -> error $ render $ vcat
@@ -125,6 +126,7 @@ handle_dp encoded direct opts sys = do
                             { dimension = dim opts
                             , domain = D.domain direct
                             , mapping = f
+                            , constraint = Nothing
                             }
                           , sys' )
                 Left err -> error $ render $ vcat
