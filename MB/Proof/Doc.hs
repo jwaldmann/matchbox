@@ -29,7 +29,19 @@ instance (Pretty s, Pretty e ) =>
                  , "dimension", text (show $dimension i)
                  ]
           , pretty $ mapping i
+          , case constraint i of
+            Nothing -> empty
+            Just c -> pretty c
           ]
+
+instance (Pretty s, Pretty e) => Pretty (Constraint s e) where
+    pretty c = "Constraint" <+> vcat
+      [ "restriction_factor" <+> pretty (restriction_factor c)
+      , "restriction_absolute" <+> pretty (restriction_absolute c)
+      , "nonemptiness_certificate" <+> pretty (nonemptiness_certificate c )
+      , "mapping_certificate" <+> pretty (mapping_certificate c)
+      , "compatibility_certificate" <+> pretty (compatibility_certificate c)
+      ]
 
 instance (Pretty v, Pretty s) => Pretty (Reason v s) where
     pretty r = case r of

@@ -36,7 +36,7 @@ data Constraint s e =
              , restriction_absolute :: M.Matrix e -- vector
              , nonemptiness_certificate :: M.Matrix e -- actually, vector
              , mapping_certificate :: M.Map s (M.Matrix e)
-             , compat_certificates :: [ M.Matrix e ]
+             , compatibility_certificate :: [ M.Matrix e ]
              }
         
 
