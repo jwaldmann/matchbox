@@ -103,7 +103,8 @@ cdecode :: (Ord s, Applicative m, Monad m)
         -> Constraint s num
         -> m (Constraint s val)
 cdecode l m con = Constraint
-    <$> L.decode l (restriction con)
+    <$> return (width con)
+    <*> L.decode l (restriction con)
     <*> M.decode m (nonemptiness_certificate con)
     <*> mapdecode (mapM (M.decode m)) ( mapping_certificate con )
     <*> mapM (mapM (M.decode m)) ( compatibility_certificate con )
@@ -277,7 +278,8 @@ system dict mdict opts sys = do
     M.assert mdict [ good ]
     
     let con = Constraint
-           { restriction = res
+           { width = numc
+           , restriction = res
            , nonemptiness_certificate = L.abs emp
            , mapping_certificate = mapcert
            , compatibility_certificate = map snd flagcerts

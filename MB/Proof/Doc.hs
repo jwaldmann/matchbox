@@ -36,10 +36,11 @@ instance (Pretty s, Pretty e ) =>
 
 instance (Pretty s, Pretty e) => Pretty (Constraint s e) where
     pretty c = "Constraint" <+> vcat
-      [ "restriction" <+> pretty (restriction c)
-      , "nonemptiness_certificate" <+> pretty (nonemptiness_certificate c )
-      , "mapping_certificate" <+> pretty (mapping_certificate c)
-      , "compatibility_certificate" <+> pretty (compatibility_certificate c)
+      [ "width:" <+> pretty (width c)
+      , "restriction:" <+> pretty (restriction c) <+> ">= 0"
+      , "nonemptiness_certificate:" <+> pretty (nonemptiness_certificate c )
+      , "mapping_certificate:" <+> pretty (mapping_certificate c)
+      , "compatibility_certificate:" <+> pretty (compatibility_certificate c)
       ]
 
 instance (Pretty v, Pretty s) => Pretty (Reason v s) where

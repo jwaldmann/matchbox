@@ -35,6 +35,9 @@ outreason r = case r of
     Matrix_Interpretation_Natural  i u p -> 
         vcat ["matrix interpretation, domain" <+> text  ( show $ domain i)
                       <+> "dimension" <+> pretty (dimension i)
+                      <+> case constraint i of
+                               Nothing -> empty
+                               Just con -> "with" <+> pretty (width con) <+> "constraints"
              , case u of 
                      Nothing -> empty 
                      Just us -> "for" <+> pretty (length us) <+> "usable rules" 
