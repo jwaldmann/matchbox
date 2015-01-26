@@ -186,9 +186,12 @@ matrix  d = Dictionary
           error $ "Satchmo.SMT.Matrix.weakly_greater: incompatible dimensions " ++ show (dim a) ++ show (dim b)
        _ | D.domain d `elem` 
              [D.Int, D.Arctic] -> case (a,b) of
-         (_, Zero{}) -> D.bconstant d True
+         (Zero{}, Zero{}) -> D.bconstant d True
          (Zero{}, Unit{}) -> D.bconstant d False
          (Unit{}, Unit{}) -> D.bconstant d True
+         (Unit{}, Zero{}) -> D.bconstant d False
+         -- watch out: this would be false:  (_, Zero{}) -> True
+         -- since we may have negative entries in the lhs matrix
          _ -> do
              ea <- expand d a ; eb <- expand d b
              cs <- forM ( zip (concat $ contents ea) 
