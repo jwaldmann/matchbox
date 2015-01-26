@@ -150,9 +150,11 @@ matrix  d = Dictionary
        _ | dim a /= dim b -> 
           error $ "Satchmo.SMT.Matrix.strictly_greater: incompatible dimensions " ++ show (dim a) ++ show (dim b)
        D.Int -> case (a,b) of
-         (Zero{}, _) -> D.bconstant d False
-         (Unit{}, Zero{}) -> D.bconstant d True
-         (Unit{}, Unit{}) -> D.bconstant d False
+         -- not necessarily true with possible negative entries:
+         -- (Zero{}, _) -> D.bconstant d False
+         -- these shortcuts are dubious:y
+         -- (Unit{}, Zero{}) -> D.bconstant d True
+         -- (Unit{}, Unit{}) -> D.bconstant d False
          _ -> do
              ea <- expand d a ; eb <- expand d b
              let (x,y) : rest =  
