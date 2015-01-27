@@ -5,7 +5,7 @@ import qualified SMT.Semiring as S
 
 import Control.Monad ( forM )
 import Control.Applicative
-import Data.List ( transpose )
+import qualified Data.List 
 
 data Matrix a 
      = Zero { dim :: (Int,Int) }
@@ -141,7 +141,7 @@ matrix  d = Dictionary
                         D.times d x y
                     bfoldM (D.add d) xys
             css <- forM (contents a) $ \ row ->
-               forM (transpose $ contents b) $ \ col ->
+               forM (Data.List.transpose $ contents b) $ \ col ->
                   dot -- D.dot_product d
                   row col
             return $ Matrix { dim = (to a,from b)
@@ -218,3 +218,9 @@ matrix  d = Dictionary
 bfoldM f [x] = return x
 bfoldM f (x:y:zs) = 
     do xy <- f x y ; bfoldM f (zs ++ [xy])
+
+transpose m = case m of
+  Zero { dim=(a,b) } -> Zero { dim = (b,a) }
+  Unit { dim=(a,b) } -> Unit { dim = (b,a) }
+  Matrix { dim=(a,b), contents = cs } ->
+    Matrix { dim =(b,a), contents = Data.List.transpose cs }

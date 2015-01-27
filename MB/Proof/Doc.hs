@@ -3,11 +3,15 @@
 module MB.Proof.Doc where
 
 import MB.Proof.Type
+import qualified SMT.Matrix as M
+import qualified SMT.Linear as L
 
 import TPDB.Plain.Write ()
 
+import qualified Data.Map as M
+
 import TPDB.Pretty
-import MB.Pretty (pretty_short) -- and instances
+import MB.Pretty (pretty_short, oneline, beside, (</>)) -- and instances
 
 instance (Pretty v, Pretty s) => Pretty (Proof v s) where
     pretty p = vcat 
@@ -21,26 +25,34 @@ instance Pretty Claim where
         Termination -> "terminating"
         Top_Termination -> "top-terminating"
 
-instance (Pretty s, Pretty e ) =>
-    Pretty (Interpretation s e) where
-       pretty i = vcat
-          [ hsep [ "matrix interpretation"
+instance (Pretty v, Pretty s, Pretty e ) =>
+    Pretty (Interpretation v s e) where
+       pretty i = hsep [ "matrix interpretation" 
                  , "domain", text ( show $ domain i)
                  , "dimension", text (show $dimension i)
-                 ]
-          , pretty $ mapping i
+                 ] </> vcat [
+            pretty $ mapping i
           , case constraint i of
             Nothing -> empty
             Just c -> pretty c
+          , case values_for_rules i of
+            Nothing -> empty
+            Just vs -> "interpretations for rules:"
+               </> vcat ( map ( \ (u,(l,r)) ->
+                   pretty u </> beside " | " (pretty l) (pretty r)  ) vs )
           ]
 
-instance (Pretty s, Pretty e) => Pretty (Constraint s e) where
-    pretty c = "Constraint" <+> vcat
-      [ "width:" <+> pretty (width c)
-      , "restriction:" <+> pretty (restriction c) <+> ">= 0"
-      , "nonemptiness_certificate:" <+> pretty (nonemptiness_certificate c )
-      , "mapping_certificate:" <+> pretty (mapping_certificate c)
-      , "compatibility_certificate:" <+> pretty (compatibility_certificate c)
+instance (Pretty v, Pretty s, Pretty e)
+         => Pretty (Constraint v s e) where
+    pretty c = "Polyhedral constraints with certificates:" </> vcat
+      [ "number of constraints:" <+> pretty (width c)
+      , "domain restriction" </> pretty (restriction c) <+> ">= 0"
+      , "nonemptiness certificate"
+        </> pretty (M.transpose $ nonemptiness_certificate c ) 
+      , "mapping certificate:" </>
+            vcat (map pretty $ M.toList $ mapping_certificate c)
+      , "compatibility certificate:" </>
+            vcat (map (\(u,c) -> pretty u </> pretty c)( compatibility_certificate c))
       ]
 
 instance (Pretty v, Pretty s) => Pretty (Reason v s) where

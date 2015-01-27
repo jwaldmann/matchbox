@@ -131,7 +131,7 @@ ocp fsym dom mi = C.OCPRedPair
 interpretation :: ( C.ToExotic e)
                => (s -> C.Symbol) 
     -> C.Domain 
-    -> Interpretation s e
+    -> Interpretation v s e
     -> C.Interpretation 
 interpretation fsym dom mi = case constraint mi of
   Just c -> error "MB.Proof.CFP: non-empty constraint"

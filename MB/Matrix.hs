@@ -1,5 +1,7 @@
 {-# language OverloadedStrings #-}
 {-# language DeriveGeneric #-}
+{-# language TupleSections #-}
+{-# language ScopedTypeVariables #-}
 
 module MB.Matrix where
 
@@ -42,6 +44,8 @@ import Data.Hashable
 -- and the remaining rules in the _compressed_ signature
 -- (because we might want to avoid re-compression).
 
+{-
+
 handle :: (Show s, Hashable s, Ord v, Show v, Pretty v, Pretty s, Ord s
           , S.Semiring val, Pretty val
           , Solver m
@@ -49,10 +53,14 @@ handle :: (Show s, Hashable s, Ord v, Show v, Pretty v, Pretty s, Ord s
           )
        => (Int -> D.Dictionary m num val bool )
        -> D.Dictionary (Either String) val val Bool
-       -> Options -> TRS v (CC.Sym s)
-       -> IO ( Maybe ( Interpretation s val
+       -> Options
+       -> TRS v (CC.Sym s)
+       -> IO ( Maybe ( Interpretation v s val
                      , TRS v (CC.Sym s)))
-handle encoded direct opts sys = do
+       
+-}
+handle ( encoded :: Int -> D.Dictionary m num val bool) direct 
+       opts (sys :: TRS v (CC.Sym s)) = do
     eprint $ pretty_short sys
     eprint $ show opts
 
@@ -64,27 +72,32 @@ handle encoded direct opts sys = do
         let ldict = L.linear mdict
             mdict = M.matrix idict
             idict = encoded (bits opts)
-        (funmap, con) <- system ldict mdict opts sys
+        (funmap :: M.Map s (L.Linear (M.Matrix num)), con)
+               <- system ldict mdict opts (sys:: TRS v (CC.Sym s))
         return $ do
-          f <- mapdecode (L.decode ldict) (originals_only funmap)
+          f <- mapdecode (L.decode ldict) funmap
           c <- cdecode ldict mdict con 
-          return (f, c)
+          return (f :: M.Map s (L.Linear (M.Matrix val)) , c  )
 
     case out of
-        Just (f,con) -> do
+        Just (f,con :: Constraint v s val ) -> do
             eprint $ pretty f
             let mcon = do
                   guard $ O.constraints opts > 0
                   return con
             let ldict = L.linear mdict
                 mdict = M.matrix direct
-            case remaining_compressed False (ldict, mdict) (dim opts) (f,con) sys of
+                Right vs = evaluate_rules False
+                   (ldict, mdict) (dim opts) (f, con) sys 
+            case remaining_compressed False
+                   (ldict, mdict) (dim opts) (f, con) sys of
                 Right sys' -> return 
                    $ Just ( Interpretation 
                             { dimension = dim opts
                             , domain = D.domain direct
                             , mapping = f
                             , constraint = mcon
+                            , values_for_rules = Just vs
                             }
                           , sys' )
                 Left err -> error $ render $ vcat
@@ -97,17 +110,19 @@ handle encoded direct opts sys = do
         Nothing -> return Nothing
 
 
+
 cdecode :: (Ord s, Applicative m, Monad m)
         => L.Dictionary m (M.Matrix num) (M.Matrix val) bool
         -> M.Dictionary m num val bool
-        -> Constraint s num
-        -> m (Constraint s val)
+        -> Constraint v s num
+        -> m (Constraint v s val)
 cdecode l m con = Constraint
     <$> return (width con)
     <*> L.decode l (restriction con)
     <*> M.decode m (nonemptiness_certificate con)
     <*> mapdecode (mapM (M.decode m)) ( mapping_certificate con )
-    <*> mapM (mapM (M.decode m)) ( compatibility_certificate con )
+    <*> forM  ( compatibility_certificate con )
+      ( \ (u,ws) -> ( u ,) <$> mapM (M.decode m) ws )
 
 
 handle_dp :: (Show s, Hashable s, Ord v, Show v, Pretty v, Pretty s, Ord s
@@ -119,7 +134,7 @@ handle_dp :: (Show s, Hashable s, Ord v, Show v, Pretty v, Pretty s, Ord s
        -> D.Dictionary (Either String) val val Bool
        -> Options
        -> TRS v (CC.Sym (TPDB.DP.Marked s))
-       -> IO ( Maybe ( Interpretation (TPDB.DP.Marked s) val
+       -> IO ( Maybe ( Interpretation v (TPDB.DP.Marked s) val
                      , TRS v (CC.Sym (TPDB.DP.Marked s))))
 handle_dp encoded direct opts sys = do
     eprint $ pretty_short sys
@@ -164,15 +179,31 @@ handle_dp encoded direct opts sys = do
 
 -- | check that all rules are weakly decreasing.
 -- returns the system with the rules that are not strictly decreasing.
+remaining_compressed 
+  :: (Pretty num, Pretty k1, Pretty v, Ord k1, Ord v) =>
+     Bool
+     -> (L.Dictionary (Either String) (M.Matrix num) val1 Bool,
+         M.Dictionary (Either String) num val Bool)
+     -> Int
+     -> (M.Map  k1 (L.Linear (M.Matrix num)),
+         Constraint v k1 num)
+     -> TRS v (CC.Sym k1)
+     -> Either String (TRS v (CC.Sym k1))
 remaining_compressed top dicts dim (funmap,con) sys = do
-    uss <- forM ( zip (rules sys) (compatibility_certificate con) ) $ \ (u,c) -> do
-        s <- traced_rule top dicts dim (funmap,con) ( fmap CC.expand_all u, c)
-        return ( u, s )
-    return $ sys { rules = map fst $ filter (not . snd) uss }
+    decrease <- forM ( compatibility_certificate con ) $ \ (u,c) -> do
+        True <- traced_rule top dicts dim
+             ( funmap , restriction con) ( u, c)
+        return u
+    let keep u = fmap CC.expand_all u `notElem` decrease
+    return $ sys { rules = filter keep $ rules sys }
+
+evaluate_rules top dicts dim (funmap,con) sys = 
+  forM ( compatibility_certificate con ) $ \ (u,c) -> do
+        evaluate_rule top dicts dim (funmap , restriction con) ( u, c)
 
 remaining top dicts dim (funmap,con) sys = do
-    uss <- forM ( zip ( rules sys) (compatibility_certificate con) ) $ \ (u,c) -> do
-        s <- traced_rule top dicts dim (funmap,con) (u,c) 
+    uss <- forM (compatibility_certificate con) $ \ (u,c) -> do
+        s <- traced_rule top dicts dim (funmap,restriction con) (u,c) 
         return ( u, s )
     return $ sys { rules = map fst $ filter (not . snd) uss }
 
@@ -181,13 +212,20 @@ traced doc con = case con of
     Left msg -> 
         Left $ show $ vcat [ doc , text msg ]
 
-traced_rule top (ldict,mdict) dim (funmap,con) (u,us) = do
+evaluate_rule top (ldict,_) dim (funmap,_)(u,_) = do
+    let vs = S.union (vars $ lhs u) (vars $ rhs u)
+        varmap = M.fromList $ zip (S.toList vs) [0..]
+    l <- term ldict dim funmap varmap $ lhs u
+    r <- term ldict dim funmap varmap $ rhs u
+    return (u, (l,r))
+
+traced_rule top (ldict,mdict) dim (funmap,res) (u,us) = do
     let vs = S.union (vars $ lhs u) (vars $ rhs u)
         varmap = M.fromList $ zip (S.toList vs) [0..]
     l <- term ldict dim funmap varmap $ lhs u
     r <- term ldict dim funmap varmap $ rhs u
 
-    let res = restriction con
+    let -- res = restriction con
         [c] = L.lin res ; numc = L.to res
     let b = L.abs res
     sus <- foldM (M.add mdict) (M.Zero (dim,numc)) us
@@ -206,6 +244,8 @@ traced_rule top (ldict,mdict) dim (funmap,con) (u,us) = do
             False -> return gt
             True  -> L.bconstant ldict  False -- cannot remove
 
+mapdecode
+  :: (Ord k, Monad m) => (a -> m a1) -> M.Map k a -> m (M.Map k a1)
 mapdecode dec f = do
     pairs <- forM ( M.toList f) $ \ (k,v) -> do
         w <- dec v
@@ -219,11 +259,13 @@ originals_only funmap = M.fromList $ do
 -- | assert that at least one rule can be removed.
 -- returns interpretation of function symbols.
 {-
-system :: L.Dictionary m (M.Matrix num) (M.Matrix val) bool
+system :: (Ord s, Ord v, Pretty s, Show s, Functor m, Monad m)
+       => L.Dictionary m (M.Matrix num) (M.Matrix val) bool
+       -> M.Dictionary m num val bool
        -> O.Options
-       -> RS s (Term t (CC.Sym c))
-       -> m ( M.Map (CC.Sym c) (L.Linear (M.Matrix num))
-            , Maybe (Constraint s  num)
+       -> RS s (Term v (CC.Sym s))
+       -> m ( M.Map s (L.Linear (M.Matrix num))
+            , Constraint v s  num
             )
 -}
 system dict mdict opts sys = do
@@ -240,7 +282,7 @@ system dict mdict opts sys = do
     nn <- L.nonnegative dict femp
     L.assert dict [ nn ]
            
-    opairs <- forM originals $ \ (f,ar) -> do
+    opairs <- forM originals $ \ ( f,ar) -> do
         l <- if O.triangular opts
              then  L.triangular dict ar (dim , dim)
              else  L.make dict ar (dim , dim)
@@ -276,16 +318,17 @@ system dict mdict opts sys = do
           True -> M.and ; False -> M.or
     good <- combine mdict $ map fst flagcerts
     M.assert mdict [ good ]
-    
+
     let con = Constraint
            { width = numc
            , restriction = res
            , nonemptiness_certificate = L.abs emp
-           , mapping_certificate = mapcert
-           , compatibility_certificate = map snd flagcerts
+           , mapping_certificate =  mapcert
+           , compatibility_certificate =  map snd flagcerts
            }
 
-    return (funmap, con)
+    return ( originals_only funmap
+           , con)
 
 -- | assert that at least one rule can be removed.
 -- returns interpretation of function symbols.
@@ -332,6 +375,15 @@ digger dict m (CC.Dig d, _) = do
            (CC.Dig d) fg m
 
 -- | asserts weak decrease and returns strict decrease
+rule
+ :: (Ord o, Ord v, Monad m) =>
+     L.Dictionary m (M.Matrix num) val bool
+     -> M.Dictionary m num val1 t
+     -> Int
+     -> M.Map (CC.Sym o) (L.Linear (M.Matrix num))
+     -> L.Linear (M.Matrix num)
+     -> Rule (Term v (CC.Sym o))
+     -> m (t, (Rule (Term v o), [M.Matrix num]))
 rule dict mdict dim funmap res u = do
     let vs = S.union (vars $ lhs u) (vars $ rhs u)
         varmap = M.fromList $ zip (S.toList vs) [0..]
@@ -355,7 +407,7 @@ rule dict mdict dim funmap res u = do
     M.assert mdict [ge]
     gt <- M.strictly_greater mdict (L.abs l) rhs
     
-    return (gt, us)
+    return (gt, ( fmap CC.expand_all u,us))
 
 -- | asserts weak decrease and 
 -- returns strict decrease (for strict rules)

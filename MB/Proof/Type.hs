@@ -24,19 +24,25 @@ data Proof v s = Proof
      , reason :: Reason v s
      }
 
-data Interpretation s e = Interpretation 
+data Interpretation v s e = Interpretation 
         { dimension :: Int
         , domain :: Domain
         , mapping :: M.Map s (L.Linear (M.Matrix e))
-        , constraint :: Maybe (Constraint s e)
+        , constraint :: Maybe (Constraint v s e)
+        , values_for_rules :: Maybe
+             [ (Rule (Term v s)
+               , (L.Linear(M.Matrix e),L.Linear(M.Matrix e))
+               )
+             ]
         }
 
-data Constraint s e =
+data Constraint v s e =
   Constraint { width :: Int
              , restriction :: L.Linear (M.Matrix e) -- ^ unary
              , nonemptiness_certificate :: M.Matrix e -- ^ vector
              , mapping_certificate :: M.Map s [M.Matrix e]
-             , compatibility_certificate :: [[ M.Matrix e ]]
+             , compatibility_certificate ::
+                  [ (Rule (Term v s), [ M.Matrix e ]) ]
              }
         
 
@@ -45,11 +51,11 @@ data Reason v s = No_Strict_Rules
      | DP_Transform (Proof v (Marked s ))
      | Mirror_Transform (Proof v s)
      | Matrix_Interpretation_Natural
-         (Interpretation s Integer)
+         (Interpretation v s Integer)
          (Maybe [ Rule (Term v s) ]) -- maybe mention usable rules
          (Proof v s)
      | Matrix_Interpretation_Arctic  
-         (Interpretation s (A.Arctic Integer))
+         (Interpretation v s (A.Arctic Integer))
         (Maybe [ Rule (Term v s) ]) -- maybe mention usable rules
            (Proof v s)
      | Usable_Rules (Proof v s)

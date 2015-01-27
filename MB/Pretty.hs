@@ -83,3 +83,12 @@ instance Pretty a => Pretty (A.Arctic a) where
         A.Finite x -> pretty x
 
 eprint = hPutStrLn stderr . show
+
+newtype Oneline a = Oneline a
+
+instance Pretty a => Pretty (Oneline a) where
+  pretty (Oneline a) = oneline a
+
+oneline a = text $ unwords $ words $ render $ pretty a
+
+p </> q = vcat [ p , text "    " <+> q ]
