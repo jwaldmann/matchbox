@@ -2,7 +2,7 @@
 
 solver=satchmo
 domain=natural
-bits=3
+bits=4
 con=1
 
 export LD_LIBRARY_PATH=.

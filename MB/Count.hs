@@ -55,6 +55,7 @@ elt = D.Dictionary
       , D.ge = \ _ _ -> return ()
       , D.gt = \ _ _ -> return ()
       , D.assert = \ _ -> return ()
+      , D.atmost = \ _ _ -> return ()
       }
 
 matrix :: M.Dictionary (State Count) () () ()

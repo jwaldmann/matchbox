@@ -28,6 +28,7 @@ import qualified SMT.Matrix as M
 
 import qualified Data.Map as M
 import qualified Data.Set as S
+import qualified Data.List
 import Control.Monad ( forM, void, foldM )
 import Control.Monad.Identity
 import Control.Applicative
@@ -65,7 +66,8 @@ handle ( encoded :: Int -> D.Dictionary m num val bool) direct
     eprint $ show opts
 
     let count = MB.Count.run $ do
-          fmap fst $  system MB.Count.linear MB.Count.matrix opts sys
+          fmap fst $
+            system MB.Count.linear MB.Count.matrix MB.Count.elt opts sys
     hPutStrLn stderr $ show count
 
     out <- solve $ do
@@ -73,7 +75,7 @@ handle ( encoded :: Int -> D.Dictionary m num val bool) direct
             mdict = M.matrix idict
             idict = encoded (bits opts)
         (funmap :: M.Map s (L.Linear (M.Matrix num)), con)
-               <- system ldict mdict opts (sys:: TRS v (CC.Sym s))
+               <- system ldict mdict idict opts (sys:: TRS v (CC.Sym s))
         return $ do
           f <- mapdecode (L.decode ldict) funmap
           c <- cdecode ldict mdict con 
@@ -268,7 +270,7 @@ system :: (Ord s, Ord v, Pretty s, Show s, Functor m, Monad m)
             , Constraint v s  num
             )
 -}
-system dict mdict opts sys = do
+system dict mdict idict opts sys = do
     let dim = O.dim opts
     let (originals, digrams) = CC.deep_signature  sys
     
@@ -281,14 +283,26 @@ system dict mdict opts sys = do
     femp <- L.substitute dict res [emp]
     nn <- L.nonnegative dict femp
     L.assert dict [ nn ]
-           
+
+    -- interpretation
     opairs <- forM originals $ \ ( f,ar) -> do
         l <- if O.triangular opts
-             then  L.triangular dict ar (dim , dim)
+             then L.triangular dict ar (dim , dim)
              else  L.make dict ar (dim , dim)
         s <- L.positive dict l
         L.assert dict [s]
         return (f, l)
+
+    case O.mode opts of
+      O.Complexity (Just d) | d < dim -> do
+        pss <- forM ( opairs ) $ \ (f,l) -> do
+          pss <- forM (L.lin l) $ \ m -> 
+            forM (M.diagonal m) $ D.positive idict
+          forM (Data.List.transpose pss) (D.or idict)
+        ps <- forM (Data.List.transpose pss) (D.or idict)
+        ok <- D.atmost idict d ps
+        D.assert idict [ok]
+      _ -> return ()
 
     -- mapping certificate
     mapcert <- M.fromList <$> forM opairs ( \ (CC.Orig f,l) -> do

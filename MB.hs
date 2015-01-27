@@ -11,6 +11,7 @@
 import MB.Arctic
 import MB.Natural
 import MB.Logic
+import MB.Complexity
 import qualified MB.Options as O
 
 import qualified Compress.Common as CC
@@ -19,7 +20,8 @@ import qualified Compress.PaperIter as CPI
 import qualified Compress.Paper as CP
 
 import TPDB.Data ( strict, rules, TRS, RS(..), separate )
-import TPDB.Pretty 
+import TPDB.Pretty
+import MB.Pretty ((</>))
 import qualified TPDB.Input 
 import TPDB.DP.Transform
 import TPDB.DP.Usable
@@ -57,8 +59,11 @@ main = do
           case O.mode config of
             O.Termination -> do
               putStrLn "YES"
-            O.Complexity -> do
-              putStrLn $ "YES(?,O(n^" ++ show (P.getDim proof) ++ "))"
+            O.Complexity {} -> do
+              let Just (g, doc) = degree proof
+              putStrLn $ "YES(?,O(n^" ++ show g ++ "))"
+              hPutDoc stdout $ "justification of degree:" </> doc 
+              hPutStrLn stdout ""
           if O.cpf config
               then do
                 displayIO stdout $ renderCompact $ document 

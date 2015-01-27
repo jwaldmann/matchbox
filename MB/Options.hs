@@ -18,7 +18,8 @@ data Encoding = Binary | Unary
               | Interval_Twos | Interval_Threes
    deriving (Eq, Ord, Show)     
 
-data Mode = Termination | Complexity
+data Mode = Termination
+          | Complexity (Maybe Int) -- ^ upper bound for deg. of pol.
      deriving (Eq, Ord, Show)
    
 data Options =
@@ -71,13 +72,14 @@ options0 = Options
 
 options = 
     [ Option [ ] [ "complexity" ]
-      (NoArg ( \ opts -> opts { mode = Complexity
-                              , triangular = True
-                              , remove_all = True
-                              , use_natural = True
-                              , dp = False
-                              } ))
-      "prove polynomial complexity"
+      (OptArg ( \ ms opts -> opts
+         { mode = Complexity $ fmap read ms
+         , triangular = True
+         , remove_all = True
+         , use_natural = True
+         , dp = False
+         } ) "Int" )
+      "prove polynomial complexity (with degree bound)"
 
 
     , Option [ 'd' ] [ "dimension" ]

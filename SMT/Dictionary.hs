@@ -31,4 +31,5 @@ data Dictionary m num val bool = Dictionary
     , not :: bool -> m bool
     , beq :: bool -> bool -> m bool
     , assert :: [ bool ] -> m ()
+    , atmost :: Int -> [bool] -> m bool  
     }

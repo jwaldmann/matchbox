@@ -224,3 +224,6 @@ transpose m = case m of
   Unit { dim=(a,b) } -> Unit { dim = (b,a) }
   Matrix { dim=(a,b), contents = cs } ->
     Matrix { dim =(b,a), contents = Data.List.transpose cs }
+
+diagonal (  Matrix {dim=(a,b), contents = cs} ) | a == b =
+  map (\ i ->  cs !! i !! i ) [ 0 .. a-1]

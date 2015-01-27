@@ -12,6 +12,7 @@ import SMT.Dictionary
 import qualified Satchmo.SAT.Mini
 import qualified Satchmo.Code
 import qualified Satchmo.Boolean as B
+import qualified Satchmo.Counting as C
 
 import qualified SMT.Satchmo.Natural as N
 
@@ -56,6 +57,7 @@ dict bits = let n = N.dict bits in Dictionary
     , neq = \ (Difference ax ay) (Difference bx by) ->
          app2 (neq n) (add n ax by) ( add n ay bx)
     , and = B.and, or = B.or, not = return . B.not, beq = B.equals2, assert = B.assert
+    , atmost = \ k bs -> C.atmost k bs
     }
 
 app1 f a = do x <- a ; f a

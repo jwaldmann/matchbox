@@ -39,7 +39,7 @@ instance (Pretty v, Pretty s, Pretty e ) =>
             Nothing -> empty
             Just vs -> "interpretations for rules:"
                </> vcat ( map ( \ (u,(l,r)) ->
-                   pretty u </> beside " | " (pretty l) (pretty r)  ) vs )
+                   pretty u </> vcat [pretty l, pretty r]  ) vs )
           ]
 
 instance (Pretty v, Pretty s, Pretty e)
