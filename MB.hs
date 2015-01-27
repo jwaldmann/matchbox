@@ -58,7 +58,7 @@ main = do
             O.Termination -> do
               putStrLn "YES"
             O.Complexity -> do
-              putStrLn $ "YES(?O(n^" ++ show (P.getDim proof) ++ "))"
+              putStrLn $ "YES(?,O(n^" ++ show (P.getDim proof) ++ "))"
           if O.cpf config
               then do
                 displayIO stdout $ renderCompact $ document 
