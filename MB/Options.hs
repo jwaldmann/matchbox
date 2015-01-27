@@ -18,6 +18,9 @@ data Encoding = Binary | Unary
               | Interval_Twos | Interval_Threes
    deriving (Eq, Ord, Show)     
 
+data Mode = Termination | Complexity
+     deriving (Eq, Ord, Show)
+   
 data Options =
      Options { dim :: Int
              , bits :: Int
@@ -25,6 +28,7 @@ data Options =
              , encoding :: Encoding  
              , compression :: Compression
              , constraints :: Int
+             , mode :: Mode
              , remove_all :: Bool
              , triangular :: Bool
              , dp :: Bool
@@ -43,7 +47,8 @@ data Options =
     deriving Show
 
 options0 = Options 
-         { dim = 5, bits = 3
+         { mode = Termination
+         , dim = 5, bits = 3
          , solver = Satchmo_Guarded
          , encoding = Binary
          , compression = None
@@ -65,7 +70,17 @@ options0 = Options
          }
 
 options = 
-    [ Option [ 'd' ] [ "dimension" ]
+    [ Option [ ] [ "complexity" ]
+      (NoArg ( \ opts -> opts { mode = Complexity
+                              , triangular = True
+                              , remove_all = True
+                              , use_natural = True
+                              , dp = False
+                              } ))
+      "prove polynomial complexity"
+
+
+    , Option [ 'd' ] [ "dimension" ]
        ( ReqArg ( \ s opts -> opts { dim = read s }) "Int" ) "vector dimension"
     , Option [ 'b' ] [ "bits" ]
        ( ReqArg ( \ s opts -> opts { bits = read s }) "Int" ) "bit width"

@@ -58,4 +58,8 @@ data Reason v s = No_Strict_Rules
 
      | Cpf2Cpf Doc (T.DpProof -> T.DpProof) (Proof v s)
 
-
+-- * hack: get dimension (from termination proof, for complexity)
+getDim p =
+  let Matrix_Interpretation_Natural i _ _ = reason p
+  in dimension i
+     

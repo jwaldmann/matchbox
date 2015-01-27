@@ -1,4 +1,4 @@
--- improved main propram, should act as driver for a modular prover, 
+-- | improved main propram, should act as driver for a modular prover, 
 -- see https://github.com/apunktbau/co4/issues/82
 
 {-# language OverloadedStrings #-}
@@ -53,9 +53,13 @@ main = do
       True -> handle_both config trs      
     case out of
         Nothing    -> do putStrLn "MAYBE"
-        Just proof -> do  
-            putStrLn "YES" 
-            if O.cpf config
+        Just proof -> do
+          case O.mode config of
+            O.Termination -> do
+              putStrLn "YES"
+            O.Complexity -> do
+              putStrLn $ "YES(?O(n^" ++ show (P.getDim proof) ++ "))"
+          if O.cpf config
               then do
                 displayIO stdout $ renderCompact $ document 
                               $ P.tox $ P.rtoc proof
