@@ -10,8 +10,11 @@ import Compress.Paper.Selection (select)
 import Compress.Paper.Digram (nonOverlappingOccurences)
 import Data.Hashable
 
+import Control.Monad
+import Control.Applicative       
+       
 newtype TreeRePair var sym a = TreeRePair { run :: State (Trees var sym) a }
-  deriving (Monad, Functor, MonadState (Trees var sym))
+  deriving (Monad, Applicative, Functor, MonadState (Trees var sym))
 
 -- |Runs tree re-pair algorithm 
 treeRePair :: (Ord var, Ord sym, Hashable sym) 

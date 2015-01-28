@@ -1,4 +1,5 @@
 {-# language NoMonomorphismRestriction #-}
+{-# language FlexibleContexts #-}
 
 module Compress.Common
 where

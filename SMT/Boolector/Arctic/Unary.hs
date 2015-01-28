@@ -1,3 +1,5 @@
+{-# language FlexibleContexts #-}
+
 module SMT.Boolector.Arctic.Unary where
 
 import qualified SMT.Dictionary as D

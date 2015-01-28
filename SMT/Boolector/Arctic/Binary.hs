@@ -1,3 +1,5 @@
+{-# language FlexibleContexts #-}
+
 module SMT.Boolector.Arctic.Binary where
 
 import qualified SMT.Dictionary as D

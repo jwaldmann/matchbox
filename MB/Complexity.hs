@@ -1,4 +1,5 @@
 {-# language OverloadedStrings #-}
+{-# language FlexibleContexts #-}    
 
 module MB.Complexity where
 
