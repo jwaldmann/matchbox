@@ -48,7 +48,7 @@ original_matrix_natural_dp opts =
     $ case O.solver opts of
         O.Boolector -> MB.Matrix.handle_dp B.dict SPI.direct opts
         O.Satchmo   -> case O.encoding opts of
-          O.Binary -> MB.Matrix.handle_dp SN.dict SPI.direct opts
+          O.Binary -> MB.Matrix.handle_dp SI.dict SPI.direct opts
           O.Interval_Plain ->
               MB.Matrix.handle_dp SNI.dict_plain SPI.direct opts
           O.Interval_Fibs ->

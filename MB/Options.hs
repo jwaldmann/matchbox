@@ -50,7 +50,7 @@ data Options =
 options0 = Options 
          { mode = Termination
          , dim = 5, bits = 3
-         , solver = Satchmo_Guarded
+         , solver = Satchmo
          , encoding = Binary
          , compression = None
          , constraints = 0

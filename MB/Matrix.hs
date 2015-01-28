@@ -143,22 +143,26 @@ handle_dp encoded direct opts sys = do
     eprint $ show opts
 
     let count = MB.Count.run $ do
-            system_dp MB.Count.linear opts sys
+            system_dp MB.Count.linear MB.Count.matrix MB.Count.elt opts sys
     hPutStrLn stderr $ show count
 
     out <- solve $ do
         let ldict = L.linear mdict
             mdict = M.matrix idict
             idict = encoded (bits opts) 
-        funmap <- system_dp ldict opts sys
-        return $ mapdecode (L.decode ldict) $ originals_only funmap
+        (funmap, con) <- system_dp ldict mdict idict opts sys
+        return $ do
+          f <- mapdecode (L.decode ldict) funmap
+          c <- cdecode ldict mdict con 
+          return (f , c  )
 
     case out of
-        Just f -> do
+        Just (f, con) -> do
             eprint $ pretty f
-            let con = undefined
             let mdict = M.matrix direct 
                 ldict = L.linear mdict
+                Right vs = evaluate_rules False
+                   (ldict, mdict) (dim opts) (f, con) sys 
                 rc = remaining_compressed True (ldict,mdict) (dim opts) (f,con) sys
             eprint $ pretty rc
             case rc of
@@ -167,7 +171,8 @@ handle_dp encoded direct opts sys = do
                             { dimension = dim opts
                             , domain = D.domain direct
                             , mapping = f
-                            , constraint = Nothing
+                            , constraint = Just con
+                            , values_for_rules = Just vs
                             }
                           , sys' )
                 Left err -> error $ render $ vcat
@@ -192,11 +197,12 @@ remaining_compressed
      -> TRS v (CC.Sym k1)
      -> Either String (TRS v (CC.Sym k1))
 remaining_compressed top dicts dim (funmap,con) sys = do
-    decrease <- forM ( compatibility_certificate con ) $ \ (u,c) -> do
-        True <- traced_rule top dicts dim
+    gtus <- forM ( compatibility_certificate con ) $ \ (u,c) -> do
+        gt <- traced_rule top dicts dim
              ( funmap , restriction con) ( u, c)
-        return u
-    let keep u = fmap CC.expand_all u `notElem` decrease
+        return (gt,u)
+    let decrease = map snd $ filter fst gtus
+        keep u = fmap CC.expand_all u `notElem` decrease
     return $ sys { rules = filter keep $ rules sys }
 
 evaluate_rules top dicts dim (funmap,con) sys = 
@@ -230,7 +236,8 @@ traced_rule top (ldict,mdict) dim (funmap,res) (u,us) = do
     let -- res = restriction con
         [c] = L.lin res ; numc = L.to res
     let b = L.abs res
-    sus <- foldM (M.add mdict) (M.Zero (dim,numc)) us
+    let todim = L.to l
+    sus <- foldM (M.add mdict) (M.Zero (todim,numc)) us
     susb <- M.times mdict sus b
     rhs <- M.add mdict (L.abs r) susb
     ge <- M.weakly_greater mdict (L.abs l) rhs
@@ -260,16 +267,15 @@ originals_only funmap = M.fromList $ do
 
 -- | assert that at least one rule can be removed.
 -- returns interpretation of function symbols.
-{-
 system :: (Ord s, Ord v, Pretty s, Show s, Functor m, Monad m)
        => L.Dictionary m (M.Matrix num) (M.Matrix val) bool
        -> M.Dictionary m num val bool
+       -> D.Dictionary m num val bool
        -> O.Options
-       -> RS s (Term v (CC.Sym s))
+       -> RS r (Term v (CC.Sym s))
        -> m ( M.Map s (L.Linear (M.Matrix num))
             , Constraint v s  num
             )
--}
 system dict mdict idict opts sys = do
     let dim = O.dim opts
     let (originals, digrams) = CC.deep_signature  sys
@@ -346,9 +352,29 @@ system dict mdict idict opts sys = do
 
 -- | assert that at least one rule can be removed.
 -- returns interpretation of function symbols.
-system_dp dict opts sys = do
+system_dp :: (Ord s, Ord v, Pretty s, Show s, Functor m, Monad m)
+       => L.Dictionary m (M.Matrix num) (M.Matrix val) bool
+       -> M.Dictionary m num val bool
+       -> D.Dictionary m num val bool
+       -> O.Options
+       -> RS r (Term v (CC.Sym (TPDB.DP.Marked s)))
+       -> m ( M.Map (TPDB.DP.Marked s) (L.Linear (M.Matrix num))
+            , Constraint v (TPDB.DP.Marked s)  num
+            )
+system_dp dict mdict idict opts sys = do
     let dim = O.dim opts      
     let (originals, digrams) = CC.deep_signature  sys
+
+    -- restriction (written as linear function, res(x) >= 0)
+    let numc = O.constraints opts
+    res <- L.any_make dict 1 (numc,dim)
+
+    -- non-emptiness certificate
+    emp <- L.make dict 0 (dim,dim)
+    femp <- L.substitute dict res [emp]
+    nn <- L.nonnegative dict femp
+    L.assert dict [ nn ]
+    
     opairs <- forM originals $ \ (f,ar) -> do
         let topdim = case f of
                 CC.Orig (TPDB.DP.Marked   {}) -> 1
@@ -359,11 +385,48 @@ system_dp dict opts sys = do
             s <- L.positive dict l -- wrong name
             L.assert dict [s]
         return (f, l)
+
+    let unmarked opairs =
+          filter ( \ (f,l) -> case f of
+                      CC.Orig (TPDB.DP.Original {}) -> True
+                      CC.Orig (TPDB.DP.Marked   {}) -> False
+                 ) opairs    
+
+    -- mapping certificate (REFACTOR THIS)
+    mapcert <- M.fromList <$> forM (unmarked opairs) ( \ (CC.Orig f,l) -> do
+      let [c] = L.lin res
+      ws <- forM (L.lin l) $ \ m -> do
+        w <- M.make mdict (numc,numc)
+        cm <- M.times mdict c m
+        wc <- M.times mdict w c
+        ge <- M.weakly_greater mdict cm wc
+        M.assert mdict [ ge ]
+        return w
+      let b = L.abs res
+      ca <- M.times mdict c $ L.abs l
+      lhs <- M.add mdict ca b
+      wsb <- forM ws $ \ w -> M.times mdict w b
+      rhs <- foldM (M.add mdict) (M.Zero (numc,1)) wsb
+      ge <- M.weakly_greater mdict lhs rhs
+      M.assert mdict [ ge ]
+      return (f, ws)
+      )
+
+        
     funmap <- foldM (digger dict) ( M.fromList opairs ) digrams
-    flags <- forM (rules sys) 
-             $ rule_dp dict dim funmap
-    L.assert dict flags 
-    return funmap
+    flagcerts <- forM (rules sys) $ rule_dp dict mdict dim funmap res
+    M.assert mdict $ map fst flagcerts
+
+    let con = Constraint
+           { width = numc
+           , restriction = res
+           , nonemptiness_certificate = L.abs emp
+           , mapping_certificate =  mapcert
+           , compatibility_certificate =  map snd flagcerts
+           }
+
+    return ( originals_only funmap
+           , con )
 
 
 digger dict m (CC.Dig d, _) = do
@@ -425,16 +488,34 @@ rule dict mdict dim funmap res u = do
 
 -- | asserts weak decrease and 
 -- returns strict decrease (for strict rules)
-rule_dp dict dim funmap u = do
+rule_dp dict mdict dim funmap res u = do
     let vs = S.union (vars $ lhs u) (vars $ rhs u)
         varmap = M.fromList $ zip (S.toList vs) [0..]
     l <- term dict dim funmap varmap $ lhs u
     r <- term dict dim funmap varmap $ rhs u
-    w <- L.weakly_greater dict l r
-    L.assert dict [w] 
-    case relation u of
-        Strict -> L.strictly_greater dict l r
+
+    let [c] = L.lin res ; numc = L.to res
+    us <- forM (zip (L.lin l) (L.lin r)) $ \ (lm,rm) -> do
+      let todim = L.to l
+      u <- M.make mdict (todim, numc)
+      uc <- M.times mdict u c
+      rhs <- M.add mdict rm uc
+      ge <- M.weakly_greater mdict lm rhs
+      M.assert mdict [ge]
+      return u
+
+    let b = L.abs res
+        todim = L.to l
+    sus <- foldM (M.add mdict) (M.Zero (todim,numc)) us
+    susb <- M.times mdict sus b
+    rhs <- M.add mdict (L.abs r) susb
+    ge <- M.weakly_greater mdict (L.abs l) rhs
+    M.assert mdict [ge]
+    
+    gt <- case relation u of
+        Strict -> M.strictly_greater mdict (L.abs l) rhs
         Weak   -> L.bconstant dict False
+    return ( gt, (fmap CC.expand_all u, us) )
 
 term dict dim funmap varmap t = case t of
     Var v -> return 
