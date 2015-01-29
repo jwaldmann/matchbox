@@ -15,7 +15,11 @@ dict bits = D.Dictionary
          z <- B.zero bits
          B.assert =<< B.sgte n z
          return $ N n
-    , D.any_number = N <$> B.var bits                 
+    , D.any_number = N <$> B.var bits
+    , D.smallnumber = do
+         prefix <- B.zero $ bits - 1
+         bit <- B.var 1
+         N <$> B.concat prefix bit
     , D.nbits = bits
     , D.nconstant = \ n -> N <$> B.int (fromIntegral n) bits
     , D.decode = \ a -> B.signedVal $ contents a
