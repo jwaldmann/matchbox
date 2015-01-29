@@ -310,7 +310,7 @@ system dict mdict idict opts sys = do
         D.assert idict [ok]
       _ -> return ()
 
-    -- mapping certificate
+    -- domain certificate
     mapcert <- M.fromList <$> forM opairs ( \ (CC.Orig f,l) -> do
       let [c] = L.lin res
       ws <- forM (L.lin l) $ \ m -> do
@@ -323,8 +323,8 @@ system dict mdict idict opts sys = do
       let b = L.abs res
       ca <- M.times mdict c $ L.abs l
       lhs <- M.add mdict ca b
-      wsb <- forM ws $ \ w -> M.times mdict w b
-      rhs <- foldM (M.add mdict) (M.Zero (numc,1)) wsb
+      sws <- foldM (M.add mdict) (M.Zero (numc,numc)) ws
+      rhs <- M.times mdict sws b      
       ge <- M.weakly_greater mdict lhs rhs
       M.assert mdict [ ge ]
       return (f, ws)
@@ -403,7 +403,7 @@ system_dp dict mdict idict opts sys = do
                       CC.Orig (TPDB.DP.Marked   {}) -> False
                  ) opairs    
 
-    -- mapping certificate (REFACTOR THIS)
+    -- domain certificate (REFACTOR THIS)
     mapcert <- M.fromList <$> forM (unmarked opairs) ( \ (CC.Orig f,l) -> do
       let [c] = L.lin res
       ws <- forM (L.lin l) $ \ m -> do
@@ -416,8 +416,8 @@ system_dp dict mdict idict opts sys = do
       let b = L.abs res
       ca <- M.times mdict c $ L.abs l
       lhs <- M.add mdict ca b
-      wsb <- forM ws $ \ w -> M.times mdict w b
-      rhs <- foldM (M.add mdict) (M.Zero (numc,1)) wsb
+      sws <- foldM (M.add mdict) (M.Zero (numc,numc)) ws
+      rhs <- M.times mdict sws b      
       ge <- M.weakly_greater mdict lhs rhs
       M.assert mdict [ ge ]
       return (f, ws)
