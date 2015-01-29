@@ -49,10 +49,15 @@ instance (Pretty v, Pretty s, Pretty e)
       , "domain restriction" </> pretty (restriction c) <+> ">= 0"
       , "nonemptiness certificate"
         </> pretty (M.transpose $ nonemptiness_certificate c ) 
-      , "mapping certificate:" </>
-            vcat (map pretty $ M.toList $ mapping_certificate c)
-      , "compatibility certificate:" </>
-            vcat (map (\(u,c) -> pretty u </> pretty c)( compatibility_certificate c))
+      , "mapping certificate (nonzero components only):" </>
+            vcat (map pretty $ M.toList $ nonzero_mapping_certificate c)
+      , "rules with nonzero compatibility certificate:" </>
+            vcat (map ( \ (u,cert,(lhs,rhs)) -> pretty u </> vcat
+                       [ "certificate" </> pretty cert
+                       , "lhs value" </> pretty lhs
+                       , "rhs value" </> pretty rhs
+                       ]
+                   ) $ rules_with_nonzero_compatibility_certificate c )
       ]
 
 instance (Pretty v, Pretty s) => Pretty (Reason v s) where

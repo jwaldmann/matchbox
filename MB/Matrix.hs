@@ -29,6 +29,7 @@ import qualified SMT.Matrix as M
 import qualified Data.Map as M
 import qualified Data.Set as S
 import qualified Data.List
+import Data.Maybe (catMaybes )
 import Control.Monad ( forM, void, foldM )
 import Control.Monad.Identity
 import Control.Applicative
@@ -82,14 +83,14 @@ handle ( encoded :: Int -> D.Dictionary m num val bool) direct
           return (f :: M.Map s (L.Linear (M.Matrix val)) , c  )
 
     case out of
-        Just (f,con :: Constraint v s val ) -> do
-            eprint $ pretty f
-            let mcon = do
-                  guard $ O.constraints opts > 0
-                  return con
+        Just (f, con0 :: Constraint v s val ) -> do
             let ldict = L.linear mdict
                 mdict = M.matrix direct
-                Right vs = evaluate_rules False
+                dicts = (ldict,mdict)
+            let Right con = add_nonzero_information dicts (dim opts)  f con0
+          
+            eprint $ pretty f
+            let Right vs = evaluate_rules False
                    (ldict, mdict) (dim opts) (f, con) sys 
             case remaining_compressed False
                    (ldict, mdict) (dim opts) (f, con) sys of
@@ -98,8 +99,8 @@ handle ( encoded :: Int -> D.Dictionary m num val bool) direct
                             { dimension = dim opts
                             , domain = D.domain direct
                             , mapping = f
-                            , constraint = mcon
-                            , values_for_rules = Just vs
+                            , constraint = if width con > 0 then Just con else Nothing
+                            , values_for_rules = Nothing 
                             }
                           , sys' )
                 Left err -> error $ render $ vcat
@@ -123,8 +124,62 @@ cdecode l m con = Constraint
     <*> L.decode l (restriction con)
     <*> M.decode m (nonemptiness_certificate con)
     <*> mapdecode (mapM (M.decode m)) ( mapping_certificate con )
+    <*> return ( error "nonzero_mapping_certificate" )
     <*> forM  ( compatibility_certificate con )
       ( \ (u,ws) -> ( u ,) <$> mapM (M.decode m) ws )
+    <*> return ( error "rules_with_nonzero_compatibility_certificate" )
+
+
+-- | actually, check validity of certificates and add nonzero information
+add_nonzero_information :: (Ord s, Pretty s, Pretty num, Monad m, Ord v)
+     => ( L.Dictionary m (M.Matrix num) (M.Matrix val) Bool
+        , M.Dictionary m num val Bool
+        )
+     -> Int
+     -> M.Map s (L.Linear (M.Matrix num))
+     -> Constraint v s num
+     -> m (Constraint v s num)
+add_nonzero_information dicts@(ldict,mdict) dim int con = do
+  nzmz <- forM (M.toList $ mapping_certificate con) $ \ (f, ws) -> do
+        let w0s = map ( \ w -> M.Zero (M.dim w) ) ws
+        ok0 <- check_mapping_certificate mdict int con (f, w0s)
+        if ok0 then return Nothing
+          else do
+            ok <- check_mapping_certificate mdict int con (f, ws)
+            if ok then return $ Just (f,ws)
+              else error $ render $ "invalid part of mapping certificate" </> pretty (f,ws)
+  nzcc <- forM ( compatibility_certificate con ) $ \ (u,c) -> do
+        (_, (l,r)) <- evaluate_rule top dicts dim (int , restriction con) ( u, c)
+        ge <- L.weakly_greater ldict l r
+        if ge then return Nothing
+          else return $ Just (u, c, (l,r))
+                   
+  return $ con
+    { nonzero_mapping_certificate = M.fromList $ catMaybes nzmz
+    , rules_with_nonzero_compatibility_certificate = catMaybes nzcc
+    }
+    
+check_mapping_certificate
+  :: (Ord k, Monad m)
+     => M.Dictionary m num val b
+     -> M.Map k (L.Linear (M.Matrix num))
+     -> Constraint v s num
+     -> (k, [M.Matrix num])
+     -> m b
+check_mapping_certificate mdict int con (sym, ws) = do
+    let [c] = L.lin $ restriction con 
+        fun = int M.! sym
+    fs <- forM ( zip (L.lin fun) ws ) $ \ (m,w) -> do
+      lhs <- M.times mdict c m
+      rhs <- M.times mdict w c
+      M.weakly_greater mdict lhs rhs
+    let b = L.abs $ restriction con
+    ca <- M.times mdict c $ L.abs fun
+    lhs <- M.add mdict ca b
+    sw <- foldM (M.add mdict) (M.Zero (M.to c, M.to c)) ws
+    rhs <- M.times mdict sw b
+    f <- M.weakly_greater mdict lhs rhs
+    M.and mdict $ f : fs
 
 
 handle_dp :: (Show s, Hashable s, Ord v, Show v, Pretty v, Pretty s, Ord s
@@ -157,11 +212,15 @@ handle_dp encoded direct opts sys = do
           return (f , c  )
 
     case out of
-        Just (f, con) -> do
+        Just (f, con0  ) -> do
+            let ldict = L.linear mdict
+                mdict = M.matrix direct
+                dicts = (ldict, mdict)
+            let Right con = add_nonzero_information dicts (dim opts) f con0
+
             eprint $ pretty f
-            let mdict = M.matrix direct 
-                ldict = L.linear mdict
-                Right vs = evaluate_rules False
+
+            let Right vs = evaluate_rules False
                    (ldict, mdict) (dim opts) (f, con) sys 
                 rc = remaining_compressed True (ldict,mdict) (dim opts) (f,con) sys
             eprint $ pretty rc
@@ -171,8 +230,8 @@ handle_dp encoded direct opts sys = do
                             { dimension = dim opts
                             , domain = D.domain direct
                             , mapping = f
-                            , constraint = Just con
-                            , values_for_rules = Just vs
+                            , constraint = if width con > 0 then Just con else Nothing
+                            , values_for_rules = Nothing
                             }
                           , sys' )
                 Left err -> error $ render $ vcat
