@@ -101,11 +101,15 @@ handle_dp config sys = do
                   , P.reason = P.DP_Transform proof 
                   }
 
+fuse opts = case O.usable_rules opts of
+  True -> for_usable_rules
+  False -> id
+
 handle_scc config  = orelse nomarkedrules 
             $ decomp (handle_scc config)
 
             -- $ andthen0 ( parallel_or [ for_usable_rules matrices , semanticlabs ])
-            $ andthen0 (for_usable_rules $ matrices_dp config) 
+            $ andthen0 (fuse config $ matrices_dp config) 
             $  apply (handle_scc config)
 
 --            $ orelse_andthen (for_usable_rules matrices) (apply handle_scc) 

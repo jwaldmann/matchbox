@@ -369,6 +369,17 @@ system_dp dict mdict idict opts sys = do
     let numc = O.constraints opts
     res <- L.any_make dict 1 (numc,dim)
 
+    -- https://github.com/jwaldmann/matchbox/issues/9
+    -- proposed fix: each line of B contains at most one
+    -- non-negative enty
+    when (O.usable_rules opts) $ do
+      let [ b ] = L.lin res
+      void $ forM (M.contents b) $ \ line -> do
+        negs <- forM line $ \ x ->
+          D.nonnegative idict x >>= D.not idict
+        ok <- D.atmost idict 1 negs
+        D.assert idict [ok]
+
     -- non-emptiness certificate
     emp <- L.make dict 0 (dim,dim)
     femp <- L.substitute dict res [emp]
