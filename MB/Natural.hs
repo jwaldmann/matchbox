@@ -17,6 +17,7 @@ import qualified Compress.Common as CC
 import qualified SMT.Boolector.Natural.Binary as B  
 import qualified SMT.Satchmo.Natural as SN
 import qualified SMT.Satchmo.Integer as SI
+import qualified SMT.Boolector.Integer as BI
 import qualified SMT.Satchmo.Natural.Interval as SNI
 import qualified SMT.Satchmo.Natural.Guarded as SNG
 
@@ -41,12 +42,15 @@ matrix_natural_dp opts dim bits = original_matrix_natural_dp
 
 original_matrix_natural_direct opts =
     remover_natural P.Termination ("matrix_natural_direct" :: Doc) CC.expand_all_trs
-  $ MB.Matrix.handle SI.dict SPI.direct opts
+  $ case O.solver opts of
+         O.Satchmo -> MB.Matrix.handle SI.dict SPI.direct opts
+         O.Boolector -> MB.Matrix.handle BI.dict SPI.direct opts
 
 original_matrix_natural_dp opts = 
       remover_natural P.Top_Termination ( "matrix_natural_dp" :: Doc ) CC.expand_all_trs
     $ case O.solver opts of
-        O.Boolector -> MB.Matrix.handle_dp B.dict SPI.direct opts
+        O.Boolector ->
+          MB.Matrix.handle_dp BI.dict SPI.direct opts
         O.Satchmo   -> case O.encoding opts of
           O.Binary -> MB.Matrix.handle_dp SI.dict SPI.direct opts
           O.Interval_Plain ->
