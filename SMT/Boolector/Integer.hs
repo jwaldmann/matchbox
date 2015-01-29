@@ -52,8 +52,42 @@ dict bits = D.Dictionary
     , D.not = B.not
     , D.beq = B.iff
     , D.assert = \ bs -> B.assert =<< B.or bs
+    , D.atmost = atmost
     }
 
 data N = N { contents :: B.Node }
 
+-- implementation copied from Satchmo.
+-- Can Boolector to this better in some built-in way?
 
+
+atleast k xs = B.not <$> atmost (k-1) xs
+        
+atmost_block k [] = do
+    t <- B.true
+    return $ replicate (k+1) t
+atmost_block k (x:xs) = do
+    cs <- atmost_block k xs
+    f <- B.false
+    sequence $ do
+        (p,q) <- zip cs ( f : cs )
+        return $ B.cond x q p
+
+atmost k xs = do
+    cs <- atmost_block k xs
+    return $ cs !! k
+        
+exactly_block k [] = do
+    t <- B.true
+    f <- B.false
+    return $ t : replicate k f
+exactly_block k (x:xs) = do
+    f <- B.false
+    cs <- exactly_block k xs
+    sequence $ do
+        (p,q) <- zip cs ( f : cs )
+        return $ B.cond x q p 
+
+exactly k xs = do
+    cs <- exactly_block k xs
+    return $ cs !! k
