@@ -154,22 +154,29 @@ decomp succ fail sys =
 matrices_direct config =  capture $ foldr1 orelse
     -- $ map (\(d,b) -> capture $ parallel_or [ matrix_nat d b, matrix_arc d b ] ) 
     -- $ map (\(d,b) -> matrix_nat config d b )
-    $ map (\(d,b) -> 
-         if O.use_natural config then matrix_nat_direct config d b 
+    $ map (\(d,c,b) -> 
+         if O.use_natural config
+         then matrix_nat_direct (config { O.constraints=c }) d b 
          else error "use --nat option"
         ) 
-    $ do d <- [1 .. ] ; return ( d, O.bits config )
-
+    $ parameters config
+    
+parameters config = do
+  dc <- [1 .. ]
+  c <- [ 0 .. O.constraints config ]
+  let d = dc - c
+  guard $ d > 0
+  return ( d, c, O.bits config )
 
 matrices_dp config =  capture $ foldr1 orelse
     -- $ map (\(d,b) -> capture $ parallel_or [ matrix_nat d b, matrix_arc d b ] ) 
     -- $ map (\(d,b) -> matrix_nat config d b )
-    $ map (\(d,b) -> 
+    $ map (\(d,c,b) -> 
          if O.use_natural config then matrix_nat_dp config d b 
          else if O.use_arctic config then matrix_arc_dp config d b 
          else error "use -n or -a options"
         ) 
-    $ do d <- [1 .. ] ; return ( d, O.bits config )
+    $ parameters config
 
 for_usable_rules method = \ sys -> do
     let restricted = TPDB.DP.Usable.restrict sys
