@@ -1,9 +1,9 @@
 #!/bin/bash
 
-solver=satchmo
+solver=boolector
 domain=natural
 bits=4
-con=1
+con=2
 
 export LD_LIBRARY_PATH=.
 
