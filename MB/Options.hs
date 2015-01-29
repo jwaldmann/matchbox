@@ -32,7 +32,8 @@ data Options =
              , mode :: Mode
              , remove_all :: Bool
              , triangular :: Bool
-             , dp :: Bool
+             , dependency_pairs :: Bool
+             , usable_rules :: Bool  
              , fromtop :: Bool
              , naive :: Bool
              , mirror :: Bool
@@ -56,7 +57,8 @@ options0 = Options
          , constraints = 0
          , remove_all = False
          , triangular = False
-         , dp = False 
+         , dependency_pairs = False
+         , usable_rules = False
          , fromtop = False
          , naive = False
          , mirror = False
@@ -77,7 +79,7 @@ options =
          , triangular = True
          , remove_all = True
          , use_natural = True
-         , dp = False
+         , dependency_pairs = False
          } ) "Int" )
       "prove polynomial complexity (with degree bound)"
 
@@ -159,14 +161,17 @@ options =
     , Option [ 'C' ] [ "compression-paper (iterative)" ]
        ( NoArg ( \ opts -> opts { compression = PaperIter }) ) "compress (algorithm as in paper, iterative version)"
 
-    , Option [ 'p' ] [ "dp" ]
-       ( NoArg ( \ opts -> opts { dp = True })) "dependency pairs transformation"   
+    , Option [ 'p' ] [ "dp", "dependency-pairs" ]
+       ( NoArg ( \ opts -> opts { dependency_pairs = True })) "dependency pairs transformation"   
+
+    , Option [ 'u' ] [ "ur", "usable-rules" ]
+       ( NoArg ( \ opts -> opts { usable_rules = True })) "restrict to usable rules"   
 
     , Option [ 'P' ] [ "dp-fromtop" ]
-       ( NoArg ( \ opts -> opts { dp = True, fromtop = True })) "dependency pairs transformation and then compression from the top"   
+       ( NoArg ( \ opts -> opts { dependency_pairs = True, fromtop = True })) "dependency pairs transformation and then compression from the top"   
 
     , Option [ 'n' ] [ "dp-naive" ]
-       ( NoArg ( \ opts -> opts { dp = True, naive = True })) "apply compression after dependency pairs transformation"   
+       ( NoArg ( \ opts -> opts { dependency_pairs = True, naive = True })) "apply compression after dependency pairs transformation"   
 
     , Option [     ] [ "parallel" ]
        ( NoArg ( \ opts -> opts { parallel = True })) "start threads for different dimensions in parallel"

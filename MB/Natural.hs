@@ -33,11 +33,11 @@ import Control.Monad (when)
 
 
 matrix_natural_direct opts dim bits = original_matrix_natural_direct
-      ( opts{  O.dim = dim, O.bits = bits, O.compression = O.Simple, O.dp = False })
+      ( opts{  O.dim = dim, O.bits = bits, O.compression = O.Simple, O.dependency_pairs = False })
 
 
 matrix_natural_dp opts dim bits = original_matrix_natural_dp 
-      ( opts{  O.dim = dim, O.bits = bits, O.compression = O.Simple, O.dp = True })
+      ( opts{  O.dim = dim, O.bits = bits, O.compression = O.Simple, O.dependency_pairs = True })
 
 original_matrix_natural_direct opts =
     remover_natural P.Termination ("matrix_natural_direct" :: Doc) CC.expand_all_trs

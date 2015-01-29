@@ -50,7 +50,7 @@ main = do
     (config,filePath) <- O.parse -- parseConfig
     
     trs <- TPDB.Input.get_trs filePath
-    out <- run $ case O.dp config of
+    out <- run $ case O.dependency_pairs config of
       False -> handle_direct config trs
       True -> handle_both config trs      
     case out of

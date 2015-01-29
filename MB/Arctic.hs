@@ -34,7 +34,7 @@ import Control.Monad (when)
 
 -- matrix_arctic_dp :: Int -> Int -> TRS v c -> Work (TRS v x) Doc
 matrix_arctic_dp opts dim bits = original_matrix_arctic_dp
-      ( opts { O.dim = dim, O.bits = bits, O.compression = O.Simple, O.dp = True })
+      ( opts { O.dim = dim, O.bits = bits, O.compression = O.Simple, O.dependency_pairs = True })
 
 original_matrix_arctic_dp opts = 
       remover_arctic ( "matrix_arctic_dp" :: Doc ) CC.expand_all_trs
