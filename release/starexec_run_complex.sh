@@ -3,7 +3,7 @@
 solver=boolector
 domain=natural
 bits=4
-con=2
+con=1
 
 export LD_LIBRARY_PATH=.
 
