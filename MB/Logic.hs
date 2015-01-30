@@ -44,7 +44,7 @@ andthen p q = \ x -> do
 
 orelse p q = \ x -> do mplus (p x) (q x)
 
-sequential_or ps = foldl1 orelse ps
+sequential_or ps = foldr1 orelse ps
 
 parallel_or :: [ a -> LogicT IO b ] -> a -> LogicT IO b
 parallel_or ps = \ x -> parallel_or0 $ map ( \ p -> p x ) ps
@@ -55,6 +55,7 @@ parallel_or0 ps = mkWork0 $ do
         go (p:ps) = withAsync ( run p ) $ \ a -> do
                     as <- go ps ; return $ a : as
     asyncs <- forM ps ( async . run )
+    -- asyncs <- go ps
     m <- waitAnyCatchCancelFilter isJust asyncs
     case m of
         Just (_, Right (Just x)) -> return $ Just x ; _ -> return Nothing

@@ -151,15 +151,15 @@ decomp succ fail sys =
                      }
 
 
-matrices_direct config =  capture $ foldr1 orelse
+matrices_direct config =  capture $ sequential_or
     -- $ map (\(d,b) -> capture $ parallel_or [ matrix_nat d b, matrix_arc d b ] ) 
     -- $ map (\(d,b) -> matrix_nat config d b )
-    $ map (\(d,c,b) -> 
-         if O.use_natural config
-         then matrix_nat_direct (config { O.constraints=c }) d b 
-         else error "use --nat option"
-        ) 
-    $ parameters config
+    $ do
+      d <- [1 .. ]
+      return $ capture $ parallel_or $ do
+        c <- [ 0 .. O.constraints config ]
+        let b = O.bits config
+        return $ matrix_nat_direct (config { O.constraints=c }) d b 
     
 parameters config = do
   dc <- [1 .. ]
