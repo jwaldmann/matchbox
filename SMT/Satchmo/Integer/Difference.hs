@@ -1,6 +1,6 @@
 -- | integers as difference of naturals
 
-module SMT.Satchmo.Integer where
+module SMT.Satchmo.Integer.Difference where
 
 import Prelude hiding ( not, and, or )
 import qualified Prelude
