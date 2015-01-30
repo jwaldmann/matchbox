@@ -341,7 +341,7 @@ system dict mdict idict opts sys = do
     
     -- restriction (written as linear function, res(x) >= 0)
     let numc = O.constraints opts
-    res <- L.any_make dict 1 (numc,dim)
+    res <- L.small_make dict 1 (numc,dim)
 
     -- non-emptiness certificate
     emp <- L.make dict 0 (dim,dim)

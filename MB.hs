@@ -163,8 +163,8 @@ matrices_direct config =  capture $ foldr1 orelse
     
 parameters config = do
   dc <- [1 .. ]
-  c <- [ 0 .. O.constraints config ]
-  let d = dc - c
+  c <- [ {- 0 .. -} O.constraints config ]
+  let d = dc -- - c
   guard $ d > 0
   return ( d, c, O.bits config )
 

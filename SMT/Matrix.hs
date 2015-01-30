@@ -22,7 +22,8 @@ data Dictionary m num val bool =
      Dictionary { domain :: D.Domain
                 , make :: (Int,Int) -> m (Matrix num)
                 , triangular :: (Int,Int) -> m (Matrix num)
-                , any_make :: (Int,Int) -> m (Matrix num) 
+                , any_make :: (Int,Int) -> m (Matrix num)
+                , small_make :: (Int,Int) -> m (Matrix num) 
                 , decode :: 
                       Matrix num -> m (Matrix val)
                 , weakly_monotone :: 
@@ -78,7 +79,7 @@ matrix  d = Dictionary
          cs <- forM [1..to] $ \ r ->
                forM [1..from] $ \ c -> do
                     if r < c then D.number d
-                    else if r == c then D.smallnumber d
+                    else if r == c then D.small_nn_number d
                     else D.nconstant d S.zero
          return $ Matrix { dim = (to,from)
                          , contents = cs} 
@@ -86,6 +87,12 @@ matrix  d = Dictionary
          cs <- forM [1..to] $ \ r ->
                forM [1..from] $ \ c ->
                     D.any_number d
+         return $ Matrix { dim = (to,from)
+                         , contents = cs} 
+    , small_make = \ (to, from) -> do
+         cs <- forM [1..to] $ \ r ->
+               forM [1..from] $ \ c ->
+                    D.small_number d
          return $ Matrix { dim = (to,from)
                          , contents = cs} 
     , decode = \ m -> case m of 

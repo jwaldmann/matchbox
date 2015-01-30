@@ -24,7 +24,11 @@ data Dictionary m num val bool =
                       -> m (Linear num)
                 , triangular :: Int -> (Int,Int) 
                       -> m (Linear num)
+                 -- | coefficients may also be negative
                 , any_make :: Int -> (Int,Int) 
+                      -> m (Linear num)
+                -- | coefficients in lin are {-1,0,1}, in abs: may be larger
+                , small_make :: Int -> (Int,Int) 
                       -> m (Linear num)
                 , decode :: 
                     Linear num -> m (Linear val)
@@ -69,6 +73,12 @@ linear d = Dictionary
     , any_make = \ ar (to, from) -> do
         ms <- forM [ 1 .. ar ] $ \ i -> 
             M.any_make d (to,from)
+        a <- M.any_make d (to, 1)
+        return $ Linear { dim=(to,from)
+                        , abs = a, lin = ms }
+    , small_make = \ ar (to, from) -> do
+        ms <- forM [ 1 .. ar ] $ \ i -> 
+            M.small_make d (to,from)
         a <- M.any_make d (to, 1)
         return $ Linear { dim=(to,from)
                         , abs = a, lin = ms }

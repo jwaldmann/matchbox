@@ -9,7 +9,9 @@ data Dictionary m num val bool = Dictionary
       -- | build a non-negative number
     , number   :: m num
       -- | zero or one
-    , smallnumber :: m num
+    , small_nn_number :: m num
+      -- | -1, 0, 1
+    , small_number :: m num
       -- | build any number (possibly negative)
     , any_number :: m num
     , nbits :: Int
