@@ -156,7 +156,7 @@ matrices_direct config =  capture $ sequential_or
     -- $ map (\(d,b) -> matrix_nat config d b )
     $ do
       d <- [1 .. ]
-      return $ capture $ parallel_or $ do
+      return $ parallel_or $ do
         c <- [ 0 .. O.constraints config ]
         let b = O.bits config
         return $ matrix_nat_direct (config { O.constraints=c }) d b 

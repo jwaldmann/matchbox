@@ -54,15 +54,15 @@ parallel_or0 ps = mkWork0 $ do
     let go  [] = return  []
         go (p:ps) = withAsync ( run p ) $ \ a -> do
                     as <- go ps ; return $ a : as
-    asyncs <- forM ps ( async . run )
-    -- asyncs <- go ps
+    -- asyncs <- forM ps ( async . run )
+    asyncs <- go ps
     m <- waitAnyCatchCancelFilter isJust asyncs
     case m of
         Just (_, Right (Just x)) -> return $ Just x ; _ -> return Nothing
 
 waitAnyCatchCancelFilter :: (a -> Bool) -> [Async a] -> IO (Maybe (Async a, Either SomeException a))
 waitAnyCatchCancelFilter p asyncs = 
-    waitAnyCatchFilter p asyncs `finally` mapM_ ( async . cancel ) asyncs 
+    waitAnyCatchFilter p asyncs `finally` mapM_ (async . cancel) asyncs 
 
 waitAnyCatchFilter :: (a -> Bool) -> [Async a] -> IO (Maybe (Async a, Either SomeException a))
 waitAnyCatchFilter p asyncs = atomically $ do
