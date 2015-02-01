@@ -171,12 +171,17 @@ parameters config = do
 matrices_dp config =  capture $ foldr1 orelse
     -- $ map (\(d,b) -> capture $ parallel_or [ matrix_nat d b, matrix_arc d b ] ) 
     -- $ map (\(d,b) -> matrix_nat config d b )
-    $ map (\(d,c,b) -> 
-         if O.use_natural config then matrix_nat_dp config d b 
-         else if O.use_arctic config then matrix_arc_dp config d b 
+    $ do
+      d <- [1 .. ]
+      return $ parallel_or $ do
+        c <- [ 0 .. O.constraints config ]
+        let b = O.bits config
+            conf = config { O.constraints=c }
+        return $ 
+         if O.use_natural conf then matrix_nat_dp conf d b 
+         else if O.use_arctic conf then matrix_arc_dp conf d b 
          else error "use -n or -a options"
-        ) 
-    $ parameters config
+
 
 for_usable_rules method = \ sys -> do
     let restricted = TPDB.DP.Usable.restrict sys
