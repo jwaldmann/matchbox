@@ -341,7 +341,7 @@ system dict mdict idict opts sys = do
     
     -- restriction (written as linear function, res(x) >= 0)
     let numc = O.constraints opts
-    res <- L.any_make dict 1 (numc,dim)
+    res <- L.small_make dict 1 (numc,dim)
 
     -- non-emptiness certificate
     emp <- L.make dict 0 (dim,dim)
@@ -570,7 +570,9 @@ rule_dp dict mdict dim funmap res u = do
       u <- M.make mdict (todim, numc)
       uc <- M.times mdict u c
       rhs <- M.add mdict rm uc
-      ge <- M.weakly_greater mdict lm rhs
+      ge <- case M.domain mdict of
+        D.Int -> M.weakly_greater mdict lm rhs
+        -- D.Arctic -> M.strictly_greater mdict lm rhs
       M.assert mdict [ge]
       return u
 
@@ -579,7 +581,9 @@ rule_dp dict mdict dim funmap res u = do
     sus <- foldM (M.add mdict) (M.Zero (todim,numc)) us
     susb <- M.times mdict sus b
     rhs <- M.add mdict (L.abs r) susb
-    ge <- M.weakly_greater mdict (L.abs l) rhs
+    ge <- case M.domain mdict of
+      D.Int -> M.weakly_greater mdict (L.abs l) rhs
+      -- D.Arctic -> M.strictly_greater mdict (L.abs l) rhs
     M.assert mdict [ge]
     
     gt <- case relation u of

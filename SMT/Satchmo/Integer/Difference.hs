@@ -1,6 +1,6 @@
 -- | integers as difference of naturals
 
-module SMT.Satchmo.Integer where
+module SMT.Satchmo.Integer.Difference where
 
 import Prelude hiding ( not, and, or )
 import qualified Prelude
@@ -33,10 +33,20 @@ dict bits = let n = N.dict bits in Dictionary
     , domain = SMT.Dictionary.Int
     , nbits = bits
     , number = Difference <$> number n <*> nconstant n 0
-    , smallnumber = Difference <$> smallnumber n <*> nconstant n 0
-    , any_number =
-      -- TODO possible require that one of them is zero:
-      Difference <$> number n <*> number n
+    , small_nn_number = Difference <$> small_nn_number n <*> nconstant n 0
+    , any_number = do
+        -- TODO possible require that one of them is zero:
+        -- Difference <$> number n <*> number n
+        a <- number n ; za <- Bin.iszero a
+        b <- number n ; zb <- Bin.iszero b
+        assert n [za,zb]
+        return $ Difference a b
+    , small_number = do
+        -- Difference <$> small_nn_number n <*> small_nn_number n
+        a <- small_nn_number n ; za <- Bin.iszero a
+        b <- small_nn_number n ; zb <- Bin.iszero b
+        assert n [za,zb]
+        return $ Difference a b
     , decode = \ (Difference x y) -> (-) <$> decode n x <*> decode n y
     , nconstant = \ c -> if c >= 0
          then Difference <$> nconstant n (abs c) <*> nconstant n 0

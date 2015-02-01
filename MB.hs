@@ -151,32 +151,37 @@ decomp succ fail sys =
                      }
 
 
-matrices_direct config =  capture $ foldr1 orelse
+matrices_direct config =  capture $ sequential_or
     -- $ map (\(d,b) -> capture $ parallel_or [ matrix_nat d b, matrix_arc d b ] ) 
     -- $ map (\(d,b) -> matrix_nat config d b )
-    $ map (\(d,c,b) -> 
-         if O.use_natural config
-         then matrix_nat_direct (config { O.constraints=c }) d b 
-         else error "use --nat option"
-        ) 
-    $ parameters config
+    $ do
+      d <- [1 .. ]
+      return $ parallel_or $ do
+        c <- [ 0 .. O.constraints config ]
+        let b = O.bits config
+        return $ matrix_nat_direct (config { O.constraints=c }) d b 
     
 parameters config = do
   dc <- [1 .. ]
-  c <- [ 0 .. O.constraints config ]
-  let d = dc - c
+  c <- [ {- 0 .. -} O.constraints config ]
+  let d = dc -- - c
   guard $ d > 0
   return ( d, c, O.bits config )
 
 matrices_dp config =  capture $ foldr1 orelse
     -- $ map (\(d,b) -> capture $ parallel_or [ matrix_nat d b, matrix_arc d b ] ) 
     -- $ map (\(d,b) -> matrix_nat config d b )
-    $ map (\(d,c,b) -> 
-         if O.use_natural config then matrix_nat_dp config d b 
-         else if O.use_arctic config then matrix_arc_dp config d b 
+    $ do
+      d <- [1 .. ]
+      return $ parallel_or $ do
+        c <- [ 0 .. O.constraints config ]
+        let b = O.bits config
+            conf = config { O.constraints=c }
+        return $ 
+         if O.use_natural conf then matrix_nat_dp conf d b 
+         else if O.use_arctic conf then matrix_arc_dp conf d b 
          else error "use -n or -a options"
-        ) 
-    $ parameters config
+
 
 for_usable_rules method = \ sys -> do
     let restricted = TPDB.DP.Usable.restrict sys

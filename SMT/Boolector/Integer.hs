@@ -1,3 +1,7 @@
+-- | signed integers.
+-- with operations that accept operands of different bit lengths.
+-- the output bit length is the max of the input bit lengths.
+
 module SMT.Boolector.Integer where
 
 import qualified SMT.Dictionary as D
@@ -10,40 +14,50 @@ dict :: Int
 dict bits = D.Dictionary
     { D.info = "Boolector.Integer.Binary"
     , D.domain = D.Int
-    , D.number = do
+    , D.number = awed "number" $ do
          n <- B.var bits
          z <- B.zero bits
          B.assert =<< B.sgte n z
-         return $ N n
-    , D.any_number = N <$> B.var bits
-    , D.smallnumber = do
-         prefix <- B.zero $ bits - 1
+         return $ N bits n
+    , D.any_number = awed "any_number" $ N bits <$> B.var bits
+    , D.small_nn_number = awed "small_nn_number" $ do
+         prefix <- B.zero 1
          bit <- B.var 1
-         N <$> B.concat prefix bit
+         N 2 <$> B.concat prefix bit
+    , D.small_number = awed "small_number" $ do
+         n <- B.var 2
+         m <- B.int (-2) 2 
+         B.assert =<< B.sgt n m
+         return $ N 2 n
     , D.nbits = bits
-    , D.nconstant = \ n -> N <$> B.int (fromIntegral n) bits
+    , D.nconstant = \ n -> awed ( "nconstant" ++ show n ) $ N bits <$> B.int (fromIntegral n) bits
     , D.decode = \ a -> B.signedVal $ contents a
-    , D.add = \ x y -> do
+    , D.add = sextend $ \ x y -> do
+         assert_equal_width "add" x y
          a <- B.add (contents x) (contents y)
          o <- B.saddo (contents x) (contents y)
          B.assert =<< B.not o
-         return $ N a
-    , D.times = \ x y -> do
+         return $ N (width x) a
+    , D.times = sextend $ \ x y -> do
+         assert_equal_width "times" x y
          m <- B.mul (contents x) (contents y)
          o <- B.smulo (contents x) (contents y)
          B.assert =<< B.not o
-         return $ N m
+         return $ N (width x) m
     , D.positive = \ x -> do
-         z <- B.zero bits
+         z <- B.zero (width x)
          B.sgt (contents x) z
     , D.nonnegative = \ x -> do
-         z <- B.zero bits
+         z <- B.zero (width x)
          B.sgte (contents x) z
-    , D.gt = \ x y -> do
+    , D.gt = sextend $ \ x y -> do
+         assert_equal_width "gt" x y
          B.sgt (contents x) (contents y) 
-    , D.ge = \ x y -> do
+    , D.ge = sextend $ \ x y -> do
+         assert_equal_width "ge" x y
          B.sgte (contents x) (contents y) 
-    , D.neq = \ x y -> do
+    , D.neq = sextend $ \ x y -> do
+         assert_equal_width "neq" x y
          B.eq (contents x) (contents y) 
     , D.boolean = B.var 1
     , D.bconstant = \ b -> if b then B.true else B.false
@@ -55,7 +69,36 @@ dict bits = D.Dictionary
     , D.atmost = atmost
     }
 
-data N = N { contents :: B.Node }
+uextend x y action = do
+  let wx = width x ; wy = width y ; w = max wx wy
+  ex <- N w <$> B.uext (contents x) (w - wx)
+  ey <- N w <$> B.uext (contents y) (w - wy)
+  action ex ey
+
+sextend action = \ x y -> do
+  let wx = width x ; wy = width y ; w = max wx wy
+  aw ("sextend.x " ++ show (wx,wy,w) )  x
+  aw ("sextend.y" ++ show (wx,wy,w) )  y
+  ex <- N w <$> B.sext (contents x) (w - wx)
+  aw ("sextend.ex " ++ show (wx,wy,w) )  ex
+  ey <- N w <$> B.sext (contents y) (w - wy)
+  aw ("sextend.ey" ++ show (wx,wy,w) )  ey
+  action ex ey
+
+assert_equal_width msg x y =
+  if width x == width y then return ()
+  else error $ unwords
+       [ "SMT.Boolector.Integer:assert_equal_width", msg, show (width x, width y) ]
+
+awed msg action = do x <- action ; aw msg x ; return x
+
+aw msg x = do
+  w <- B.getWidth $ contents x
+  if w == width x then return ()
+    else error $ unwords
+         [ "SMT.Boolector.Integer:aw", msg, "claimed", show (width x), "actual", show w ]
+
+data N = N { width :: Int , contents :: B.Node }
 
 -- implementation copied from Satchmo.
 -- Can Boolector to this better in some built-in way?

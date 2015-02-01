@@ -44,35 +44,71 @@ andthen p q = \ x -> do
 
 orelse p q = \ x -> do mplus (p x) (q x)
 
-sequential_or ps = foldl1 orelse ps
+sequential_or ps = foldr1 orelse ps
 
-parallel_or :: [ a -> LogicT IO b ] -> a -> LogicT IO b
+-- parallel_or :: [ a -> LogicT IO b ] -> a -> LogicT IO b
 parallel_or ps = \ x -> parallel_or0 $ map ( \ p -> p x ) ps
 
-parallel_or0 :: [ LogicT IO b ] -> LogicT IO b
+-- parallel_or0 :: [ LogicT IO b ] -> LogicT IO b
 parallel_or0 ps = mkWork0 $ do
     let go  [] = return  []
         go (p:ps) = withAsync ( run p ) $ \ a -> do
                     as <- go ps ; return $ a : as
     asyncs <- forM ps ( async . run )
+    -- asyncs <- go ps
     m <- waitAnyCatchCancelFilter isJust asyncs
     case m of
-        Just (_, Right (Just x)) -> return $ Just x ; _ -> return Nothing
+        Just (_, Right (Just x)) -> return $ Just x
+        _ -> return Nothing
 
-waitAnyCatchCancelFilter :: (a -> Bool) -> [Async a] -> IO (Maybe (Async a, Either SomeException a))
+waitAnyCatchCancelFilter
+  :: (a -> Bool)
+  -> [Async a]
+  -> IO (Maybe (Async a, Either SomeException a))
 waitAnyCatchCancelFilter p asyncs = 
-    waitAnyCatchFilter p asyncs `finally` mapM_ ( async . cancel ) asyncs 
+    waitAnyCatchFilter p asyncs `finally` mapM_ (async . cancel) asyncs 
 
-waitAnyCatchFilter :: (a -> Bool) -> [Async a] -> IO (Maybe (Async a, Either SomeException a))
+waitAnyCatchFilter
+  :: (a -> Bool)
+  -> [Async a]
+  -> IO (Maybe (Async a, Either SomeException a))     
+waitAnyCatchFilter p as = case as of
+  [] -> return Nothing
+  _ -> do
+    let verbose = False
+        trace ws = when verbose $ hPutStrLn stderr $ unwords ws
+    trace ["handle:before wait" ]
+    (a,r)  <- waitAnyCatch as
+    trace ["handle:after wait"  ]
+    case r of
+      Right  x | p x -> do
+        trace [ "handle:returns" ]
+        return $ Just (a, Right x)
+      _ -> do
+        trace [ "handle:repeats" ]
+        waitAnyCatchFilter p $ filter (/= a) as
+
+
+{-
+-- why did this work at all?
+-- if an async returns with Nothing,
+-- the transaction will retry,
+-- so the modification of the TVar (pred)
+-- will not be published?
 waitAnyCatchFilter p asyncs = atomically $ do
     running <- newTVar $ length asyncs
-    foldr orElse ( do r <- readTVar running ; if r > 0 then retry else return Nothing ) 
+    foldr orElse
+      ( do r <- readTVar running
+           if r > 0 then retry else return Nothing
+      ) 
       $ map (\a -> do 
         r <- waitCatchSTM a
         modifyTVar' running pred
-        case r of Right x | p x -> return $ Just (a,r) ; _ -> retry 
+        case r of
+          Right x | p x -> return $ Just (a,r)
+          _ -> retry 
       ) asyncs
-
+-}
 
 capture p =  \ x -> once ( p x)
 

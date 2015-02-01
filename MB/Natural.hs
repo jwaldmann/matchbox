@@ -16,7 +16,10 @@ import qualified Compress.Common as CC
 
 import qualified SMT.Boolector.Natural.Binary as B  
 import qualified SMT.Satchmo.Natural as SN
-import qualified SMT.Satchmo.Integer as SI
+
+-- import qualified SMT.Satchmo.Integer as SI
+import qualified SMT.Satchmo.Integer.Native as SI
+
 import qualified SMT.Boolector.Integer as BI
 import qualified SMT.Satchmo.Natural.Interval as SNI
 import qualified SMT.Satchmo.Natural.Guarded as SNG
