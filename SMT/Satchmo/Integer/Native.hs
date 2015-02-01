@@ -30,7 +30,7 @@ dict bits = Dictionary
         forM (tail $ I.bits n) $ \ b -> B.assert [ B.not b ]
         return n
     , any_number = I.number bits
-    , small_number = I.number bits -- FIXME
+    , small_number = I.number 2
     , decode = \ n -> do
         bs <- forM (I.bits n) C.decode
         let v = fromBinary bs ; h = 2^(bits-1)

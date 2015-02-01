@@ -119,6 +119,8 @@ linear d = Dictionary
         D.Int -> do
             ms <- forM ( abs f : lin f ) $ M.nonnegative d
             M.and d ms
+        D.Arctic -> do
+            M.and d []
 {-
     , strictly_monotone = \ f -> do
         ms <- forM ( lin f ) $ M.strictly_monotone d
