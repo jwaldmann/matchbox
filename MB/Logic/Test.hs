@@ -22,7 +22,7 @@ main = do
 -- test3 = run $  (_ p1 p2)  0
 
 p1 = mkWork $ \ x -> log "p1" $ do
-     threadDelay (10^6)
+     threadDelay (2 * 10^6)
      return $ Just x
 
 p2 = mkWork $ \ x -> log "p2" $ do

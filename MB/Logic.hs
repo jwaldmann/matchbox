@@ -71,25 +71,22 @@ waitAnyCatchCancelFilter p asyncs =
 waitAnyCatchFilter
   :: (a -> Bool)
   -> [Async a]
-  -> IO (Maybe (Async a, Either SomeException a))
-waitAnyCatchFilter p as = do
-  let verbose = False
-      trace ws = when verbose $ hPutStrLn stderr $ unwords ws
-  let handle open | open > 0 = do
-        trace ["handle:before wait", show open ]
-        (a,r)  <- waitAnyCatch as
-        trace ["handle:after wait" {- , show r -} ]
-        case r of
-          Right  x | p x -> do
-            trace [ "handle:returns" ]
-            return $ Just (a, Right x)
-          _ -> do
-            trace [ "handle:repeats" ]
-            handle $ pred open
-      handle _ = do
-        trace [ "handle:done" ]
-        return Nothing
-  handle $ length as 
+  -> IO (Maybe (Async a, Either SomeException a))     
+waitAnyCatchFilter p as = case as of
+  [] -> return Nothing
+  _ -> do
+    let verbose = False
+        trace ws = when verbose $ hPutStrLn stderr $ unwords ws
+    trace ["handle:before wait" ]
+    (a,r)  <- waitAnyCatch as
+    trace ["handle:after wait"  ]
+    case r of
+      Right  x | p x -> do
+        trace [ "handle:returns" ]
+        return $ Just (a, Right x)
+      _ -> do
+        trace [ "handle:repeats" ]
+        waitAnyCatchFilter p $ filter (/= a) as
 
 
 {-
