@@ -11,6 +11,7 @@ export LD_LIBRARY_PATH=.
     --natural --arctic \
     --bits=$bits \
     --con=$con \
+    --cores \
     +RTS -N -M32G -K1G -RTS \
     $1  \
     2>/dev/null
