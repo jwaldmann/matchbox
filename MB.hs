@@ -184,7 +184,7 @@ matrices_dp config =
       d <- [1 .. ]
       do
           guard$ O.use_arctic config
-          return $ matrix_arc_dp config d b 
+          return $ matrix_arc_dp ( config { O.constraints = 0 } ) d b 
         ++ do
           guard $ O.use_natural config
           c <- [ 0 .. O.constraints config ]
