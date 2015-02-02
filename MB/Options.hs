@@ -39,6 +39,7 @@ data Options =
              , mirror :: Bool
              , mirror_labelled :: Bool
              , parallel :: Bool
+             , cores :: Maybe Int
              , label :: Maybe (Int,Int)
              , use_lpo :: Bool
              , use_natural :: Bool
@@ -64,6 +65,7 @@ options0 = Options
          , mirror = False
          , mirror_labelled = False
          , parallel = False
+         , cores = Just 2
          , label = Nothing
          , use_lpo = False
          , use_natural = False
@@ -174,7 +176,13 @@ options =
        ( NoArg ( \ opts -> opts { dependency_pairs = True, naive = True })) "apply compression after dependency pairs transformation"   
 
     , Option [     ] [ "parallel" ]
-       ( NoArg ( \ opts -> opts { parallel = True })) "start threads for different dimensions in parallel"
+       ( NoArg ( \ opts -> opts { parallel = True }))
+      "start threads for different dimensions in parallel"
+
+    , Option [] [ "cores" ]
+       (OptArg ( \ s opts -> opts { cores = fmap read s }) "Int" )
+      "use several cores (threads), no argument: all available"
+      
     , Option [ 's' ] [ "printStatistics" ]
        ( NoArg ( \ opts -> opts { printStatistics = True })) "print some statistics"   
 

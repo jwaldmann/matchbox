@@ -1,4 +1,5 @@
--- | improved main propram, should act as driver for a modular prover, 
+-- | improved main program,
+-- should act as driver for a modular prover, 
 -- see https://github.com/apunktbau/co4/issues/82
 
 {-# language OverloadedStrings #-}
@@ -37,6 +38,8 @@ import System.IO
 import TPDB.CPF.Proof.Util (sortVariables)
 import MB.Proof.Outline (outline)
 
+import GHC.Conc
+
 -- https://github.com/apunktbau/co4/issues/81#issuecomment-41269315
 
 
@@ -47,7 +50,12 @@ main = do
     hSetBuffering stdout LineBuffering
     hSetBuffering stderr LineBuffering
 
-    (config,filePath) <- O.parse -- parseConfig
+    (config0,filePath) <- O.parse -- parseConfig
+
+    nc <- GHC.Conc.getNumCapabilities
+    let config = config0 { O.cores = case O.cores config0 of
+          Just nc -> Just nc ; Nothing -> Just nc
+                        }
     
     trs <- TPDB.Input.get_trs filePath
     out <- run $ case O.dependency_pairs config of
@@ -79,9 +87,12 @@ main = do
 
 handle_both config sys = case TPDB.Mirror.mirror sys of
      Nothing -> handle_dp config sys
-     Just sys' -> parallel_or0 
-         [ handle_dp config sys
-         , do p <- handle_dp config sys' 
+     Just sys' ->
+       let Just nc = O.cores config
+           config2 = config { O.cores = Just $ max 1 $ div nc 2 }
+       in  parallel_or0 
+         [ handle_dp config2 sys
+         , do p <- handle_dp config2 sys' 
               return $ P.Proof { P.input = sys
                      , P.claim = P.Termination
                      , P.reason = P.Mirror_Transform p 
@@ -151,15 +162,13 @@ decomp succ fail sys =
                      }
 
 
-matrices_direct config =  capture $ sequential_or
-    -- $ map (\(d,b) -> capture $ parallel_or [ matrix_nat d b, matrix_arc d b ] ) 
-    -- $ map (\(d,b) -> matrix_nat config d b )
-    $ do
-      d <- [1 .. ]
-      return $ parallel_or $ do
-        c <- [ 0 .. O.constraints config ]
-        let b = O.bits config
-        return $ matrix_nat_direct (config { O.constraints=c }) d b 
+matrices_direct config =
+  let Just nc = O.cores config in
+  capture $ bounded_parallel_or nc $ do
+      d <- [ 1 .. ]
+      c <- [ 0 .. O.constraints config ]
+      let b = O.bits config
+      return $ matrix_nat_direct (config { O.constraints=c }) d b 
     
 parameters config = do
   dc <- [1 .. ]
@@ -168,19 +177,19 @@ parameters config = do
   guard $ d > 0
   return ( d, c, O.bits config )
 
-matrices_dp config =  capture $ foldr1 orelse
-    -- $ map (\(d,b) -> capture $ parallel_or [ matrix_nat d b, matrix_arc d b ] ) 
-    -- $ map (\(d,b) -> matrix_nat config d b )
-    $ do
+matrices_dp config = 
+  let Just nc = O.cores config in
+  capture $ bounded_parallel_or nc $ do
+      let b = O.bits config
       d <- [1 .. ]
-      return $ parallel_or $ do
-        c <- [ 0 .. O.constraints config ]
-        let b = O.bits config
-            conf = config { O.constraints=c }
-        return $ 
-         if O.use_natural conf then matrix_nat_dp conf d b 
-         else if O.use_arctic conf then matrix_arc_dp conf d b 
-         else error "use -n or -a options"
+      do
+          guard$ O.use_arctic config
+          return $ matrix_arc_dp config d b 
+        ++ do
+          guard $ O.use_natural config
+          c <- [ 0 .. O.constraints config ]
+          return $ matrix_nat_dp ( config { O.constraints = c}) d b 
+
 
 
 for_usable_rules method = \ sys -> do

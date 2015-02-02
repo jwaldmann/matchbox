@@ -231,7 +231,7 @@ handle_dp encoded direct opts sys = do
                             , domain = D.domain direct
                             , mapping = f
                             , constraint = if width con > 0 then Just con else Nothing
-                            , values_for_rules = Nothing
+                            , values_for_rules = Just vs -- Nothing
                             }
                           , sys' )
                 Left err -> error $ render $ vcat
@@ -285,6 +285,26 @@ evaluate_rule top (ldict,_) dim (funmap,_)(u,_) = do
     l <- term ldict dim funmap varmap $ lhs u
     r <- term ldict dim funmap varmap $ rhs u
     return (u, (l,r))
+
+traced_rule top (ldict,mdict) dim (funmap,res) (u,us) | M.domain mdict == D.Arctic = do
+    let vs = S.union (vars $ lhs u) (vars $ rhs u)
+        varmap = M.fromList $ zip (S.toList vs) [0..]
+    l <- term ldict dim funmap varmap $ lhs u
+    r <- term ldict dim funmap varmap $ rhs u
+
+    ge <- L.weakly_greater ldict l r
+    gt <- L.strictly_greater ldict l r
+    traced ( vcat [ "rule:" <+> pretty u
+                  , "left:" <+> pretty l
+                  , "right: " <+> pretty r
+                  ]
+           ) $ L.assert ldict [ge] 
+    case relation u of
+        Strict -> return gt
+        Weak   -> case top of
+            False -> return gt
+            True  -> L.bconstant ldict  False -- cannot remove
+  
 
 traced_rule top (ldict,mdict) dim (funmap,res) (u,us) = do
     let vs = S.union (vars $ lhs u) (vars $ rhs u)
@@ -426,7 +446,7 @@ system_dp dict mdict idict opts sys = do
 
     -- restriction (written as linear function, res(x) >= 0)
     let numc = O.constraints opts
-    res <- L.any_make dict 1 (numc,dim)
+    res <- L.small_make dict 1 (numc,dim)
 
     -- https://github.com/jwaldmann/matchbox/issues/9
     -- proposed fix: each line of B contains at most one
@@ -556,6 +576,21 @@ rule dict mdict dim funmap res u = do
     
     return (gt, ( fmap CC.expand_all u,us))
 
+rule_dp dict mdict dim funmap res u | M.domain mdict == D.Arctic = do
+    let vs = S.union (vars $ lhs u) (vars $ rhs u)
+        varmap = M.fromList $ zip (S.toList vs) [0..]
+    l <- term dict dim funmap varmap $ lhs u
+    r <- term dict dim funmap varmap $ rhs u
+
+    ge <- L.weakly_greater dict l r
+    L.assert dict [ge]
+
+    gt <- case relation u of
+        Strict -> L.strictly_greater dict l r
+        Weak   -> L.bconstant dict False
+    return ( gt, (fmap CC.expand_all u, []) )
+  
+
 -- | asserts weak decrease and 
 -- returns strict decrease (for strict rules)
 rule_dp dict mdict dim funmap res u = do
@@ -572,7 +607,6 @@ rule_dp dict mdict dim funmap res u = do
       rhs <- M.add mdict rm uc
       ge <- case M.domain mdict of
         D.Int -> M.weakly_greater mdict lm rhs
-        -- D.Arctic -> M.strictly_greater mdict lm rhs
       M.assert mdict [ge]
       return u
 
@@ -583,7 +617,6 @@ rule_dp dict mdict dim funmap res u = do
     rhs <- M.add mdict (L.abs r) susb
     ge <- case M.domain mdict of
       D.Int -> M.weakly_greater mdict (L.abs l) rhs
-      -- D.Arctic -> M.strictly_greater mdict (L.abs l) rhs
     M.assert mdict [ge]
     
     gt <- case relation u of

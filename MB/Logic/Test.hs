@@ -13,9 +13,8 @@ main = do
   -- log "t3" $ run $ (orelse p2 p1) 0
   -- log "t4" $ run $ sequential_or [ p2, p1 ] 0
   -- log "t5" $ run $ parallel_or [  p1 ] 0
-  log "t6" $ run $ parallel_or [  p1, p2 ] 0
-  -- test2 >>= print
-  -- test3 >>= print
+  -- log "t6" $ run $ parallel_or [  p1, p2 ] 0
+  log "t7" $ run $ bounded_parallel_or 2 [ p1, p2 ] 0
 
 -- test1 = run $  (orelse p2 p1)  0
 -- test2 = run $  (orelse p1 p2)  0
