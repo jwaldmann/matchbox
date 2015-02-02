@@ -46,16 +46,43 @@ orelse p q = \ x -> do mplus (p x) (q x)
 
 sequential_or ps = foldr1 orelse ps
 
--- parallel_or :: [ a -> LogicT IO b ] -> a -> LogicT IO b
+
+-- | run at most b of the computations concurrently,
+-- starting them in order they appear in the list. 
+-- when any of them returns a result x,
+-- kill the others, and return x to the caller.
+bounded_parallel_or b ps = \ x ->
+  bounded_parallel_or0 b $ map ( \ p -> p x ) ps
+
+bounded_parallel_or0 b as = mkWork0 $ do
+  let handler [] [] = return Nothing
+      handler running waiting = do
+        hPutStrLn stderr $ unwords
+          [ "bp", show (length running), show (length waiting)]
+        (a,r) <- waitAnyCatch running
+        case r of
+          Right (Just x) -> return (Just x)
+              `finally` forM_ running (async . cancel)
+          _-> do
+            (more, later) <- case waiting of
+              [] -> return ([], [])
+              w:aiting -> do
+                a <- async $ run w
+                return ([a], aiting)
+            handler (more ++ filter (/= a) running) later
+  let (canrun, mustwait) = splitAt b as
+  asyncs <- forM canrun ( async . run )
+  handler asyncs mustwait
+
+-- | run the computations concurrently.
+-- when any of them returns a result x,
+-- kill the others, and return x to the caller.
+parallel_or :: [ a -> LogicT IO b ] -> a -> LogicT IO b
 parallel_or ps = \ x -> parallel_or0 $ map ( \ p -> p x ) ps
 
--- parallel_or0 :: [ LogicT IO b ] -> LogicT IO b
+parallel_or0 :: [ LogicT IO b ] -> LogicT IO b
 parallel_or0 ps = mkWork0 $ do
-    let go  [] = return  []
-        go (p:ps) = withAsync ( run p ) $ \ a -> do
-                    as <- go ps ; return $ a : as
     asyncs <- forM ps ( async . run )
-    -- asyncs <- go ps
     m <- waitAnyCatchCancelFilter isJust asyncs
     case m of
         Just (_, Right (Just x)) -> return $ Just x

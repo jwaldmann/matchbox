@@ -426,7 +426,7 @@ system_dp dict mdict idict opts sys = do
 
     -- restriction (written as linear function, res(x) >= 0)
     let numc = O.constraints opts
-    res <- L.any_make dict 1 (numc,dim)
+    res <- L.small_make dict 1 (numc,dim)
 
     -- https://github.com/jwaldmann/matchbox/issues/9
     -- proposed fix: each line of B contains at most one

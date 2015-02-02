@@ -1,4 +1,5 @@
--- | improved main propram, should act as driver for a modular prover, 
+-- | improved main program,
+-- should act as driver for a modular prover, 
 -- see https://github.com/apunktbau/co4/issues/82
 
 {-# language OverloadedStrings #-}
@@ -37,6 +38,8 @@ import System.IO
 import TPDB.CPF.Proof.Util (sortVariables)
 import MB.Proof.Outline (outline)
 
+import GHC.Conc
+
 -- https://github.com/apunktbau/co4/issues/81#issuecomment-41269315
 
 
@@ -47,7 +50,12 @@ main = do
     hSetBuffering stdout LineBuffering
     hSetBuffering stderr LineBuffering
 
-    (config,filePath) <- O.parse -- parseConfig
+    (config0,filePath) <- O.parse -- parseConfig
+
+    nc <- GHC.Conc.getNumCapabilities
+    let config = config0 { O.cores = case O.cores config0 of
+          Just nc -> Just nc ; Nothing -> Just nc
+                        }
     
     trs <- TPDB.Input.get_trs filePath
     out <- run $ case O.dependency_pairs config of
@@ -151,15 +159,13 @@ decomp succ fail sys =
                      }
 
 
-matrices_direct config =  capture $ sequential_or
-    -- $ map (\(d,b) -> capture $ parallel_or [ matrix_nat d b, matrix_arc d b ] ) 
-    -- $ map (\(d,b) -> matrix_nat config d b )
-    $ do
+matrices_direct config =
+  let Just nc = O.cores config in
+  capture $ bounded_parallel_or nc $ do
       d <- [1 .. ]
-      return $ parallel_or $ do
-        c <- [ 0 .. O.constraints config ]
-        let b = O.bits config
-        return $ matrix_nat_direct (config { O.constraints=c }) d b 
+      c <- [ 0 .. O.constraints config ]
+      let b = O.bits config
+      return $ matrix_nat_direct (config { O.constraints=c }) d b 
     
 parameters config = do
   dc <- [1 .. ]
