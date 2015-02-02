@@ -1,9 +1,9 @@
 #!/bin/bash
 
-solver=boolector
+solver=satchmo
 domain=natural
 bits=4
-con=1
+con=2
 
 export LD_LIBRARY_PATH=.
 
@@ -13,6 +13,7 @@ export LD_LIBRARY_PATH=.
     --$domain \
     --bits=$bits \
     --con=$con \
+    --cores \
     +RTS -N -M32G -K1G -RTS \
     $1  \
     2>/dev/null

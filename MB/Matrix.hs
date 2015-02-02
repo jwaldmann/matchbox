@@ -630,7 +630,8 @@ term dict dim funmap varmap t = case t of
     Node f [] -> do
         let a = L.abs $ funmap M.! f 
         return $ L.Linear
-               { L.abs = a
+               { L.dim = (M.to a, dim)
+               , L.abs = a
                , L.lin = replicate (M.size varmap) 
                        $ M.Zero (M.to a ,dim)
                }
@@ -640,7 +641,8 @@ term dict dim funmap varmap t = case t of
 
 -- TODO: move this to Satchmo.SMT.Linear
 projection dim n i = 
-   L.Linear { L.abs = M.Zero (dim,1)
+   L.Linear { L.dim = (dim,dim)
+            , L.abs = M.Zero (dim,1)
             , L.lin = do
                    k <- [ 0 .. n-1]
                    return $ if k == i
