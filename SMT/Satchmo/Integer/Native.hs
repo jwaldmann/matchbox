@@ -33,7 +33,7 @@ dict bits = Dictionary
     , small_number = I.number 2
     , decode = \ n -> do
         bs <- forM (I.bits n) C.decode
-        let v = fromBinary bs ; h = 2^(bits-1)
+        let v = fromBinary bs ; h = 2^(I.width n - 1)
         return $ if v < h then v else v - 2*h
     , nconstant = \ i -> I.constant bits i
     , boolean = B.boolean
