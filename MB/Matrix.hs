@@ -231,7 +231,7 @@ handle_dp encoded direct opts sys = do
                             , domain = D.domain direct
                             , mapping = f
                             , constraint = if width con > 0 then Just con else Nothing
-                            , values_for_rules = Just vs -- Nothing
+                            , values_for_rules = Nothing -- Just vs 
                             }
                           , sys' )
                 Left err -> error $ render $ vcat

@@ -26,9 +26,8 @@ dict bits = Dictionary
     , nbits = bits
     , number = do n <- I.number bits ; B.assert [ B.not $ sign n ] ; return n
     , small_nn_number = do
-        n <- I.number bits
-        forM (tail $ I.bits n) $ \ b -> B.assert [ B.not b ]
-        return n
+        b <- B.boolean ; s <- B.constant False
+        return $ I.make [ b, s ]
     , any_number = I.number bits
     , small_number = I.number 2
     , decode = \ n -> do
