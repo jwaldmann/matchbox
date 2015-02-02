@@ -180,14 +180,16 @@ parameters config = do
 matrices_dp config = 
   let Just nc = O.cores config in
   capture $ bounded_parallel_or nc $ do
-      d <- [1 .. ]
-      c <- [ 0 .. O.constraints config ]
       let b = O.bits config
-          conf = config { O.constraints=c }
-      return $ 
-         if O.use_natural conf then matrix_nat_dp conf d b 
-         else if O.use_arctic conf then matrix_arc_dp conf d b 
-         else error "use -n or -a options"
+      d <- [1 .. ]
+      do
+          guard$ O.use_arctic config
+          return $ matrix_arc_dp config d b 
+        ++ do
+          guard $ O.use_natural config
+          c <- [ 0 .. O.constraints config ]
+          return $ matrix_nat_dp ( config { O.constraints = c}) d b 
+
 
 
 for_usable_rules method = \ sys -> do

@@ -40,6 +40,7 @@ original_matrix_arctic_dp opts =
       remover_arctic ( "matrix_arctic_dp" :: Doc ) CC.expand_all_trs
     $ case O.solver opts of
       O.Satchmo -> case O.encoding opts of
+         O.Binary -> MB.Matrix.handle_dp ( \ b -> SAU.dict $ 2^(b-1) )  SA.direct opts
          O.Unary  -> MB.Matrix.handle_dp SAU.dict SA.direct opts
          O.Interval_Plain ->
            MB.Matrix.handle_dp SAI.dict_plain SA.direct opts 
