@@ -87,9 +87,12 @@ main = do
 
 handle_both config sys = case TPDB.Mirror.mirror sys of
      Nothing -> handle_dp config sys
-     Just sys' -> parallel_or0 
-         [ handle_dp config sys
-         , do p <- handle_dp config sys' 
+     Just sys' ->
+       let Just nc = O.cores config
+           config2 = config { O.cores = Just $ max 1 $ div nc 2 }
+       in  parallel_or0 
+         [ handle_dp config2 sys
+         , do p <- handle_dp config2 sys' 
               return $ P.Proof { P.input = sys
                      , P.claim = P.Termination
                      , P.reason = P.Mirror_Transform p 
@@ -162,7 +165,7 @@ decomp succ fail sys =
 matrices_direct config =
   let Just nc = O.cores config in
   capture $ bounded_parallel_or nc $ do
-      d <- [1 .. ]
+      d <- [ 1 .. ]
       c <- [ 0 .. O.constraints config ]
       let b = O.bits config
       return $ matrix_nat_direct (config { O.constraints=c }) d b 
@@ -174,16 +177,14 @@ parameters config = do
   guard $ d > 0
   return ( d, c, O.bits config )
 
-matrices_dp config =  capture $ foldr1 orelse
-    -- $ map (\(d,b) -> capture $ parallel_or [ matrix_nat d b, matrix_arc d b ] ) 
-    -- $ map (\(d,b) -> matrix_nat config d b )
-    $ do
+matrices_dp config = 
+  let Just nc = O.cores config in
+  capture $ bounded_parallel_or nc $ do
       d <- [1 .. ]
-      return $ parallel_or $ do
-        c <- [ 0 .. O.constraints config ]
-        let b = O.bits config
-            conf = config { O.constraints=c }
-        return $ 
+      c <- [ 0 .. O.constraints config ]
+      let b = O.bits config
+          conf = config { O.constraints=c }
+      return $ 
          if O.use_natural conf then matrix_nat_dp conf d b 
          else if O.use_arctic conf then matrix_arc_dp conf d b 
          else error "use -n or -a options"

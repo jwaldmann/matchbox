@@ -55,10 +55,12 @@ bounded_parallel_or b ps = \ x ->
   bounded_parallel_or0 b $ map ( \ p -> p x ) ps
 
 bounded_parallel_or0 b as = mkWork0 $ do
-  let handler [] [] = return Nothing
-      handler running waiting = do
+  hPutStrLn stderr "--------------- bp start"
+  let worker [] [] = return Nothing
+      worker running waiting = do
         hPutStrLn stderr $ unwords
-          [ "bp", show (length running), show (length waiting)]
+          [ "---------------- bp.worker", show (length running) ]
+        hFlush stderr
         (a,r) <- waitAnyCatch running
         case r of
           Right (Just x) -> return (Just x)
@@ -69,10 +71,12 @@ bounded_parallel_or0 b as = mkWork0 $ do
               w:aiting -> do
                 a <- async $ run w
                 return ([a], aiting)
-            handler (more ++ filter (/= a) running) later
+            worker (more ++ filter (/= a) running) later
   let (canrun, mustwait) = splitAt b as
+  hPutStrLn stderr "--------------- bp start processes"
   asyncs <- forM canrun ( async . run )
-  handler asyncs mustwait
+  hPutStrLn stderr $ "--------------- bp processes started: " ++ show (length asyncs)
+  worker asyncs mustwait
 
 -- | run the computations concurrently.
 -- when any of them returns a result x,
