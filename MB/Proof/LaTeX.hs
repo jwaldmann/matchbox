@@ -16,6 +16,7 @@ import Text.LaTeX (Texy, texy, par, (<>), empty, verbatim, raw)
 import Data.Monoid (mconcat, mempty)
 
 import Text.LaTeX.Base.Class (liftL, liftL2, liftListL, LaTeXC)
+import Text.LaTeX.Base.Commands ( comment )
 import Text.LaTeX.Packages.AMSMath
 import qualified Data.Matrix as DM
 import Text.LaTeX.Base.Pretty
@@ -40,6 +41,9 @@ vcat docs = liftLN mconcat $ map ( \ d -> par <+> d ) docs
 hsep docs = foldr (<+>) mempty docs
 nest :: LaTeXC l => Int -> l -> l
 nest _ doc = doc
+
+align' [] = align_ []
+align' docs = align_ $ init docs ++ [ last docs <> raw "%" ]
 
 p <+> q = liftL2 (<>) p (liftL2 (<>) (raw " ") q)
 
@@ -72,7 +76,7 @@ instance (Texy v, Texy s, Texy e ) =>
           , case values_for_rules i of
             Nothing -> mempty
             Just vs -> "interpretations for rules:"
-               </> align_ ( map ( \ (u,(l,r)) ->
+               </> align' ( map ( \ (u,(l,r)) ->
                    texy u </> vcat [texy l, texy r]  ) vs )
           ]
 
@@ -85,7 +89,7 @@ instance (Texy v, Texy s, Texy e)
       , "domain nonemptiness certificate"
         </> matexy (M.transpose $ nonemptiness_certificate c ) 
       , "domain mapping certificate:" </>
-            align_ (map (\(k,us) ->  texy k <+> raw "\\mapsto"
+            align' (map (\(k,us) ->  texy k <+> raw "\\mapsto"
                         <+> commasep (map texy us)  )
                     $ M.toList $ mapping_certificate c)
       , "rules with compatibility certificate:" </>
