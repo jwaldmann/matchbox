@@ -89,6 +89,7 @@ main = do
                 hPutDoc stdout $ pretty proof    ; hPutStrLn stdout ""
                 
                 case O.latex config of
+                  Nothing -> return ()
                   Just mf -> do
                     hPutStrLn stdout "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
                     let ltx = L.documentclass [] "article"
