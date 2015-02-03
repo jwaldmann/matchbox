@@ -151,8 +151,8 @@ add_nonzero_information dicts@(ldict,mdict) dim int con = do
   nzcc <- forM ( compatibility_certificate con ) $ \ (u,c) -> do
         (_, (l,r)) <- evaluate_rule top dicts dim (int , restriction con) ( u, c)
         ge <- L.weakly_greater ldict l r
-        if ge then return Nothing
-          else return $ Just (u, c, (l,r))
+        -- if ge then return Nothing else
+        return $ Just (u, c, (l,r))
                    
   return $ con
     { nonzero_mapping_certificate = M.fromList $ catMaybes nzmz

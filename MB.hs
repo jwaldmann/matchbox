@@ -45,6 +45,11 @@ import GHC.Conc
 
 import qualified MB.Proof as P
 
+import qualified MB.Proof.LaTeX as L
+import qualified Text.LaTeX.Base as L
+import qualified Text.LaTeX.Base.Pretty as L
+import qualified Text.PrettyPrint.Free as L (displayIO, renderPretty)
+
 main :: IO ()
 main = do
     hSetBuffering stdout LineBuffering
@@ -82,6 +87,23 @@ main = do
                 hPutDoc stderr $ outline proof ; hPutStrLn stderr ""
               else do
                 hPutDoc stdout $ pretty proof    ; hPutStrLn stdout ""
+                
+                case O.latex config of
+                  Just mf -> do
+                    hPutStrLn stdout "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
+                    let ltx = L.documentclass [] "article"
+                              L.<> L.usepackage [] "amsmath"
+                              L.<> L.document ( L.texy proof )
+                        doc = L.docLaTeX ltx
+                    h <- case mf of
+                      Nothing -> return stdout
+                      Just f -> do
+                        hPutStrLn stdout $ "latex output to: " ++ show f
+                        openFile f WriteMode
+                    L.displayIO h $ L.renderPretty 0.4 80 doc
+                    hFlush h
+                    hPutStrLn stdout "\n%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
+
                 hPutStrLn stdout "Proof outline"
                 hPutDoc stdout $ outline proof ; hPutStrLn stdout ""
 

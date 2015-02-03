@@ -60,3 +60,4 @@ Executable matchbox2015
                     , boolector
                     , array, hashable, HaXml, wl-pprint-text
                     , async, stm
+                    , wl-pprint-extras , HaTeX, text, matrix 

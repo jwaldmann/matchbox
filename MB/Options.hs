@@ -46,6 +46,7 @@ data Options =
              , use_arctic :: Bool
              , printStatistics :: Bool
              , cpf :: Bool
+             , latex :: Maybe (Maybe FilePath) 
              }
     deriving Show
 
@@ -72,6 +73,7 @@ options0 = Options
          , use_arctic = False
          , printStatistics = False
          , cpf = False
+         , latex = Nothing
          }
 
 options = 
@@ -190,6 +192,10 @@ options =
     , Option [ 'c' ] [ "cpf" ]
        ( NoArg ( \ opts -> opts { cpf = True }))
        "proof output in CPF (XML) format"
+
+    , Option [ ] [ "latex" ]
+      ( OptArg ( \ s opts -> opts { latex = Just s }) "FilePath" )
+      "proof output in LaTeX format to file (default: to stdout)" 
     ]
 
 parse :: IO (Options, String)
