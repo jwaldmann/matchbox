@@ -20,6 +20,7 @@ data Encoding = Binary | Unary
 
 data Mode = Termination
           | Complexity (Maybe Int) -- ^ upper bound for deg. of pol.
+          | Cycle_Termination -- ^ for SRS, termination modulo conjugacy
      deriving (Eq, Ord, Show)
    
 data Options =
@@ -87,7 +88,10 @@ options =
          } ) "Int" )
       "prove polynomial complexity (with degree bound)"
 
-
+    , Option [] [ "cycle" ]
+       (NoArg ( \ opts -> opts { mode = Cycle_Termination } ) )
+      "prove cycle termination (for SRS, termination moduly conjugacy)"
+      
     , Option [ 'd' ] [ "dimension" ]
        ( ReqArg ( \ s opts -> opts { dim = read s }) "Int" ) "vector dimension"
     , Option [ 'b' ] [ "bits" ]
