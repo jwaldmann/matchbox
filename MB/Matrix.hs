@@ -361,7 +361,10 @@ system dict mdict idict opts sys = do
     
     -- restriction (written as linear function, res(x) >= 0)
     let numc = O.constraints opts
-    res <- L.small_make dict 1 (numc,dim)
+    res <- ( case O.small_constraints opts of
+        False -> L.any_make
+        True -> L.small_make
+      ) dict 1 (numc,dim)
 
     -- non-emptiness certificate
     emp <- L.make dict 0 (dim,dim)
@@ -446,7 +449,14 @@ system_dp dict mdict idict opts sys = do
 
     -- restriction (written as linear function, res(x) >= 0)
     let numc = O.constraints opts
-    res <- L.small_make dict 1 (numc,dim)
+    res <- ( case O.small_constraints opts of
+        False -> L.any_make
+        True -> L.small_make
+      ) dict 1 (numc,dim)
+    res <- ( case O.small_constraints opts of
+        False -> L.any_make
+        True -> L.small_make
+      ) dict 1 (numc,dim)
 
     -- https://github.com/jwaldmann/matchbox/issues/9
     -- proposed fix: each line of B contains at most one

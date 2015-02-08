@@ -30,6 +30,7 @@ data Options =
              , encoding :: Encoding  
              , compression :: Compression
              , constraints :: Int
+             , small_constraints :: Bool
              , mode :: Mode
              , remove_all :: Bool
              , triangular :: Bool
@@ -60,6 +61,7 @@ options0 = Options
          , constraints = 0
          , remove_all = False
          , triangular = False
+         , small_constraints = False
          , dependency_pairs = False
          , usable_rules = False
          , fromtop = False
@@ -139,6 +141,12 @@ options =
     , Option [] [ "triangular" ]
         ( NoArg ( \ opts -> opts { triangular = True } ) )
         "use upper triangular shape (with --all, proves polynomial complexity)"
+
+    , Option [] [ "small-constraints" ]
+        ( OptArg ( \ s opts -> opts { small_constraints = case s of
+                                         Nothing -> True
+                                         Just s -> read s } ) "Bool" )
+        "use small numbers {-1,0,1} in C matrix of constraint"
       
     , Option [ 'l' ] [ "label" ]
        ( ReqArg ( \ s opts -> opts { label = Just $ read $ "(" ++ s ++ ")" }) "Int,Int" ) 
