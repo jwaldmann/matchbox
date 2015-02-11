@@ -77,7 +77,7 @@ instance (Texy v, Texy s, Texy e ) =>
             Nothing -> mempty
             Just vs -> "interpretations for rules:"
                </> align' ( map ( \ (u,(l,r)) ->
-                   texy u </> vcat [texy l, texy r]  ) vs )
+                   texy u </> texy l </> texy r  ) vs )
           ]
 
 instance (Texy v, Texy s, Texy e)
