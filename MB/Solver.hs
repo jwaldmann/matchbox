@@ -23,8 +23,8 @@ instance Solver Satchmo.SAT.Mini.SAT where
 instance Solver Boolector.Boolector where
     solve opts action = Boolector.withBoolectorAsync $ do
       decoder <- action
+      start <- liftIO $ System.Posix.Time.epochTime
       return $ do
-        start <- liftIO $ System.Posix.Time.epochTime
         result <- decoder
         finish <- liftIO $ System.Posix.Time.epochTime
         when (O.dump_boolector opts) $ do
