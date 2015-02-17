@@ -71,7 +71,7 @@ handle ( encoded :: Int -> D.Dictionary m num val bool) direct
             system MB.Count.linear MB.Count.matrix MB.Count.elt opts sys
     hPutStrLn stderr $ show count
 
-    out <- solve $ do
+    out <- solve opts $ do
         let ldict = L.linear mdict
             mdict = M.matrix idict
             idict = encoded (bits opts)
@@ -201,7 +201,7 @@ handle_dp encoded direct opts sys = do
             system_dp MB.Count.linear MB.Count.matrix MB.Count.elt opts sys
     hPutStrLn stderr $ show count
 
-    out <- solve $ do
+    out <- solve opts $ do
         let ldict = L.linear mdict
             mdict = M.matrix idict
             idict = encoded (bits opts) 

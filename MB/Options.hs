@@ -47,6 +47,7 @@ data Options =
              , use_natural :: Bool
              , use_arctic :: Bool
              , printStatistics :: Bool
+             , dump_boolector :: Bool
              , cpf :: Bool
              , latex :: Maybe (Maybe FilePath) 
              }
@@ -75,6 +76,7 @@ options0 = Options
          , use_natural = False
          , use_arctic = False
          , printStatistics = False
+         , dump_boolector = False
          , cpf = False
          , latex = Nothing
          }
@@ -101,6 +103,9 @@ options =
 
     , Option [ ] [ "boolector" ]
        (NoArg ( \ opts -> opts { solver = Boolector } ))
+       "use Boolector SMT solver"
+    , Option [ ] [ "dump-boolector" ]
+       (NoArg ( \ opts -> opts { dump_boolector = True } ))
        "use Boolector SMT solver"
     , Option [ ] [ "satchmo" ]
        (NoArg ( \ opts -> opts { solver = Satchmo } ))

@@ -35,7 +35,6 @@ import Control.Monad.Trans.Maybe
 import Data.Hashable
 import Control.Monad (when)
 
-
 matrix_natural_direct opts dim bits = original_matrix_natural_direct
       ( opts{  O.dim = dim, O.bits = bits, O.compression = O.Simple, O.dependency_pairs = False })
 
