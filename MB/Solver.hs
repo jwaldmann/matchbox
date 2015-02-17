@@ -27,16 +27,19 @@ instance Solver Boolector.Boolector where
       return $ do
         result <- decoder
         finish <- liftIO $ System.Posix.Time.epochTime
-        when (O.dump_boolector opts) $ do
-          let status = True
-          let needed = finish - start
-          off <- liftIO $ randomRIO (1000, 9999 :: Int)
-          let dir = concat $ intersperse "/"
-                [ "dump", show status , show needed ]
-              fname = dir ++ "/" ++ show start ++ "-" ++ show off ++ ".smt2"
-          liftIO $ createDirectoryIfMissing True dir    
-          liftIO $ hPutStrLn stderr $ unwords [ "boolector smt2 dump to", fname ]
-          Boolector.dumpSmt2 fname
+        case O.dump_boolector opts of
+          O.Never -> return ()
+          O.Above threshold ->  do
+            let status = True
+            let needed = finish - start
+            when (needed >= fromIntegral threshold) $ do
+              off <- liftIO $ randomRIO (1000, 9999 :: Int)
+              let dir = concat $ intersperse "/"
+                    [ "dump", show status , show needed ]
+                  fname = dir ++ "/" ++ show start ++ "-" ++ show off ++ ".smt2"
+              liftIO $ createDirectoryIfMissing True dir    
+              liftIO $ hPutStrLn stderr $ unwords [ "boolector smt2 dump to", fname ]
+              Boolector.dumpSmt2 fname
         return result
 
       

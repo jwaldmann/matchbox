@@ -47,11 +47,14 @@ data Options =
              , use_natural :: Bool
              , use_arctic :: Bool
              , printStatistics :: Bool
-             , dump_boolector :: Bool
+             , dump_boolector :: Dump
              , cpf :: Bool
              , latex :: Maybe (Maybe FilePath) 
              }
     deriving Show
+
+data Dump = Never | Above Int 
+  deriving ( Eq, Ord, Show )
 
 options0 = Options 
          { mode = Termination
@@ -76,7 +79,7 @@ options0 = Options
          , use_natural = False
          , use_arctic = False
          , printStatistics = False
-         , dump_boolector = False
+         , dump_boolector = Never
          , cpf = False
          , latex = Nothing
          }
@@ -104,9 +107,11 @@ options =
     , Option [ ] [ "boolector" ]
        (NoArg ( \ opts -> opts { solver = Boolector } ))
        "use Boolector SMT solver"
-    , Option [ ] [ "dump-boolector" ]
-       (NoArg ( \ opts -> opts { dump_boolector = True } ))
-       "use Boolector SMT solver"
+    , Option [ ] [ "dump-boolector-above" ]
+       (OptArg ( \ s opts -> opts { dump_boolector = case s of
+               Nothing -> Above 0 ; Just s -> Above $ read s
+               } ) "Int" )
+       "dump smt2 file if Boolector takes at least N seconds (default N=0, dump all)"
     , Option [ ] [ "satchmo" ]
        (NoArg ( \ opts -> opts { solver = Satchmo } ))
        "use Satchmo SMT solver (bitblasting via minisat)"
