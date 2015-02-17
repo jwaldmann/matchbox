@@ -61,4 +61,4 @@ Executable matchbox2015
                     , array, hashable, HaXml, wl-pprint-text
                     , async, stm
                     , wl-pprint-extras , HaTeX, text, matrix
-                    , random, unix
+                    , random, unix, directory
