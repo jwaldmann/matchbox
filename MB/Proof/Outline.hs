@@ -9,6 +9,8 @@ import TPDB.Data (strict, rules )
 import TPDB.Pretty 
 import Text.PrettyPrint.Leijen.Text ( align, indent)
 
+import Data.Time.Clock
+
 outline :: Proof v s -> Doc
 outline p = vcat
     [ pretty (claim p) <+> "for" <+> outsys (input p)
@@ -29,7 +31,8 @@ outreason r = case r of
                       <+> "dimension" <+> pretty (dimension i)
              , case u of 
                      Nothing -> empty 
-                     Just us -> "for" <+> pretty (length us) <+> "usable rules" 
+                     Just us -> "for" <+> pretty (length us) <+> "usable rules"
+             , timing i
              , indent 4 $ outline p
              ]
     Matrix_Interpretation_Natural  i u p -> 
@@ -40,7 +43,8 @@ outreason r = case r of
                                Just con -> "with" <+> pretty (width con) <+> "constraints"
              , case u of 
                      Nothing -> empty 
-                     Just us -> "for" <+> pretty (length us) <+> "usable rules" 
+                     Just us -> "for" <+> pretty (length us) <+> "usable rules"
+             , timing i
              , indent 4 $ outline p
              ]
     SCCs cs ->  vcat ["EDG decomposed in SCCs" 
@@ -49,3 +53,9 @@ outreason r = case r of
     Cpf2Cpf info f p -> vcat [ "Cpf2Cpf", indent 4 $ info , indent 4 $ outline p ]
 
 
+timing i = case time i of
+  Nothing -> empty
+  Just t -> text "found in"
+            <+> (text $ show $ diffUTCTime (end t) (start t) )
+            <+> text "from" <+> (text $ show $ start t)
+            <+> text "to"   <+> (text $ show $ end   t)

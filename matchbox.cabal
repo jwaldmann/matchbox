@@ -1,5 +1,5 @@
 Name: matchbox
-Version: 4.1.0
+Version: 4.2.0
 Cabal-Version: >= 1.9.2
 License: GPL
 Build-type: Simple
@@ -61,4 +61,4 @@ Executable matchbox2015
                     , array, hashable, HaXml, wl-pprint-text
                     , async, stm
                     , wl-pprint-extras , HaTeX, text, matrix
-                    , random, unix, directory
+                    , random, unix, directory, time >= 1.5

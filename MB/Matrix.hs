@@ -8,7 +8,7 @@ module MB.Matrix where
 import qualified MB.Options as O
 import MB.Options (dim, bits, Options)       
 import MB.Pretty
-import MB.Proof (Interpretation (..), Constraint (..))
+import MB.Proof (Interpretation (..), Constraint (..), Time (..))
 
 import qualified MB.Count
 
@@ -37,6 +37,7 @@ import Control.Applicative
 import System.IO
 
 import Data.Hashable
+import Data.Time.Clock
 
 -- | note: we are assuming that we get a compressed system.
 -- the choice of the compressor should be done outside this module.
@@ -71,6 +72,7 @@ handle ( encoded :: Int -> D.Dictionary m num val bool) direct
             system MB.Count.linear MB.Count.matrix MB.Count.elt opts sys
     hPutStrLn stderr $ show count
 
+    search_start <- getCurrentTime
     out <- solve opts $ do
         let ldict = L.linear mdict
             mdict = M.matrix idict
@@ -81,7 +83,8 @@ handle ( encoded :: Int -> D.Dictionary m num val bool) direct
           f <- mapdecode (L.decode ldict) funmap
           c <- cdecode ldict mdict con 
           return (f :: M.Map s (L.Linear (M.Matrix val)) , c  )
-
+    search_end <- getCurrentTime
+    let t = Time { start = search_start, end = search_end }
     case out of
         Just (f, con0 :: Constraint v s val ) -> do
             let ldict = L.linear mdict
@@ -100,7 +103,8 @@ handle ( encoded :: Int -> D.Dictionary m num val bool) direct
                             , domain = D.domain direct
                             , mapping = f
                             , constraint = if width con > 0 then Just con else Nothing
-                            , values_for_rules = Just vs -- Nothing 
+                            , values_for_rules = Just vs -- Nothing
+                            , time = Just t
                             }
                           , sys' )
                 Left err -> error $ render $ vcat
@@ -201,6 +205,7 @@ handle_dp encoded direct opts sys = do
             system_dp MB.Count.linear MB.Count.matrix MB.Count.elt opts sys
     hPutStrLn stderr $ show count
 
+    search_start <- getCurrentTime
     out <- solve opts $ do
         let ldict = L.linear mdict
             mdict = M.matrix idict
@@ -210,7 +215,9 @@ handle_dp encoded direct opts sys = do
           f <- mapdecode (L.decode ldict) funmap
           c <- cdecode ldict mdict con 
           return (f , c  )
-
+    search_end <- getCurrentTime
+    let t = Time { start = search_start, end = search_end }
+    
     case out of
         Just (f, con0  ) -> do
             let ldict = L.linear mdict
@@ -232,6 +239,7 @@ handle_dp encoded direct opts sys = do
                             , mapping = f
                             , constraint = if width con > 0 then Just con else Nothing
                             , values_for_rules = Just vs -- Nothing
+                            , time = Just t
                             }
                           , sys' )
                 Left err -> error $ render $ vcat

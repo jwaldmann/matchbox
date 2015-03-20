@@ -51,27 +51,28 @@ sequential_or ps = foldr1 orelse ps
 -- starting them in order they appear in the list. 
 -- when any of them returns a result x,
 -- kill the others, and return x to the caller.
+-- WARNING: @ps@ possibly is a lazy infinite list
 bounded_parallel_or b ps = \ x ->
   bounded_parallel_or0 b $ map ( \ p -> p x ) ps
 
+-- | WARNING: @as@ possibly is a lazy infinite list
 bounded_parallel_or0 b as = mkWork0 $ do
   hPutStrLn stderr "--------------- bp start"
   let worker [] [] = return Nothing
       worker running waiting = do
         hPutStrLn stderr $ unwords
-          [ "---------------- bp.worker", show (length running) ]
+          [ "---------------- bp.worker", "running:", show (length running)  ]
         hFlush stderr
         (a,r) <- waitAnyCatch running
         case r of
           Right (Just x) -> return (Just x)
               `finally` forM_ running (async . cancel)
-          _-> do
-            (more, later) <- case waiting of
-              [] -> return ([], [])
+          _-> case waiting of
+              [] -> worker (filter (/= a) running) []
               w:aiting -> do
-                a <- async $ run w
-                return ([a], aiting)
-            worker (more ++ filter (/= a) running) later
+                hPutStrLn stderr "-------------- start next process from queue"
+                b <- async $ run w
+                worker (b : filter (/= a) running) aiting
   let (canrun, mustwait) = splitAt b as
   hPutStrLn stderr "--------------- bp start processes"
   asyncs <- forM canrun ( async . run )

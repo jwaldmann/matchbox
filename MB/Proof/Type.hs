@@ -14,6 +14,8 @@ import TPDB.Pretty ( Doc )
 
 import qualified TPDB.CPF.Proof.Type as T
 
+import qualified Data.Time.Clock as C
+
 -- * the data type
 
 data Claim = Termination | Top_Termination
@@ -34,7 +36,10 @@ data Interpretation v s e = Interpretation
                , (L.Linear(M.Matrix e),L.Linear(M.Matrix e))
                )
              ]
+        , time :: Maybe Time
         }
+
+data Time = Time { start :: C.UTCTime , end :: C.UTCTime }
 
 data Constraint v s e =
   Constraint { width :: Int
