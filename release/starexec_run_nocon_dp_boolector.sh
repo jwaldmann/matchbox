@@ -12,7 +12,7 @@ export LD_LIBRARY_PATH=.
     --bits=$bits \
     --con=$con \
     --cores \
-    --latex \
+    --cpf \
     +RTS -N -M32G -K1G -RTS \
     $1  \
     2>/dev/null
