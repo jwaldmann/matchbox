@@ -9,7 +9,7 @@ import TPDB.Data (strict, rules )
 import TPDB.Pretty 
 import Text.PrettyPrint.Leijen.Text ( align, indent)
 
-import Data.Time.Clock
+import Data.Time ( getCurrentTime, diffUTCTime )
 
 outline :: Proof v s -> Doc
 outline p = vcat

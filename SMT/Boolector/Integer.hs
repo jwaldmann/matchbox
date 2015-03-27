@@ -2,6 +2,8 @@
 -- with operations that accept operands of different bit lengths.
 -- the output bit length is the max of the input bit lengths.
 
+{-# language FlexibleContexts #-}
+
 module SMT.Boolector.Integer where
 
 import qualified SMT.Dictionary as D
