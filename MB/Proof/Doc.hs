@@ -24,6 +24,7 @@ instance Pretty Claim where
     pretty c = case c of
         Termination -> "terminating"
         Top_Termination -> "top-terminating"
+        Cycle_Termination -> "cycle-terminating"
 
 instance (Pretty v, Pretty s, Pretty e ) =>
     Pretty (Interpretation v s e) where

@@ -31,13 +31,37 @@ import Control.Monad.Trans.Maybe
 import Data.Hashable
 import Control.Monad (when)
 
+matrix_arctic_direct opts dim bits = original_matrix_arctic_direct
+      ( opts { O.dim = dim, O.bits = bits, O.compression = O.Simple, O.dependency_pairs = False })
+
+original_matrix_arctic_direct opts = 
+      remover_arctic (case O.mode opts of
+                         O.Termination -> P.Termination
+                         O.Cycle_Termination -> P.Cycle_Termination
+                     )
+      ( "matrix_arctic_direct" :: Doc ) CC.expand_all_trs
+    $ case O.solver opts of
+      O.Satchmo -> case O.encoding opts of
+         O.Binary -> MB.Matrix.handle ( \ b -> SAU.dict $ 2^(b-1) )  SA.direct opts
+         O.Unary  -> MB.Matrix.handle SAU.dict SA.direct opts
+         O.Interval_Plain ->
+           MB.Matrix.handle SAI.dict_plain SA.direct opts 
+         O.Interval_Fibs ->
+           MB.Matrix.handle SAI.dict_fibs SA.direct opts 
+         O.Interval_Twos ->
+           MB.Matrix.handle SAI.dict_twos SA.direct opts 
+         O.Interval_Threes ->
+           MB.Matrix.handle SAI.dict_threes SA.direct opts 
+      O.Boolector -> case O.encoding opts of
+         O.Binary -> MB.Matrix.handle BAB.dict SA.direct opts
+         O.Unary  -> MB.Matrix.handle BAU.dict SA.direct opts
 
 -- matrix_arctic_dp :: Int -> Int -> TRS v c -> Work (TRS v x) Doc
 matrix_arctic_dp opts dim bits = original_matrix_arctic_dp
       ( opts { O.dim = dim, O.bits = bits, O.compression = O.Simple, O.dependency_pairs = True })
 
 original_matrix_arctic_dp opts = 
-      remover_arctic ( "matrix_arctic_dp" :: Doc ) CC.expand_all_trs
+      remover_arctic Top_Termination ( "matrix_arctic_dp" :: Doc ) CC.expand_all_trs
     $ case O.solver opts of
       O.Satchmo -> case O.encoding opts of
          O.Binary -> MB.Matrix.handle_dp ( \ b -> SAU.dict $ 2^(b-1) )  SA.direct opts
@@ -54,16 +78,7 @@ original_matrix_arctic_dp opts =
          O.Binary -> MB.Matrix.handle_dp BAB.dict SA.direct opts
          O.Unary  -> MB.Matrix.handle_dp BAU.dict SA.direct opts
 
-
-{-
-remover_arctic :: ( )
-        => Doc
-        -> ( TRS v s -> TRS v u )
-        -> ( TRS v s -> IO (Maybe (Interpretation u (A.Arctic Integer), TRS v t)))
-        -> Lifter (TRS v s) (TRS v t) (Proof v u)
--}
-
-remover_arctic msg unpack h  sys = do
+remover_arctic clm msg unpack h  sys = do
     let usable = filter ( not . strict ) $ rules $ unpack sys
     out <- h sys
     return $ case out of 
@@ -76,7 +91,7 @@ remover_arctic msg unpack h  sys = do
                    -- "Arctic" <+> vcat [ "sys:" <+> pretty sys , pretty m, out ]
                Proof 
                { input = unpack sys
-               , claim = Top_Termination
+               , claim = clm
                , reason = Matrix_Interpretation_Arctic m (Just usable) out
                }
                    )

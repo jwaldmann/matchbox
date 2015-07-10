@@ -34,6 +34,8 @@ data Dictionary m num val bool =
                      Matrix num -> m bool
                 , positive :: 
                       Matrix num -> m bool
+                , trace_positive :: 
+                      Matrix num -> m bool
                 , add :: Matrix num -> Matrix num
                        -> m (Matrix num)
                 , times :: Matrix num -> Matrix num

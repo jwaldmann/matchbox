@@ -42,6 +42,8 @@ data Dictionary m num val bool =
                       Linear num -> m bool
                 , positive :: 
                       Linear num -> m bool
+                , trace_positive :: 
+                      Linear num -> m bool
                 , nonnegative :: 
                       Linear num -> m bool
                 , weakly_greater :: Linear num 
@@ -115,6 +117,13 @@ linear d = Dictionary
             a <- M.positive d $ abs f
             ms <- forM ( lin f ) $ M.positive d
             M.or d $ a : ms
+    , trace_positive = \ f -> case M.domain d of
+        D.Int -> do
+            ms <- forM ( lin f ) $ M.trace_positive d
+            M.and d ms
+        D.Arctic -> do
+            ms <- forM ( lin f ) $ M.trace_positive d
+            M.and d ms
     , nonnegative = \ f -> case M.domain d of
         D.Int -> do
             ms <- forM ( abs f : lin f ) $ M.nonnegative d

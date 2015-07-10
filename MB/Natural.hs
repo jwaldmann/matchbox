@@ -43,7 +43,11 @@ matrix_natural_dp opts dim bits = original_matrix_natural_dp
       ( opts{  O.dim = dim, O.bits = bits, O.compression = O.Simple, O.dependency_pairs = True })
 
 original_matrix_natural_direct opts =
-    remover_natural P.Termination ("matrix_natural_direct" :: Doc) CC.expand_all_trs
+    remover_natural ( case O.mode opts of
+                         O.Termination -> P.Termination
+                         O.Cycle_Termination -> P.Cycle_Termination
+                    )
+       ("matrix_natural_direct" :: Doc) CC.expand_all_trs
   $ case O.solver opts of
          O.Satchmo -> MB.Matrix.handle SI.dict SPI.direct opts
          O.Boolector -> MB.Matrix.handle BI.dict SPI.direct opts

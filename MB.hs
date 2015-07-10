@@ -72,9 +72,11 @@ main = do
           case O.mode config of
             O.Termination -> do
               putStrLn "YES"
+            O.Cycle_Termination -> do
+              putStrLn "YES"
             O.Complexity {} -> do
               let Just (g, doc) = degree proof
-              putStrLn $ "YES(?,O(n^" ++ show g ++ "))"
+              putStrLn $ "WORST_CASE(?,O(n^" ++ show g ++ "))"
               hPutDoc stdout $ "justification of degree:" </> doc 
               hPutStrLn stdout ""
           if O.cpf config
@@ -191,8 +193,15 @@ matrices_direct config =
       d <- [ 1 .. ]
       c <- [ 0 .. O.constraints config ]
       let b = O.bits config
-      return $ matrix_nat_direct (config { O.constraints=c }) d b 
-    
+      do
+          guard$ O.use_arctic config
+          return $ matrix_arc_direct ( config { O.constraints = 0 } ) d b 
+        ++ do
+          guard $ O.use_natural config
+          c <- [ 0 .. O.constraints config ]
+          return $ matrix_nat_direct ( config { O.constraints = c}) d b 
+
+      
 parameters config = do
   dc <- [1 .. ]
   c <- [ {- 0 .. -} O.constraints config ]
@@ -235,6 +244,20 @@ matrix_arc_dp config dim bits sys = do
         csys = RS { rules = CC.roots rs
                                , separate = separate sys }
     (csys', f) <- mkWork ( matrix_arctic_dp config dim bits ) csys
+    let sys' = CC.expand_all_trs csys'
+    return ( sys', f )
+
+matrix_arc_direct config dim bits sys = do
+    let c = O.Paper
+        (cost, rs) = ( case c of
+                       O.None -> CS.nocompress 
+                       O.Simple -> CS.compress 
+                       O.Paper -> CP.compress CP.Simple
+                       O.PaperIter -> CP.compress CP.Iterative
+                     ) $ rules sys
+        csys = RS { rules = CC.roots rs
+                               , separate = separate sys }
+    (csys', f) <- mkWork ( matrix_arctic_direct config dim bits ) csys
     let sys' = CC.expand_all_trs csys'
     return ( sys', f )
 

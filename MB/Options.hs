@@ -96,8 +96,12 @@ options =
       "prove polynomial complexity (with degree bound)"
 
     , Option [] [ "cycle" ]
-       (NoArg ( \ opts -> opts { mode = Cycle_Termination } ) )
-      "prove cycle termination (for SRS, termination moduly conjugacy)"
+       (NoArg ( \ opts -> opts
+         { mode = Cycle_Termination
+         , dependency_pairs = False
+         , constraints = 0
+         } ) )
+      "prove cycle termination (for SRS, termination modulo conjugacy)"
       
     , Option [ 'd' ] [ "dimension" ]
        ( ReqArg ( \ s opts -> opts { dim = read s }) "Int" ) "vector dimension"

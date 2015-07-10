@@ -384,8 +384,10 @@ system dict mdict idict opts sys = do
     opairs <- forM originals $ \ ( f,ar) -> do
         l <- if O.triangular opts
              then L.triangular dict ar (dim , dim)
-             else  L.make dict ar (dim , dim)
-        s <- L.positive dict l
+             else L.make dict ar (dim , dim)
+        s <- case O.mode opts of
+          O.Termination -> L.positive dict l
+          O.Cycle_Termination -> L.positive dict l
         L.assert dict [s]
         return (f, l)
 
@@ -422,7 +424,7 @@ system dict mdict idict opts sys = do
         
     funmap <- foldM (digger dict) (M.fromList opairs) digrams
     flagcerts <- forM (rules sys) 
-             $ rule dict mdict dim funmap res
+             $ rule opts dict mdict dim funmap res
 
     let combine =  case O.remove_all opts of
           True -> M.and ; False -> M.or
@@ -561,15 +563,16 @@ digger dict m (CC.Dig d, _) = do
 
 -- | asserts weak decrease and returns strict decrease
 rule
- :: (Ord o, Ord v, Monad m) =>
-     L.Dictionary m (M.Matrix num) val bool
+ :: (Ord o, Ord v, Monad m)
+     => Options
+     -> L.Dictionary m (M.Matrix num) val bool
      -> M.Dictionary m num val1 t
      -> Int
      -> M.Map (CC.Sym o) (L.Linear (M.Matrix num))
      -> L.Linear (M.Matrix num)
      -> Rule (Term v (CC.Sym o))
      -> m (t, (Rule (Term v o), [M.Matrix num]))
-rule dict mdict dim funmap res u = do
+rule opts dict mdict dim funmap res u = do
     let vs = S.union (vars $ lhs u) (vars $ rhs u)
         varmap = M.fromList $ zip (S.toList vs) [0..]
     l <- term dict dim funmap varmap $ lhs u
@@ -590,7 +593,11 @@ rule dict mdict dim funmap res u = do
     rhs <- M.add mdict (L.abs r) susb
     ge <- M.weakly_greater mdict (L.abs l) rhs
     M.assert mdict [ge]
-    gt <- M.strictly_greater mdict (L.abs l) rhs
+    gt <- case O.mode opts of
+      O.Cycle_Termination ->
+        M.strictly_greater mdict (head $ L.lin l) (head $ L.lin r)
+      O.Termination ->
+        M.strictly_greater mdict (L.abs l) rhs
     
     return (gt, ( fmap CC.expand_all u,us))
 

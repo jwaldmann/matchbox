@@ -18,7 +18,7 @@ import qualified Data.Time.Clock as C
 
 -- * the data type
 
-data Claim = Termination | Top_Termination
+data Claim = Termination | Top_Termination | Cycle_Termination
 
 data Proof v s = Proof
      { input :: TRS v s
