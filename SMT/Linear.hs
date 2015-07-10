@@ -119,10 +119,10 @@ linear d = Dictionary
             M.or d $ a : ms
     , trace_positive = \ f -> case M.domain d of
         D.Int -> do
-            ms <- forM ( lin f ) $ M.trace_positive d
+            ms <- forM ( lin f ) $ M.positive d
             M.and d ms
         D.Arctic -> do
-            ms <- forM ( lin f ) $ M.trace_positive d
+            ms <- forM ( lin f ) $ M.positive d
             M.and d ms
     , nonnegative = \ f -> case M.domain d of
         D.Int -> do

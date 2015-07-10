@@ -387,7 +387,7 @@ system dict mdict idict opts sys = do
              else L.make dict ar (dim , dim)
         s <- case O.mode opts of
           O.Termination -> L.positive dict l
-          O.Cycle_Termination -> L.positive dict l
+          O.Cycle_Termination -> L.trace_positive dict l
         L.assert dict [s]
         return (f, l)
 
