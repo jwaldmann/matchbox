@@ -62,6 +62,7 @@ instance Texy Claim where
     texy c = case c of
         Termination -> "terminating"
         Top_Termination -> "top-terminating"
+        Cycle_Termination -> "cycle-terminating"
 
 instance (Texy v, Texy s, Texy e ) =>
     Texy (Interpretation v s e) where

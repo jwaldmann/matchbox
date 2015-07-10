@@ -1,5 +1,5 @@
 Name: matchbox
-Version: 4.2.0
+Version: 4.3.0
 Cabal-Version: >= 1.9.2
 License: GPL
 Build-type: Simple
@@ -27,7 +27,8 @@ description:
   Methods used: Matrix interpretations over natural
   and arctic numbers, dependency pairs transformation,
   (for strings:) lexicographic path order, semantic labelling/unlabelling,
-  compression of rewriting systems.
+  compression of rewriting systems,
+  (for cycle termination:) trace decreasing natural and arctic matrices.
   .
   Constraint solvers used: 
   glpk linear programming solver, minisat SAT solver via CO4 SAT compiler

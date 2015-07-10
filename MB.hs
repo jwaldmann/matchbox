@@ -28,6 +28,7 @@ import TPDB.DP.Transform
 import TPDB.DP.Usable
 import TPDB.DP.Graph
 import TPDB.Mirror
+import qualified TPDB.Convert
 import TPDB.Xml.Pretty ( document )
 import Text.PrettyPrint.Leijen.Text (hPutDoc)
 
@@ -63,6 +64,11 @@ main = do
                         }
     
     trs <- TPDB.Input.get_trs filePath
+
+    case O.mode config of
+      O.Cycle_Termination -> must_be_srs trs
+      _ -> return ()
+    
     out <- run $ case O.dependency_pairs config of
       False -> handle_direct config trs
       True -> handle_both config trs      
@@ -109,6 +115,11 @@ main = do
 
                 hPutStrLn stdout "Proof outline"
                 hPutDoc stdout $ outline proof ; hPutStrLn stdout ""
+
+must_be_srs trs = case TPDB.Convert.trs2srs trs of
+  Just _ -> return ()
+  Nothing -> error "for cycle termination, input must be SRS"
+        
 
 handle_both config sys = case TPDB.Mirror.mirror sys of
      Nothing -> handle_dp config sys
