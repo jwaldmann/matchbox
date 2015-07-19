@@ -3,10 +3,13 @@
 
 module MB.Closure.Enumerate where
 
+import qualified MB.Closure.Option as O
+
 import Data.Hashable
 import MB.Closure.Data
 import qualified Data.HashSet as S
 import qualified Data.PQueue.Min as Q
+import Data.Foldable (foldr')
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Char8 as C
 import Control.Monad ( guard )
@@ -37,7 +40,7 @@ test3 = take 1 $ loops g08
 test4 = take 1 $ loops g10
 
 loops rules = do
-  c <- enumerate_fcs rules
+  c <- enumerate O.Both rules
   guard $ looping c
   return c
 
@@ -108,9 +111,12 @@ exponentof b s = if B.null s then return 0 else do
   guard $ b == x
   succ <$> exponentof b y
     
-enumerate_fcs rules =  
+enumerate dirs rules =  
   work_fc (map rule rules) $ \ x y -> do
-    f <- [ lefts, rights, insides ]
+    f <- case dirs  of
+        O.Both -> [ lefts, insides, rights ]
+        O.Left -> [ lefts, insides ]
+        O.Right ->       [ insides, rights ]
     f x y
 
 work_fc :: (Ord a, Hashable a)
@@ -122,7 +128,7 @@ work_fc base combine =
           if S.member x done
           then go done xs
           else (x :)  $ go (S.insert x done)
-                 $ foldr Q.insert xs
+                 $ foldr' Q.insert xs
                  $ do b <- base ; combine x b
   in  go S.empty $ Q.fromList base
 
