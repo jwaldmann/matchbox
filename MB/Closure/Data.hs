@@ -7,7 +7,7 @@ module MB.Closure.Data
 
 ( OC () , size, source, target
 , rule, lefts, rights, insides, outsides
-, splits
+, splits, assert_leq
 )
        
 where
@@ -75,15 +75,21 @@ rule (l, r) = make Rule l r 1
 
 splits s = zip (B.inits s) (B.tails s)
 
-lefts c d = do
-  i <- [ 1 .. min (B.length $ target c)(B.length $ source d)]
+assert_leq x mw = guard $ case mw of
+  Just w -> x <= w
+  Nothing -> True
+
+lefts mw c d = do
+  i <- [ 1 .. min (B.length $ target c)(B.length $ source d) ]
+  assert_leq (B.length (target c) + B.length (target d) - i) mw
   let (!c1,!c2) = B.splitAt i $ target c
   let (!d1,!d2) = splitAtEnd i $ source d
   guard $ c1 == d2
   return $ overlap (Left i) c d (d1 <> source c) (target d <> c2) 
 
-rights c d = do
+rights mw c d = do
   i <- [ 1 .. min (B.length $ target c)(B.length $ source d)]
+  assert_leq (B.length (target c) + B.length (target d) - i) mw
   let (!c1,!c2) = splitAtEnd i $ target c
   let (!d1,!d2) = B.splitAt i $ source d
   guard $ c2 == d1
@@ -91,14 +97,16 @@ rights c d = do
 
 splitAtEnd i s = B.splitAt (B.length s - i) s
 
-insides c d = do
+insides mw c d = do
+  assert_leq (B.length (target c) + B.length (target d) - B.length (source d)) mw  
   i <- [ 0 .. B.length (target c) - B.length (source d)]
   let (!c1,!c2) = B.splitAt i $ target c
   let (!c21,!c22) = B.splitAt (B.length $ source d) c2
   guard $ c21 == source d
   return $ overlap (Inside i) c d (source c) (c1 <> target d <> c22) 
 
-outsides c d = do
+outsides mw c d = do
+  assert_leq (B.length (target d)) mw
   i <- [ 0 .. B.length (source d) - B.length (target c)]
   let (!d1,!d2) = B.splitAt i $ source d
   let (!d21,!d22) = B.splitAt (B.length $ target c) d2

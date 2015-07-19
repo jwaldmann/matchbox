@@ -13,6 +13,7 @@ import Data.Foldable (foldr')
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Char8 as C
 import Control.Monad ( guard )
+import Control.Applicative
 
 import qualified Data.Map.Strict as M
 import TPDB.Data 
@@ -40,7 +41,7 @@ test3 = take 1 $ loops g08
 test4 = take 1 $ loops g10
 
 loops rules = do
-  c <- enumerate O.Both rules
+  c <- enumerate O.Both Nothing rules
   guard $ looping c
   return c
 
@@ -111,13 +112,13 @@ exponentof b s = if B.null s then return 0 else do
   guard $ b == x
   succ <$> exponentof b y
     
-enumerate dirs rules =  
+enumerate dirs mw rules =  
   work_fc (map rule rules) $ \ x y -> do
     f <- case dirs  of
-        O.Both -> [ lefts, insides, rights ]
-        O.Left -> [ lefts, insides ]
-        O.Right ->       [ insides, rights ]
-    f x y
+        O.Both -> [ lefts , insides , rights  ]
+        O.Left -> [ lefts , insides  ]
+        O.Right ->        [ insides, rights  ]
+    f mw x y
 
 work_fc :: (Ord a, Hashable a)
            =>  [a] -> (a -> a -> [a]) -> [a]
@@ -132,10 +133,12 @@ work_fc base combine =
                  $ do b <- base ; combine x b
   in  go S.empty $ Q.fromList base
 
-enumerate_ocs rules =
+enumerate_ocs dirs mw rules =
   work_oc (map rule rules) $ \ x y -> do
-     f <- [lefts,rights,insides,outsides]
-     f x y  ++ f y x
+     f <- [lefts , rights , insides , outsides ]
+     c <- f mw x y ++ f mw y x
+     assert_leq ( B.length $ target c) mw
+     return c
 
 work_oc :: (Ord a, Hashable a)
            =>  [a] -> (a -> a -> [a]) -> [a]

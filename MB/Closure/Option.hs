@@ -11,6 +11,7 @@ data Directions = Left | Both | Right
 data Config =
   Config { cyclic :: Bool
          , directions :: Directions
+         , width :: Maybe Int
          , problem :: FilePath
          }
   deriving Show
@@ -26,6 +27,8 @@ config = Config
         <|> flag Right Right ( long "right" <> short 'r' )
         <|> flag Right Both ( long "both" <> short 'b' )
       )
+  <*> option (Just <$> auto) 
+      ( long "width" <> short 'w' <> value Nothing )
   <*> strArgument
     ( help "file name (containing SRS in ASCII syntax)"
       <> metavar "FILE"
