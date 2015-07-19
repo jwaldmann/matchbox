@@ -45,6 +45,7 @@ matrix_natural_dp opts dim bits = original_matrix_natural_dp
 original_matrix_natural_direct opts =
     remover_natural ( case O.mode opts of
                          O.Termination -> P.Termination
+                         O.Complexity {} -> P.Termination -- FIXME
                          O.Cycle_Termination -> P.Cycle_Termination
                     )
        ("matrix_natural_direct" :: Doc) CC.expand_all_trs

@@ -388,6 +388,7 @@ system dict mdict idict opts sys = do
         s <- case O.mode opts of
           O.Termination -> L.positive dict l
           O.Cycle_Termination -> L.trace_positive dict l
+          O.Complexity {} -> L.positive dict l
         L.assert dict [s]
         return (f, l)
 
@@ -597,6 +598,8 @@ rule opts dict mdict dim funmap res u = do
       O.Cycle_Termination ->
         M.strictly_greater mdict (head $ L.lin l) (head $ L.lin r)
       O.Termination ->
+        M.strictly_greater mdict (L.abs l) rhs
+      O.Complexity {} ->
         M.strictly_greater mdict (L.abs l) rhs
     
     return (gt, ( fmap CC.expand_all u,us))

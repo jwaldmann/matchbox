@@ -12,7 +12,7 @@ export LD_LIBRARY_PATH=.
     --$solver \
     --$domain \
     --bits=$bits \
-    --con=$con \
+    --con=$con --small-constraints \
     --cores \
     --latex \
     +RTS -N -M32G -K1G -RTS \
