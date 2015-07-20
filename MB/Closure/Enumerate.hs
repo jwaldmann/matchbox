@@ -48,7 +48,7 @@ looping c = or $ do
   return $ D.isPrefixOf (D.source c) t
 
 data Certificate = Cycle_Loop
-  { a :: D.S, b :: D.S
+  { u :: D.S, v :: D.S
   , p :: Int, q :: Int, r :: Int, s :: Int
   , closure :: D.OC
   }
@@ -61,10 +61,10 @@ instance Show Certificate where
     ]
   show z@Cycle_Loop{} = unlines
     [ "is cycle-non-terminating because of SRS derivation"
-    , "from  source = a^" ++ show (p z) ++ " b^" ++ show (q z)
-    , "  to  target = b^" ++ show (r z) ++ " a^" ++ show (s z)
-    , "where a = " ++ show (a z)
-    , "      b = " ++ show (b z)
+    , "from  source = u^" ++ show (p z) ++ " v^" ++ show (q z)
+    , "  to  target = v^" ++ show (r z) ++ " u^" ++ show (s z)
+    , "where u = " ++ show (u z)
+    , "      v = " ++ show (v z)
     , show $ closure z
     ]
 
@@ -76,16 +76,15 @@ cycle_loop_certificates c = do
    (sl,sr) <- D.splits $ D.source c
    guard $ not $ D.null sl
    guard $ not $ D.null sr
-   let (slb,sle) = root sl ; (srb,sre) = root sr
-   i <- [ 0 , D.length srb .. D.length $ D.target c ]
+   let (uu,pp) = root sl ; (vv,qq) = root sr
+   i <- [ 0 , D.length vv .. D.length $ D.target c ]
    let (tl,tr) = D.splitAt i $ D.target c
-   tle <- exponentof srb tl
-   tre <- exponentof slb tr  
-   guard $ tle >= sre 
-         && tre >= sle
-         && (divides sre  tle || divides sle tre )
+   rr <- exponentof vv tl
+   ss <- exponentof uu tr  
+   guard $  (pp == ss && qq <= rr) 
+         || (pp <= ss && qq == rr)
    return $ Cycle_Loop
-     { a = slb, b = srb , p = sle, q = sre, r = tle, s = tre
+     { u = uu, v = vv , p = pp, q = qq, r = rr, s = ss
      , closure = c
      }
 
