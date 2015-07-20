@@ -48,8 +48,8 @@ looping c = or $ do
   return $ D.isPrefixOf (D.source c) t
 
 data Certificate = Cycle_Loop
-  { p :: D.S , q :: D.S
-  , a :: Int, b :: Int, c:: Int, d :: Int
+  { a :: D.S, b :: D.S
+  , p :: Int, q :: Int, r :: Int, s :: Int
   , closure :: D.OC
   }
   | Standard_Loop { closure :: D.OC }
@@ -61,10 +61,10 @@ instance Show Certificate where
     ]
   show z@Cycle_Loop{} = unlines
     [ "is cycle-non-terminating because of SRS derivation"
-    , "from s =  p^" ++ show (a z) ++ " q^" ++ show (b z)
-    , "  to t =  q^" ++ show (c z) ++ " p^" ++ show (d z)
-    , "where p = " ++ show (p z)
-    , "      q = " ++ show (q z)
+    , "from  source = a^" ++ show (p z) ++ " b^" ++ show (q z)
+    , "  to  target = b^" ++ show (r z) ++ " a^" ++ show (s z)
+    , "where a = " ++ show (a z)
+    , "      b = " ++ show (b z)
     , show $ closure z
     ]
 
@@ -85,7 +85,7 @@ cycle_loop_certificates c = do
          && tre >= sle
          && (divides sre  tle || divides sle tre )
    return $ Cycle_Loop
-     { p = slb, a = sle, q = srb, b = sre, c = tle, d = tre
+     { a = slb, b = srb , p = sle, q = sre, r = tle, s = tre
      , closure = c
      }
 
