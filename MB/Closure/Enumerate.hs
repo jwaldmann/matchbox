@@ -13,6 +13,7 @@ import qualified Data.PQueue.Prio.Min as Q
 import Data.Foldable (foldr')
 import Control.Monad ( guard )
 import Control.Applicative
+import Data.Monoid 
 
 import qualified Data.Map.Strict as M
 import TPDB.Data 
@@ -56,19 +57,26 @@ data Certificate = Cycle_Loop
   }
   | Standard_Loop { closure :: D.OC }
 
-instance Pretty Certificate where
-  pretty z@Standard_Loop{} = vcat
-    [ "is non-terminating because of looping SRS derivation"
-    , pretty $ closure z
+instance Pretty Certificate where pretty = pretty_with True
+
+
+pretty_with full z@Standard_Loop{} = vcat
+    [ "looping SRS derivation"
+    , D.pretty_with full $ closure z
     ]
-  pretty z@Cycle_Loop{} = vcat
-    [ "is cycle-non-terminating because of SRS derivation"
-    , text $ "from  source = u^" ++ show (p z) ++ " v^" ++ show (q z)
-    , text $ "  to  target = v^" ++ show (r z) ++ " u^" ++ show (s z)
-    , text $ "where u = " ++ show (u z)
-    , text $ "      v = " ++ show (v z)
-    , pretty $ closure z
+pretty_with full z@Cycle_Loop{} = vcat
+    [ "cycle-looping SRS derivation"
+    , if full then vcat 
+       [ text $ "from  source = u^" ++ show (p z) ++ " v^" ++ show (q z)
+       , text $ "  to  target = v^" ++ show (r z) ++ " u^" ++ show (s z)
+       , text $ "where u = " ++ show (u z)
+       , text $ "      v = " ++ show (v z)
+       ] else mempty
+    , D.pretty_with full $ closure z
     ]
+
+brief :: Certificate -> Doc
+brief = pretty_with False
 
 loop_certificates c = do
    guard $ looping c

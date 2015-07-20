@@ -13,6 +13,7 @@ import MB.Arctic
 import MB.Natural
 import MB.Logic
 import MB.Complexity
+import MB.Proof.Outline (headline)
 import qualified MB.Options as O
 
 import qualified Compress.Common as CC
@@ -76,20 +77,17 @@ main = do
         Nothing    -> do putStrLn "MAYBE"
         Just proof -> do
           case O.mode config of
-            O.Termination -> do
-              putStrLn "YES"
-            O.Cycle_Termination -> do
-              putStrLn "YES"
             O.Complexity {} -> do
               let Just (g, doc) = degree proof
               putStrLn $ "WORST_CASE(?,O(n^" ++ show g ++ "))"
               hPutDoc stdout $ "justification of degree:" </> doc 
               hPutStrLn stdout ""
+            _ -> print $ headline proof  
           if O.cpf config
               then do
                 displayIO stdout $ renderCompact $ document 
                               $ P.tox $ P.rtoc proof
-                hPutStrLn stderr "YES"
+                hPutStrLn stderr $ show $ headline proof
                 hPutDoc stderr $ pretty proof ; hPutStrLn stderr ""
                 hPutStrLn stderr "Proof outline"
                 hPutDoc stderr $ outline proof ; hPutStrLn stderr ""

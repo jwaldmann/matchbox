@@ -22,7 +22,12 @@ data Mode = Termination
           | Complexity (Maybe Int) -- ^ upper bound for deg. of pol.
           | Cycle_Termination -- ^ for SRS, termination modulo conjugacy
      deriving (Eq, Ord, Show)
-   
+
+data Direction = Yeah -- ^ prove termination only
+               | Noh  -- ^ prove nontermination only
+               | Both -- ^ attempt both
+  deriving (Eq, Ord, Show)
+              
 data Options =
      Options { dim :: Int
              , bits :: Int
@@ -32,6 +37,7 @@ data Options =
              , constraints :: Int
              , small_constraints :: Bool
              , mode :: Mode
+             , direction :: Direction
              , remove_all :: Bool
              , triangular :: Bool
              , dependency_pairs :: Bool
@@ -58,6 +64,7 @@ data Dump = Never | Above Int
 
 options0 = Options 
          { mode = Termination
+         , direction = Yeah
          , dim = 5, bits = 3
          , solver = Satchmo
          , encoding = Binary
@@ -95,6 +102,16 @@ options =
          } ) "Int" )
       "prove polynomial complexity (with degree bound)"
 
+    , Option [] [ "yeah" ]
+      (NoArg ( \ opts -> opts{direction = Yeah}))
+      "prove termination (upper bounds)"
+    , Option [] [ "noh" ]
+      (NoArg ( \ opts -> opts{direction = Noh}))
+      "prove nontermination (lower bounds)"
+    , Option [] [ "both" ]
+      (NoArg ( \ opts -> opts{direction = Both}))
+      "start proof attempts for termination and nontermination (upper and lower bounds)"
+      
     , Option [] [ "cycle" ]
        (NoArg ( \ opts -> opts
          { mode = Cycle_Termination

@@ -5,11 +5,21 @@ module MB.Proof.Outline where
 import MB.Proof.Type
 import MB.Proof.Doc ()
 
+import qualified MB.Closure.Enumerate as Cl
+
 import TPDB.Data (strict, rules )
 import TPDB.Pretty 
 import Text.PrettyPrint.Leijen.Text ( align, indent)
 
 import Data.Time ( getCurrentTime, diffUTCTime )
+
+headline :: Proof v s -> Doc
+headline p = case claim p of
+  Termination -> "YES"
+  Cycle_Termination -> "YES"
+  Non_Termination -> "NO"
+  Cycle_Non_Termination -> "NO"
+  c -> pretty c
 
 outline :: Proof v s -> Doc
 outline p = vcat
@@ -50,6 +60,9 @@ outreason r = case r of
     SCCs cs ->  vcat ["EDG decomposed in SCCs" 
                      , indent 4 $ vcat $ do Right c <- cs ; return $ outline c
                      ]
+    Nonterminating c -> vcat
+      [ "nonterminating" , Cl.brief c ]
+                
     Cpf2Cpf info f p -> vcat [ "Cpf2Cpf", indent 4 $ info , indent 4 $ outline p ]
 
 

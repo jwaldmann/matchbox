@@ -19,6 +19,7 @@ module MB.Closure.Data
 , rule, lefts, rights, insides, outsides
 , splits, splitAt, null, length, isPrefixOf, tails, pack
 , assert_leq
+, pretty_with
 )
        
 where
@@ -69,12 +70,14 @@ data OC = OC { source :: ! S
              }
           deriving Show
 
-instance Pretty OC where
-  pretty c = text "Closure" <+> vcat 
+instance Pretty OC where  pretty = pretty_with True
+
+pretty_with full c = "Closure" <+> vcat 
     [ "source :" <+> ( text $ C.unpack $ source c )
     , "target :" <+> ( text $ C.unpack $ target c )
     , "steps  :" <+> ( pretty $ steps c )
-    , "reason :" <+> ( pretty $ reason c )
+    , if full then "reason :" <+> ( pretty $ reason c )
+      else mempty
     ]
 
 -- | Ord and Eq instance only use source and target

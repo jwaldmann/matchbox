@@ -3,6 +3,8 @@ module MB.Proof.Type where
 import TPDB.Data hiding ( Termination )
 import TPDB.DP (Marked )
 
+import qualified MB.Closure.Enumerate as Cl
+
 import SMT.Dictionary (Domain)
 import qualified SMT.Linear as L
 import qualified SMT.Matrix as M
@@ -19,6 +21,7 @@ import qualified Data.Time.Clock as C
 -- * the data type
 
 data Claim = Termination | Top_Termination | Cycle_Termination
+           | Non_Termination | Cycle_Non_Termination
 
 data Proof v s = Proof
      { input :: TRS v s
@@ -69,6 +72,7 @@ data Reason v s = No_Strict_Rules
            (Proof v s)
      | Usable_Rules (Proof v s)
      | SCCs [ Either (Rule (Term v s)) (Proof v s) ]
+     | Nonterminating Cl.Certificate
      | Extra Doc (Proof v s)
 
      | Cpf2Cpf Doc (T.DpProof -> T.DpProof) (Proof v s)
