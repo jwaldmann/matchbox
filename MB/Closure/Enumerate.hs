@@ -82,13 +82,16 @@ cycle_loop_certificates c = do
    i <- [ 0 , B.length srb .. B.length $ target c ]
    let (tl,tr) = B.splitAt i $ target c
    tle <- exponentof srb tl
-   tre <- exponentof slb tr
-   guard $ tle >= sre && tre >= sle
+   tre <- exponentof slb tr  
+   guard $ tle >= sre 
+         && tre >= sle
+         && (divides sre  tle || divides sle tre )
    return $ Cycle_Loop
      { p = slb, a = sle, q = srb, b = sre, c = tle, d = tre
      , closure = c
      }
 
+divides s t = 0 == mod t s
 
 -- G045: 0000 -> 0101, 0101 -> 0010
 

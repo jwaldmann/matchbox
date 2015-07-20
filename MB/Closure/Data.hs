@@ -65,7 +65,7 @@ make r s t p = OC
   -- note on size: this is used in the priority queue.
   -- we want small left-hand sides (sources)
   -- because they are much more likely to start a loop
-  , size = B.length s 
+  , size = B.length s + truncate ( logBase 2 $ fromIntegral $ B.length t )
   }
 
 overlap p c d s t =
