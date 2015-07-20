@@ -17,6 +17,8 @@ import Control.Applicative
 import qualified Data.Map.Strict as M
 import TPDB.Data 
 
+import TPDB.Pretty
+
 fromSRS :: (Hashable c, Ord c)
         => SRS c -> [(D.S, D.S)]
 fromSRS sys = do
@@ -54,18 +56,18 @@ data Certificate = Cycle_Loop
   }
   | Standard_Loop { closure :: D.OC }
 
-instance Show Certificate where
-  show z@Standard_Loop{} = unlines
+instance Pretty Certificate where
+  pretty z@Standard_Loop{} = vcat
     [ "is non-terminating because of looping SRS derivation"
-    , show $ closure z
+    , pretty $ closure z
     ]
-  show z@Cycle_Loop{} = unlines
+  pretty z@Cycle_Loop{} = vcat
     [ "is cycle-non-terminating because of SRS derivation"
-    , "from  source = u^" ++ show (p z) ++ " v^" ++ show (q z)
-    , "  to  target = v^" ++ show (r z) ++ " u^" ++ show (s z)
-    , "where u = " ++ show (u z)
-    , "      v = " ++ show (v z)
-    , show $ closure z
+    , text $ "from  source = u^" ++ show (p z) ++ " v^" ++ show (q z)
+    , text $ "  to  target = v^" ++ show (r z) ++ " u^" ++ show (s z)
+    , text $ "where u = " ++ show (u z)
+    , text $ "      v = " ++ show (v z)
+    , pretty $ closure z
     ]
 
 loop_certificates c = do

@@ -5,16 +5,16 @@ import TPDB.Plain.Write
 import TPDB.Plain.Read
 import TPDB.Pretty (pretty)
 import TPDB.Data
+import TPDB.Input (get_srs)
+import TPDB.Pretty (pretty)
 
 import Control.Monad ( forM_ )
 
 main = O.main_with >>= workf
 
 workf conf = do
-  s <- readFile $ O.problem conf
-  case srs s of
-    Left err -> error err
-    Right t -> work conf t
+  s <- get_srs $ O.problem conf
+  work conf s
 
 work conf sys = do
   let rules = fromSRS sys
@@ -23,9 +23,12 @@ work conf sys = do
   print conf    
   putStrLn $ "original: " ++ show (pretty sys)
   putStrLn $ "renamed : " ++ show rules
-  mapM_ print $ take 1 $ do
-    c <- cs
-    loop_certificates c ++
-      if O.cyclic conf then cycle_loop_certificates c else [] 
+  let certs = do
+        c <- cs
+        loop_certificates c ++
+          if O.cyclic conf 
+          then cycle_loop_certificates c 
+          else [] 
+  mapM_ (print . pretty) $ take 1 $ certs
 
 

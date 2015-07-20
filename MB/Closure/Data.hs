@@ -10,6 +10,7 @@
 -- see MB.Closure.Enumerate for a usage example.
 
 {-# language BangPatterns #-}
+{-# language OverloadedStrings #-}
 {-# language NoMonomorphismRestriction #-}
 
 module MB.Closure.Data
@@ -34,6 +35,8 @@ import qualified Data.ByteString as B
 import qualified Data.ByteString.Char8 as C
 
 import Data.ByteString.Search.KMP (indices)
+
+import TPDB.Pretty hiding ((<>))
 
 -- import qualified Data.ByteString.Lazy as B
 -- import qualified Data.ByteString.Lazy.Char8 as C
@@ -66,6 +69,14 @@ data OC = OC { source :: ! S
              }
           deriving Show
 
+instance Pretty OC where
+  pretty c = text "Closure" <+> vcat 
+    [ "source :" <+> ( text $ C.unpack $ source c )
+    , "target :" <+> ( text $ C.unpack $ target c )
+    , "steps  :" <+> ( pretty $ steps c )
+    , "reason :" <+> ( pretty $ reason c )
+    ]
+
 -- | Ord and Eq instance only use source and target
 -- (and, for efficiency, hashcode and size derived from this)
 essence c = (size c, hashcode c, source c, target c)
@@ -87,10 +98,21 @@ instance Hashable OC where
 data Reason = Rule !Int | Overlap !Position !Reason !Reason
   deriving Show
 
+instance Pretty Reason where
+  pretty r = case r of
+    Rule i -> "Rule" <+> pretty i
+    Overlap p r1 r2 -> vcat 
+      [ "Overlap" <+> pretty p 
+      , " " <> vcat [ pretty r1, pretty r2 ] 
+      ]
+
 -- | kind and offset for overlap
 data Position =
    Left !Int | Right !Int | Inside !Int | Outside !Int
   deriving Show
+
+instance Pretty Position where
+  pretty p = text $ show p
 
 make r s t p = OC
   { reason = r
