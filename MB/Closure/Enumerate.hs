@@ -21,13 +21,21 @@ import TPDB.Data
 import TPDB.Pretty
 
 fromSRS :: (Hashable c, Ord c)
-        => SRS c -> [(D.S, D.S)]
-fromSRS sys = do
+        => SRS c ->  [(D.S, D.S)] 
+fromSRS sys = snd $ fromSRS_withmap sys
+
+fromSRS_withmap :: (Hashable c, Ord c)
+        => SRS c -> ( (M.Map c Char, M.Map Char c ), [(D.S, D.S)] )
+fromSRS_withmap sys = 
   let sigma = H.fromList $ do u <- rules sys ; lhs u ++ rhs u
-      m = M.fromList $ zip ( H.toList sigma ) ['a' .. ]
-      pack s = D.pack $ map (m M.!) s
-  u <- rules sys
-  return ( pack $ lhs u, pack $ rhs u )
+      fore = M.fromList $ zip ( H.toList sigma ) ['a' .. ]
+      back = M.fromList $ zip ['a' .. ] $ H.toList sigma
+      pack s = D.pack $ map (fore M.!) s
+  in  ( (fore,back)
+    , do
+       u <- rules sys
+       return ( pack $ lhs u, pack $ rhs u )
+    )
 
 hw1 = [ ("bc", "abb"), ("ba", "acb") ]
 g03 = [ ("0000","0011"), ("1001","0010")]

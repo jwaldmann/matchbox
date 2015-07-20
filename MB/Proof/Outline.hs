@@ -35,6 +35,7 @@ outsys sys =
 outreason r = case r of
     No_Strict_Rules -> "no strict pairs"
     Mirror_Transform p -> vcat [ "mirror SRS", outline p ]
+    Equivalent doc p -> vcat [ "equivalent" <+> doc, indent 4 $ outline p ]
     DP_Transform p -> vcat [ "DP transform", indent 4 $ outline p ]
     Matrix_Interpretation_Arctic  i u p -> 
         vcat ["matrix interpretation, domain" <+> text  ( show $ domain i)

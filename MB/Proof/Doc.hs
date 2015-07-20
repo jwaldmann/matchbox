@@ -23,8 +23,10 @@ instance (Pretty v, Pretty s) => Pretty (Proof v s) where
 instance Pretty Claim where
     pretty c = case c of
         Termination -> "terminating"
+        Non_Termination -> "non-terminating"
         Top_Termination -> "top-terminating"
         Cycle_Termination -> "cycle-terminating"
+        Cycle_Non_Termination -> "cycle-non-terminating"
 
 instance (Pretty v, Pretty s, Pretty e ) =>
     Pretty (Interpretation v s e) where
@@ -103,6 +105,9 @@ instance (Pretty v, Pretty s) => Pretty (Reason v s) where
                   (k,p) <- zip [1 :: Int .. ] ps
                   return $ "SCC" <+> pretty k <+> pretty p
             ]
+
+        Nonterminating c -> vcat
+            [ "nonterminating", nest 4 $ pretty c ]
 
         Cpf2Cpf info f p -> vcat 
             [ "semanticLabeling" 

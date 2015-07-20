@@ -13,6 +13,10 @@ import MB.Arctic
 import MB.Natural
 import MB.Logic
 import MB.Complexity
+import qualified MB.Closure.Enumerate as Clo
+import qualified MB.Closure.Option as Clo
+import qualified MB.Closure.Data as Clo
+
 import MB.Proof.Outline (headline)
 import qualified MB.Options as O
 
@@ -21,7 +25,7 @@ import qualified Compress.Simple as CS
 import qualified Compress.PaperIter as CPI
 import qualified Compress.Paper as CP
 
-import TPDB.Data ( strict, rules, TRS, RS(..), separate )
+import TPDB.Data ( strict, rules, TRS, RS(..), separate, Identifier, mknullary )
 import TPDB.Pretty
 import MB.Pretty ((</>))
 import qualified TPDB.Input 
@@ -32,8 +36,9 @@ import TPDB.Mirror
 import qualified TPDB.Convert
 import TPDB.Xml.Pretty ( document )
 import Text.PrettyPrint.Leijen.Text (hPutDoc)
+import qualified Data.Map as M
 
-import Control.Monad ( guard, when, forM )
+import Control.Monad ( guard, when, forM, mzero )
 import Control.Applicative
 import System.IO
 
@@ -73,6 +78,7 @@ main = do
     out <- run $ case O.dependency_pairs config of
       False -> handle_direct config trs
       True -> handle_both config trs      
+
     case out of
         Nothing    -> do putStrLn "MAYBE"
         Just proof -> do
@@ -133,10 +139,46 @@ handle_both config sys = case TPDB.Mirror.mirror sys of
                      }
          ]
 
-handle_direct config = orelse nostrictrules
+handle_direct conf = case O.direction conf of
+  O.Yeah -> handle_direct_yeah conf
+  O.Noh  -> handle_direct_noh conf
+  -- FIXME
+  -- O.Both -> capture $ parallel_or [ handle_direct_yeah conf, handle_direct_noh conf ]
+
+handle_direct_noh conf sys = 
+    case TPDB.Convert.trs2srs sys of
+      Nothing -> mzero
+      Just srs -> do
+        let ((fore,back), rules) = Clo.fromSRS_withmap srs
+            f i = mknullary [ fore M.! i ]
+            doc = text $ unwords $ words $ show $ pretty fore
+            certs = do
+              c <- Clo.enumerate Clo.Both Nothing rules
+              Clo.loop_certificates c ++
+                case O.mode conf of
+                  O.Cycle_Termination -> Clo.cycle_loop_certificates c 
+                  _ -> []
+        case certs of
+          [] -> mzero
+          c : _ -> do
+            let clm = case O.mode conf of
+                 O.Termination -> P.Non_Termination
+                 O.Cycle_Termination -> P.Cycle_Non_Termination
+            return $ P.Proof
+             { P.input = sys
+             , P.claim = clm
+             , P.reason = P.Equivalent (  "rename letters" <+> doc )
+                          $ P.Proof
+                          { P.input = fmap (fmap f) sys
+                          , P.claim = clm
+                          , P.reason = P.Nonterminating c
+                          }
+             }
+
+
+handle_direct_yeah config = orelse nostrictrules
     $ andthen0 ( matrices_direct config )
     $ apply ( handle_direct config )
-
   
 handle_dp config sys = do
     let dp = TPDB.DP.Transform.dp sys 

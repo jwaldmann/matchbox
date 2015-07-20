@@ -23,12 +23,14 @@ work conf sys = do
   print conf    
   putStrLn $ "original: " ++ show (pretty sys)
   putStrLn $ "renamed : " ++ show rules
+  
   let certs = do
         c <- cs
         loop_certificates c ++
           if O.cyclic conf 
           then cycle_loop_certificates c 
-          else [] 
+          else []
+               
   mapM_ (print . pretty) $ take 1 $ certs
 
 
