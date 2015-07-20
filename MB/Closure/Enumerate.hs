@@ -127,9 +127,9 @@ exponentof b s = if D.null s then return 0 else do
 enumerate dirs mw rules =  
   work_fc (map D.rule $ zip [0..] rules) $ \ x y -> do
     f <- case dirs  of
-        O.Both -> [ D.lefts , D.insides , D.rights  ]
-        O.Left -> [ D.lefts , D.insides  ]
-        O.Right ->          [ D.insides, D.rights  ]
+        O.Both -> [ D.lefts , D.insides , D.outsides, D.rights  ]
+        O.Left -> [ D.lefts , D.insides , D.outsides            ]
+        O.Right-> [           D.insides , D.outsides, D.rights  ]
     f mw x y
 
 work_fc base combine =
