@@ -1,17 +1,16 @@
 {-# language OverloadedStrings #-}
 {-# language NoMonomorphismRestriction #-}
+{-# language BangPatterns #-}
 
 module MB.Closure.Enumerate where
 
 import qualified MB.Closure.Option as O
 
 import Data.Hashable
-import MB.Closure.Data
-import qualified Data.HashSet as S
-import qualified Data.PQueue.Min as Q
+import qualified MB.Closure.Data as D
+import qualified Data.HashSet as H
+import qualified Data.PQueue.Prio.Min as Q
 import Data.Foldable (foldr')
-import qualified Data.ByteString as B
-import qualified Data.ByteString.Char8 as C
 import Control.Monad ( guard )
 import Control.Applicative
 
@@ -19,14 +18,13 @@ import qualified Data.Map.Strict as M
 import TPDB.Data 
 
 fromSRS :: (Hashable c, Ord c)
-        => SRS c -> [(B.ByteString, B.ByteString)]
+        => SRS c -> [(D.S, D.S)]
 fromSRS sys = do
-  let sigma = S.fromList $ do u <- rules sys ; lhs u ++ rhs u
-      m = M.fromList $ zip ( S.toList sigma ) ['a' .. ]
-      pack s = C.pack $ map (m M.!) s
+  let sigma = H.fromList $ do u <- rules sys ; lhs u ++ rhs u
+      m = M.fromList $ zip ( H.toList sigma ) ['a' .. ]
+      pack s = D.pack $ map (m M.!) s
   u <- rules sys
   return ( pack $ lhs u, pack $ rhs u )
-
 
 hw1 = [ ("bc", "abb"), ("ba", "acb") ]
 g03 = [ ("0000","0011"), ("1001","0010")]
@@ -46,19 +44,19 @@ loops rules = do
   return c
 
 looping c = or $ do
-  t <- B.tails $ target c
-  return $ B.isPrefixOf (source c) t
+  t <- D.tails $ D.target c
+  return $ D.isPrefixOf (D.source c) t
 
 data Certificate = Cycle_Loop
-  { p :: B.ByteString  , q :: B.ByteString
+  { p :: D.S , q :: D.S
   , a :: Int, b :: Int, c:: Int, d :: Int
-  ,  closure :: OC
+  , closure :: D.OC
   }
-  | Standard_Loop { closure :: OC }
+  | Standard_Loop { closure :: D.OC }
 
 instance Show Certificate where
   show z@Standard_Loop{} = unlines
-    [ "is non-terminating because of looping derivation"
+    [ "is non-terminating because of looping SRS derivation"
     , show $ closure z
     ]
   show z@Cycle_Loop{} = unlines
@@ -75,12 +73,12 @@ loop_certificates c = do
    return $ Standard_Loop { closure = c }
 
 cycle_loop_certificates c = do
-   (sl,sr) <- splits $ source c
-   guard $ not $ B.null sl
-   guard $ not $ B.null sr
+   (sl,sr) <- D.splits $ D.source c
+   guard $ not $ D.null sl
+   guard $ not $ D.null sr
    let (slb,sle) = root sl ; (srb,sre) = root sr
-   i <- [ 0 , B.length srb .. B.length $ target c ]
-   let (tl,tr) = B.splitAt i $ target c
+   i <- [ 0 , D.length srb .. D.length $ D.target c ]
+   let (tl,tr) = D.splitAt i $ D.target c
    tle <- exponentof srb tl
    tre <- exponentof slb tr  
    guard $ tle >= sre 
@@ -93,67 +91,38 @@ cycle_loop_certificates c = do
 
 divides s t = 0 == mod t s
 
--- G045: 0000 -> 0101, 0101 -> 0010
-
--- 00101 -> 00010 ~ 00001 -> 01011-> 00101
-
--- 00001 -> 01011-> 00101 -> 00010
-
-root s | B.null s = (s,1)
+root s | D.null s = (s,1)
 root s = head $ do
-  i <- [ 1 .. B.length s ]
-  guard $ 0 == mod (B.length s) i
-  let (b,y) = B.splitAt i s
+  i <- [ 1 .. D.length s ]
+  guard $ 0 == mod (D.length s) i
+  let (b,y) = D.splitAt i s
   e <- succ <$> exponentof b y
   return (b,e)
 
-exponentof b s | B.null b = do
-  guard $ B.null s
+exponentof b s | D.null b = do
+  guard $ D.null s
   return 1
-exponentof b s = if B.null s then return 0 else do
-  let (x,y) = B.splitAt (B.length b) s
+exponentof b s = if D.null s then return 0 else do
+  let (x,y) = D.splitAt (D.length b) s
   guard $ b == x
   succ <$> exponentof b y
     
 enumerate dirs mw rules =  
-  work_fc (map rule rules) $ \ x y -> do
+  work_fc (map D.rule $ zip [0..] rules) $ \ x y -> do
     f <- case dirs  of
-        O.Both -> [ lefts , insides , rights  ]
-        O.Left -> [ lefts , insides  ]
-        O.Right ->        [ insides, rights  ]
+        O.Both -> [ D.lefts , D.insides , D.rights  ]
+        O.Left -> [ D.lefts , D.insides  ]
+        O.Right ->          [ D.insides, D.rights  ]
     f mw x y
 
-work_fc :: (Ord a, Hashable a)
-           =>  [a] -> (a -> a -> [a]) -> [a]
 work_fc base combine =
-  let go done todo = case Q.minView todo of
+  let go !done !todo = case Q.minView todo of
         Nothing -> []
         Just (x,xs) ->
-          if S.member x done
+          if H.member x done
           then go done xs
-          else (x :)  $ go (S.insert x done)
-                 $ foldr' Q.insert xs
+          else (x :)  $ go (H.insert x done)
+                 $ foldr (\e q -> Q.insert (D.size e) e q) xs
                  $ do b <- base ; combine x b
-  in  go S.empty $ Q.fromList base
+  in  go H.empty $ Q.fromList $ map (\b -> (D.size b,b)) $ base
 
-enumerate_ocs dirs mw rules =
-  work_oc (map rule rules) $ \ x y -> do
-     f <- [lefts , rights , insides , outsides ]
-     c <- f mw x y ++ f mw y x
-     assert_leq ( B.length $ target c) mw
-     return c
-
-work_oc :: (Ord a, Hashable a)
-           =>  [a] -> (a -> a -> [a]) -> [a]
-work_oc base combine =
-  let go done todo = case Q.minView todo of
-        Nothing -> []
-        Just (x,xs) ->
-          if S.member x done
-          then go done xs
-          else (x :)  $ go (S.insert x done)
-                 $ foldr Q.insert xs
-                 $ do d <- S.toList done ; combine d x
-  in  go (S.fromList base) 
-        $ Q.fromList $ do x <- base ; y <- base ; combine x y
-        

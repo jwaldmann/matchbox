@@ -1,25 +1,61 @@
--- | overlap closures for string rewriting,
--- representation using strict Bytestrings
+-- | forward/overlap closures for string rewriting,
+--
+-- with hard-coded representation
+-- (not [a], but ByteString or Text)
+-- 
+-- NOTE: the actual representation type should be hidden
+-- (do not leak outside this module)
+-- so it can be exchanged easily.
+-- This is the reason for the exports below.
+-- see MB.Closure.Enumerate for a usage example.
 
 {-# language BangPatterns #-}
+{-# language NoMonomorphismRestriction #-}
 
 module MB.Closure.Data
 
-( OC () , size, source, target
+( OC () , S (), size, source, target
 , rule, lefts, rights, insides, outsides
-, splits, assert_leq
+, splits, splitAt, null, length, isPrefixOf, tails, pack
+, assert_leq
 )
        
 where
 
-import qualified Data.ByteString as B
+import Prelude hiding ( Either (..), length, null, splitAt )
+import qualified Prelude
+
 import Data.Monoid
 import Data.Hashable
 import Control.Monad ( guard )
-import Prelude hiding ( Either (..))
 import Data.Function (on)
 
+import qualified Data.ByteString as B
+import qualified Data.ByteString.Char8 as C
+
+import Data.ByteString.Search.KMP (indices)
+
+-- import qualified Data.ByteString.Lazy as B
+-- import qualified Data.ByteString.Lazy.Char8 as C
+
+-- import qualified Data.Text as B
+-- import qualified Data.Text.Lazy as B
+
+-- import qualified Data.List as B
+
 type S = B.ByteString
+-- type S = B.Text
+-- type S = [Char]
+
+-- pack = B.pack
+pack = C.pack
+-- pack = id
+
+length = B.length
+null = B.null
+splitAt = B.splitAt
+isPrefixOf = B.isPrefixOf
+tails = B.tails
 
 data OC = OC { source :: ! S
              , target :: ! S
@@ -48,7 +84,7 @@ instance Hashable OC where
   hashWithSalt = error "OC.hashWithSalt"
   hash = hashcode
 
-data Reason = Rule | Overlap !Position !Reason !Reason
+data Reason = Rule !Int | Overlap !Position !Reason !Reason
   deriving Show
 
 -- | kind and offset for overlap
@@ -65,18 +101,19 @@ make r s t p = OC
   -- note on size: this is used in the priority queue.
   -- we want small left-hand sides (sources)
   -- because they are much more likely to start a loop
-  , size = B.length s + truncate ( logBase 2 $ fromIntegral $ B.length t )
+  , size = ( fromIntegral $ length s)
+         + ( truncate $ logBase 2 $ fromIntegral $ length t )
   }
 
 overlap p c d s t =
   make (Overlap p (reason c) (reason d)) s t (steps c + steps d)
 
-rule (l, r) = make Rule l r 1
+rule (i, (l, r)) = make (Rule i) l r 1
 
 splits s = zip (B.inits s) (B.tails s)
 
 assert_leq x mw = guard $ case mw of
-  Just w -> x <= w
+  Just w -> x <= fromIntegral w
   Nothing -> True
 
 lefts mw c d = do
@@ -85,7 +122,8 @@ lefts mw c d = do
   let (!c1,!c2) = B.splitAt i $ target c
   let (!d1,!d2) = splitAtEnd i $ source d
   guard $ c1 == d2
-  return $ overlap (Left i) c d (d1 <> source c) (target d <> c2) 
+  return $ overlap (Left $ fromIntegral i) c d
+    (d1 <> source c) (target d <> c2) 
 
 rights mw c d = do
   i <- [ 1 .. min (B.length $ target c)(B.length $ source d)]
@@ -93,17 +131,20 @@ rights mw c d = do
   let (!c1,!c2) = splitAtEnd i $ target c
   let (!d1,!d2) = B.splitAt i $ source d
   guard $ c2 == d1
-  return $ overlap (Right i) c d (source c <> d2) (c1 <> target d) 
+  return $ overlap (Right $ fromIntegral i) c d
+    (source c <> d2) (c1 <> target d) 
 
 splitAtEnd i s = B.splitAt (B.length s - i) s
 
 insides mw c d = do
   assert_leq (B.length (target c) + B.length (target d) - B.length (source d)) mw  
-  i <- [ 0 .. B.length (target c) - B.length (source d)]
+  -- i <- [ 0 .. B.length (target c) - B.length (source d)]
+  i <- indices (source d) (target c)
   let (!c1,!c2) = B.splitAt i $ target c
   let (!c21,!c22) = B.splitAt (B.length $ source d) c2
-  guard $ c21 == source d
-  return $ overlap (Inside i) c d (source c) (c1 <> target d <> c22) 
+  -- guard $ c21 == source d
+  return $ overlap (Inside $ fromIntegral i) c d
+    (source c) (c1 <> target d <> c22) 
 
 outsides mw c d = do
   assert_leq (B.length (target d)) mw
@@ -111,5 +152,6 @@ outsides mw c d = do
   let (!d1,!d2) = B.splitAt i $ source d
   let (!d21,!d22) = B.splitAt (B.length $ target c) d2
   guard $ d21 == target c
-  return $ overlap (Outside i) c d (d1 <> source c <> d22) (target d) 
+  return $ overlap (Outside $ fromIntegral i) c d
+    (d1 <> source c <> d22) (target d) 
 

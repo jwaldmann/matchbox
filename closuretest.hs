@@ -18,7 +18,8 @@ workf conf = do
 
 work conf sys = do
   let rules = fromSRS sys
-      cs = enumerate (O.directions conf) (O.width conf) ( fromSRS sys )
+      cs = enumerate (O.directions conf) (O.width conf)
+                     ( fromSRS sys )
   print conf    
   putStrLn $ "original: " ++ show (pretty sys)
   putStrLn $ "renamed : " ++ show rules
