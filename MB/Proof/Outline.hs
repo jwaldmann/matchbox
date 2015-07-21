@@ -66,4 +66,4 @@ outreason r = case r of
 
 
 timing i = case time i of
-  Just t -> pretty t ; Nothing -> mempty
+  Just t -> pretty t ; Nothing -> empty
