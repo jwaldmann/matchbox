@@ -8,7 +8,8 @@ module MB.Matrix where
 import qualified MB.Options as O
 import MB.Options (dim, bits, Options)       
 import MB.Pretty
-import MB.Proof (Interpretation (..), Constraint (..), Time (..))
+import MB.Proof (Interpretation (..), Constraint (..))
+import MB.Time
 
 import qualified MB.Count
 

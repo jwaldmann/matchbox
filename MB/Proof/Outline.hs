@@ -11,8 +11,6 @@ import TPDB.Data (strict, rules )
 import TPDB.Pretty 
 import Text.PrettyPrint.Leijen.Text ( align, indent)
 
-import Data.Time ( getCurrentTime, diffUTCTime )
-
 headline :: Proof v s -> Doc
 headline p = case claim p of
   Termination -> "YES"
@@ -68,8 +66,4 @@ outreason r = case r of
 
 
 timing i = case time i of
-  Nothing -> empty
-  Just t -> text "found in"
-            <+> (text $ show $ diffUTCTime (end t) (start t) )
-            <+> text "from" <+> (text $ show $ start t)
-            <+> text "to"   <+> (text $ show $ end   t)
+  Just t -> pretty t ; Nothing -> mempty

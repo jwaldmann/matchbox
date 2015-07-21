@@ -5,6 +5,7 @@
 module MB.Closure.Enumerate where
 
 import qualified MB.Closure.Option as O
+import MB.Time
 
 import Data.Hashable
 import qualified MB.Closure.Data as D
@@ -61,9 +62,10 @@ looping c = or $ do
 data Certificate = Cycle_Loop
   { u :: D.S, v :: D.S
   , p :: Int, q :: Int, r :: Int, s :: Int
+  , time :: Maybe Time
   , closure :: D.OC
   }
-  | Standard_Loop { closure :: D.OC }
+  | Standard_Loop { closure :: D.OC, time :: Maybe Time }
 
 instance Pretty Certificate where pretty = pretty_with True
 
@@ -71,6 +73,7 @@ instance Pretty Certificate where pretty = pretty_with True
 pretty_with full z@Standard_Loop{} = vcat
     [ "looping SRS derivation"
     , D.pretty_with full $ closure z
+    , case time z of Just t -> pretty t ; Nothing -> mempty
     ]
 pretty_with full z@Cycle_Loop{} = vcat
     [ "cycle-looping SRS derivation"
@@ -81,6 +84,7 @@ pretty_with full z@Cycle_Loop{} = vcat
        , text $ "      v = " ++ show (v z)
        ] else mempty
     , D.pretty_with full $ closure z
+    , case time z of Just t -> pretty t ; Nothing -> mempty
     ]
 
 brief :: Certificate -> Doc

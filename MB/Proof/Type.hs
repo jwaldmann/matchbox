@@ -3,6 +3,7 @@ module MB.Proof.Type where
 import TPDB.Data hiding ( Termination )
 import TPDB.DP (Marked )
 
+import MB.Time
 import qualified MB.Closure.Enumerate as Cl
 
 import SMT.Dictionary (Domain)
@@ -15,8 +16,6 @@ import qualified Data.Map as M
 import TPDB.Pretty ( Doc )
 
 import qualified TPDB.CPF.Proof.Type as T
-
-import qualified Data.Time.Clock as C
 
 -- * the data type
 
@@ -41,8 +40,6 @@ data Interpretation v s e = Interpretation
              ]
         , time :: Maybe Time
         }
-
-data Time = Time { start :: C.UTCTime , end :: C.UTCTime }
 
 data Constraint v s e =
   Constraint { width :: Int

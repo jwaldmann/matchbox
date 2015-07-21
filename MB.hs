@@ -17,6 +17,7 @@ import qualified MB.Closure.Enumerate as Clo
 import qualified MB.Closure.Option as Clo
 import qualified MB.Closure.Data as Clo
 
+import MB.Time
 import MB.Proof.Outline (headline)
 import qualified MB.Options as O
 
@@ -39,8 +40,10 @@ import Text.PrettyPrint.Leijen.Text (hPutDoc)
 import qualified Data.Map as M
 
 import Control.Monad ( guard, when, forM, mzero )
+import Control.Monad.IO.Class (liftIO)
 import Control.Applicative
 import System.IO
+import Data.Time.Clock
 
 import TPDB.CPF.Proof.Util (sortVariables)
 import MB.Proof.Outline (outline)
@@ -158,9 +161,14 @@ handle_direct_noh conf sys =
                 case O.mode conf of
                   O.Cycle_Termination -> Clo.cycle_loop_certificates c 
                   _ -> []
+        search_start <- liftIO getCurrentTime          
         case certs of
           [] -> mzero
           c : _ -> do
+            search_end <- liftIO getCurrentTime
+            let t = Time { start = search_start
+                         , end = search_end
+                         }
             let clm = case O.mode conf of
                  O.Termination -> P.Non_Termination
                  O.Cycle_Termination -> P.Cycle_Non_Termination
@@ -171,7 +179,8 @@ handle_direct_noh conf sys =
                           $ P.Proof
                           { P.input = fmap (fmap f) sys
                           , P.claim = clm
-                          , P.reason = P.Nonterminating c
+                          , P.reason = P.Nonterminating
+                              $ c { Clo.time = Just t }
                           }
              }
 
