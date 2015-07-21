@@ -95,7 +95,7 @@ handle ( encoded :: Int -> D.Dictionary m num val bool) direct
             eprint $ pretty f
             let Right vs = evaluate_rules False
                    (ldict, mdict) (dim opts) (f, con) sys 
-            case remaining_compressed False
+            case remaining_compressed opts False
                    (ldict, mdict) (dim opts) (f, con) sys of
                 Right sys' -> return 
                    $ Just ( Interpretation 
@@ -229,7 +229,7 @@ handle_dp encoded direct opts sys = do
 
             let Right vs = evaluate_rules False
                    (ldict, mdict) (dim opts) (f, con) sys 
-                rc = remaining_compressed True (ldict,mdict) (dim opts) (f,con) sys
+                rc = remaining_compressed opts True (ldict,mdict) (dim opts) (f,con) sys
             eprint $ pretty rc
             case rc of
                 Right sys' -> return 
@@ -254,8 +254,9 @@ handle_dp encoded direct opts sys = do
 -- | check that all rules are weakly decreasing.
 -- returns the system with the rules that are not strictly decreasing.
 remaining_compressed 
-  :: (Pretty num, Pretty k1, Pretty v, Ord k1, Ord v) =>
-     Bool
+  :: (Pretty num, Pretty k1, Pretty v, Ord k1, Ord v)
+     => Options 
+     -> Bool
      -> (L.Dictionary (Either String) (M.Matrix num) val1 Bool,
          M.Dictionary (Either String) num val Bool)
      -> Int
@@ -263,9 +264,9 @@ remaining_compressed
          Constraint v k1 num)
      -> TRS v (CC.Sym k1)
      -> Either String (TRS v (CC.Sym k1))
-remaining_compressed top dicts dim (funmap,con) sys = do
+remaining_compressed opts top dicts dim (funmap,con) sys = do
     gtus <- forM ( compatibility_certificate con ) $ \ (u,c) -> do
-        gt <- traced_rule top dicts dim
+        gt <- traced_rule opts top dicts dim
              ( funmap , restriction con) ( u, c)
         return (gt,u)
     let decrease = map snd $ filter fst gtus
@@ -276,9 +277,9 @@ evaluate_rules top dicts dim (funmap,con) sys =
   forM ( compatibility_certificate con ) $ \ (u,c) -> do
         evaluate_rule top dicts dim (funmap , restriction con) ( u, c)
 
-remaining top dicts dim (funmap,con) sys = do
+remaining opts top dicts dim (funmap,con) sys = do
     uss <- forM (compatibility_certificate con) $ \ (u,c) -> do
-        s <- traced_rule top dicts dim (funmap,restriction con) (u,c) 
+        s <- traced_rule opts top dicts dim (funmap,restriction con) (u,c) 
         return ( u, s )
     return $ sys { rules = map fst $ filter (not . snd) uss }
 
@@ -294,7 +295,7 @@ evaluate_rule top (ldict,_) dim (funmap,_)(u,_) = do
     r <- term ldict dim funmap varmap $ rhs u
     return (u, (l,r))
 
-traced_rule top (ldict,mdict) dim (funmap,res) (u,us) | M.domain mdict == D.Arctic = do
+traced_rule opts top (ldict,mdict) dim (funmap,res) (u,us) | M.domain mdict == D.Arctic = do
     let vs = S.union (vars $ lhs u) (vars $ rhs u)
         varmap = M.fromList $ zip (S.toList vs) [0..]
     l <- term ldict dim funmap varmap $ lhs u
@@ -314,7 +315,7 @@ traced_rule top (ldict,mdict) dim (funmap,res) (u,us) | M.domain mdict == D.Arct
             True  -> L.bconstant ldict  False -- cannot remove
   
 
-traced_rule top (ldict,mdict) dim (funmap,res) (u,us) = do
+traced_rule opts top (ldict,mdict) dim (funmap,res) (u,us) = do
     let vs = S.union (vars $ lhs u) (vars $ rhs u)
         varmap = M.fromList $ zip (S.toList vs) [0..]
     l <- term ldict dim funmap varmap $ lhs u
@@ -328,7 +329,12 @@ traced_rule top (ldict,mdict) dim (funmap,res) (u,us) = do
     susb <- M.times mdict sus b
     rhs <- M.add mdict (L.abs r) susb
     ge <- M.weakly_greater mdict (L.abs l) rhs
-    gt <- M.strictly_greater mdict (L.abs l) rhs
+
+    gt <- case O.mode opts of
+      O.Cycle_Termination ->
+        M.strictly_greater mdict (head $ L.lin l) (head $ L.lin r)
+      _ -> M.strictly_greater mdict (L.abs l) rhs 
+    
     traced ( vcat [ "rule:" <+> pretty u
                   , "left:" <+> pretty l
                   , "right: " <+> pretty r
