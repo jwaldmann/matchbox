@@ -12,6 +12,7 @@ export LD_LIBRARY_PATH=.
     --arctic --natural \
     --bits=$bits \
     --con=$con \
+    --both \
     --cores \
     +RTS -N -M7G -K1G -RTS \
     $1  \

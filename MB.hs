@@ -26,7 +26,8 @@ import qualified Compress.Simple as CS
 import qualified Compress.PaperIter as CPI
 import qualified Compress.Paper as CP
 
-import TPDB.Data ( strict, rules, TRS, RS(..), separate, Identifier, mknullary )
+import TPDB.Data ( strict, rules, TRS, RS(..)
+  , separate, Identifier, mknullary )
 import TPDB.Pretty
 import MB.Pretty ((</>))
 import qualified TPDB.Input 
@@ -145,8 +146,16 @@ handle_both config sys = case TPDB.Mirror.mirror sys of
 handle_direct conf = case O.direction conf of
   O.Yeah -> handle_direct_yeah conf
   O.Noh  -> handle_direct_noh conf
-  -- FIXME
-  -- O.Both -> capture $ parallel_or [ handle_direct_yeah conf, handle_direct_noh conf ]
+  O.Both -> orelse nostrictrules
+    $ andthen0 ( capture $ parallel_or
+                 [ \ x -> Right <$> matrices_direct conf x
+                 , \ x -> Left  <$> handle_direct_noh conf x
+                 ] )
+    $ \ x -> case x of
+                 Left p -> return p
+                 Right q -> apply (handle_direct conf) q
+
+
 
 handle_direct_noh conf sys = 
     case TPDB.Convert.trs2srs sys of

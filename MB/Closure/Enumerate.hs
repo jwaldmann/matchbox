@@ -4,6 +4,8 @@
 
 module MB.Closure.Enumerate where
 
+import Prelude hiding (exponent)
+
 import qualified MB.Closure.Option as O
 import MB.Time
 
@@ -17,9 +19,10 @@ import Control.Applicative
 import Data.Monoid 
 
 import qualified Data.Map.Strict as M
+import qualified Data.Set as S
 import TPDB.Data 
 
-import TPDB.Pretty
+import TPDB.Pretty hiding ((<>))
 
 fromSRS :: (Hashable c, Ord c)
         => SRS c ->  [(D.S, D.S)] 
@@ -65,7 +68,25 @@ data Certificate = Cycle_Loop
   , time :: Maybe Time
   , closure :: D.OC
   }
+  | Cycle_Loop2
+    { source :: Decomposition
+    , target :: Decomposition
+    , time :: Maybe Time
+    , closure :: D.OC
+    }
   | Standard_Loop { closure :: D.OC, time :: Maybe Time }
+
+data Decomposition
+  = Decomposition { prefix :: ! Int
+                  , core :: ! D.S
+                  , base :: ! D.S
+                  , suffix :: ! Int
+                  }
+    deriving (Eq, Ord)
+instance Pretty Decomposition where
+  pretty d =    pretty (base d) <> "^" <> pretty (prefix d)
+             <> " ++ " <> pretty (core d) <> " ++ "
+             <> pretty (base d) <> "^" <> pretty (suffix d)
 
 instance Pretty Certificate where pretty = pretty_with True
 
@@ -75,6 +96,16 @@ pretty_with full z@Standard_Loop{} = vcat
     , D.pretty_with full $ closure z
     , case time z of Just t -> pretty t ; Nothing -> mempty
     ]
+pretty_with full z@Cycle_Loop2{} = vcat
+    [ "cycle-looping SRS derivation"
+    , if full then vcat
+       [ "source" <+> pretty (source z)
+       , "target" <+> pretty (target z)
+       ] else mempty
+    , D.pretty_with full $ closure z
+    , case time z of Just t -> pretty t ; Nothing -> mempty
+    ]
+              
 pretty_with full z@Cycle_Loop{} = vcat
     [ "cycle-looping SRS derivation"
     , if full then vcat 
@@ -92,8 +123,43 @@ brief = pretty_with False
 
 loop_certificates c = do
    guard $ looping c
-   return $ Standard_Loop { closure = c }
+   return $ Standard_Loop { closure = c, time = Nothing }
 
+-- * new style 
+
+cycle_loop_certificates2 c = do
+   let ds = decomap $ D.source c
+       dt = decomap $ D.target c
+   (ss,ts) <- M.elems $ M.intersectionWith (,) ds dt
+   s <- ss ; t <- ts
+   guard $ compatible s t
+   return $ Cycle_Loop2 {source = s, target = t, closure = c
+                        , time = Nothing
+                        }
+
+exponent d = prefix d + suffix d
+
+compatible s t =
+   if D.null (base s) then True
+   else base s == base t && exponent s <= exponent t
+
+decompositions s = do
+   (pre, cosuff) <- D.splits s
+   let (pb,pe) = root pre
+   (co, suff) <- D.splits cosuff
+   let (sb,se) = root suff
+   guard $ pb == sb || D.null pb || D.null sb
+   let b = if D.null pb then sb else pb
+   return $ Decomposition
+     { prefix = pe, core = co, base = b, suffix = se }
+
+decomap s = M.fromListWith (++) $ do
+  d <- decompositions s
+  return (core d, [ d ])
+
+
+-- * classical style ( hom. image of  0 1^r -> 1^s 0 )
+        
 cycle_loop_certificates c = do
    (sl,sr) <- D.splits $ D.source c
    guard $ not $ D.null sl
@@ -112,7 +178,10 @@ cycle_loop_certificates c = do
 
 divides s t = 0 == mod t s
 
-root s | D.null s = (s,1)
+-- | root s = (b,e)  <=>  s = b^e  with e maximal.
+--  for  null s, return (null,0)
+root :: D.S -> (D.S, Int)
+root s | D.null s = (s,0)
 root s = head $ do
   i <- [ 1 .. D.length s ]
   guard $ 0 == mod (D.length s) i

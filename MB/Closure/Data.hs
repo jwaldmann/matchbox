@@ -51,6 +51,8 @@ type S = B.ByteString
 -- type S = B.Text
 -- type S = [Char]
 
+instance Pretty B.ByteString where pretty = text . C.unpack
+
 -- pack = B.pack
 pack = C.pack
 -- pack = id

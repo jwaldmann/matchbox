@@ -28,7 +28,7 @@ work conf sys = do
         c <- cs
         loop_certificates c ++
           if O.cyclic conf 
-          then cycle_loop_certificates c 
+          then cycle_loop_certificates2 c 
           else []
                
   mapM_ (print . pretty) $ take 1 $ certs
