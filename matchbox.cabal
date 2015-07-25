@@ -48,7 +48,10 @@ source-repository head
 
 Executable matchbox2015
   Main-Is:          MB.hs
-  Ghc-options:        -W -O2 -fno-warn-incomplete-patterns -threaded -rtsopts
+  -- -fllvm does not work (ghc-7.10.1, llvm-3.5 as on fedora 22)
+  -- while they claim it should:
+  -- http://smart-cactus.org/~ben/posts/2014-11-28-state-of-llvm-backend.html
+  Ghc-options:        -W -O2 -funbox-strict-fields -threaded -rtsopts
   Extensions: DoAndIfThenElse
   Build-Depends:      base 
                     , containers
@@ -63,4 +66,5 @@ Executable matchbox2015
                     , async, stm
                     , wl-pprint-extras , HaTeX, text, matrix
                     , random, unix, directory, time >= 1.5.0.1
-                    , optparse-applicative, bytestring, stringsearch, pqueue, unordered-containers
+                    , optparse-applicative, bytestring, stringsearch
+                    , pqueue, unordered-containers

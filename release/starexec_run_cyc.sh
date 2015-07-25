@@ -1,6 +1,6 @@
 #!/bin/bash
 
-solver=boolector
+solver=satchmo
 bits=4
 con=0
 
@@ -14,7 +14,7 @@ export LD_LIBRARY_PATH=.
     --con=$con \
     --both \
     --cores \
-    +RTS -N -M7G -K1G -RTS \
+    +RTS -C -N -M7G -K1G -RTS \
     $1  \
     2>/dev/null
 
