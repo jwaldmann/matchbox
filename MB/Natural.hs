@@ -83,7 +83,7 @@ remover_natural clm msg unpack h  sys = do
                    , \ out ->  
                Proof 
                { input = unpack sys
-               , claim = clm
+               , claim = claim out
                , reason = Matrix_Interpretation_Natural m (Just usable) out
                }
                    )

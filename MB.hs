@@ -138,7 +138,7 @@ handle_both config sys = case TPDB.Mirror.mirror sys of
          [ handle_dp config2 sys
          , do p <- handle_dp config2 sys' 
               return $ P.Proof { P.input = sys
-                     , P.claim = P.Termination
+                     , P.claim = P.claim p
                      , P.reason = P.Mirror_Transform p 
                      }
          ]
@@ -146,7 +146,7 @@ handle_both config sys = case TPDB.Mirror.mirror sys of
 handle_direct conf = case O.direction conf of
   O.Yeah -> handle_direct_yeah conf
   O.Noh  -> handle_direct_noh conf
-  O.Both -> orelse nostrictrules
+  O.Both -> orelse (nostrictrules conf)
     $ andthen0 ( capture $ parallel_or
                  [ \ x -> Right <$> matrices_direct conf x
                  , \ x -> Left  <$> handle_direct_noh conf x
@@ -194,7 +194,7 @@ handle_direct_noh conf sys =
              }
 
 
-handle_direct_yeah config = orelse nostrictrules
+handle_direct_yeah config = orelse (nostrictrules config)
     $ andthen0 ( matrices_direct config )
     $ apply ( handle_direct config )
   
@@ -202,7 +202,7 @@ handle_dp config sys = do
     let dp = TPDB.DP.Transform.dp sys 
     proof <- handle_scc config dp
     return $ P.Proof { P.input =  sys
-                  , P.claim = P.Top_Termination
+                  , P.claim = P.claim proof
                   , P.reason = P.DP_Transform proof 
                   }
 
@@ -231,11 +231,13 @@ nomarkedrules dp = do
             , P.reason = P.No_Strict_Rules 
             }
 
-nostrictrules dp = do
+nostrictrules conf dp = do
     guard $ null $ filter strict $ rules dp 
     return $ P.Proof 
             { P.input = dp
-            , P.claim = P.Termination
+            , P.claim = case O.mode conf of
+                O.Termination -> P.Termination
+                O.Cycle_Termination -> P.Cycle_Termination
             , P.reason = P.No_Strict_Rules 
             }
 

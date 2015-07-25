@@ -91,7 +91,7 @@ remover_arctic clm msg unpack h  sys = do
                    -- "Arctic" <+> vcat [ "sys:" <+> pretty sys , pretty m, out ]
                Proof 
                { input = unpack sys
-               , claim = clm
+               , claim = claim out
                , reason = Matrix_Interpretation_Arctic m (Just usable) out
                }
                    )
