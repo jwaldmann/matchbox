@@ -67,47 +67,19 @@ looping c = or $ do
 data Certificate = Cycle_Loop
   { u :: D.S, v :: D.S
   , p :: Int, q :: Int, r :: Int, s :: Int
+  , extension :: Either Int Int
   , time :: Maybe Time
   , closure :: D.OC
   }
-  | Cycle_Loop2
-    { source :: Decomposition
-    , target :: Decomposition
-    , time :: Maybe Time
-    , closure :: D.OC
-    }
   | Standard_Loop { closure :: D.OC, time :: Maybe Time }
 
-data Decomposition
-  = Decomposition { prefix :: ! Int
-                  , core :: ! D.S
-                  , base :: ! D.S
-                  , suffix :: ! Int
-                  }
-    deriving (Eq, Ord)
-instance Pretty Decomposition where
-  pretty d =    pretty (base d) <> "^" <> pretty (prefix d)
-             <> " ++ " <> pretty (core d) <> " ++ "
-             <> pretty (base d) <> "^" <> pretty (suffix d)
-
 instance Pretty Certificate where pretty = pretty_with True
-
 
 pretty_with full z@Standard_Loop{} = vcat
     [ "looping SRS derivation"
     , D.pretty_with full $ closure z
     , case time z of Just t -> pretty t ; Nothing -> mempty
     ]
-pretty_with full z@Cycle_Loop2{} = vcat
-    [ "cycle-looping SRS derivation"
-    , if full then vcat
-       [ "source" <+> pretty (source z)
-       , "target" <+> pretty (target z)
-       ] else mempty
-    , D.pretty_with full $ closure z
-    , case time z of Just t -> pretty t ; Nothing -> mempty
-    ]
-              
 pretty_with full z@Cycle_Loop{} = vcat
     [ "cycle-looping SRS derivation"
     , if full then vcat 
@@ -115,6 +87,7 @@ pretty_with full z@Cycle_Loop{} = vcat
        , text $ "  to  target = v^" ++ show (r z) ++ " u^" ++ show (s z)
        , text $ "where u = " ++ show (u z)
        , text $ "      v = " ++ show (v z)
+       , text $ "extension " ++ show (extension z)
        ] else mempty
     , D.pretty_with full $ closure z
     , case time z of Just t -> pretty t ; Nothing -> mempty
@@ -128,42 +101,57 @@ loop_certificates c = do
    guard $ looping c
    return $ Standard_Loop { closure = c, time = Nothing }
 
--- * new style 
 
-cycle_loop_certificates2 c = do
-   let ds = decomap $ D.source c
-       dt = decomap $ D.target c
-   (ss,ts) <- M.elems $ M.intersectionWith (,) ds dt
-   s <- ss ; t <- ts
-   guard $ compatible s t
-   return $ Cycle_Loop2 {source = s, target = t, closure = c
-                        , time = Nothing
-                        }
+cycle_loop_certificates c
+  =  cycle_loop_certificates_left c
+  ++ cycle_loop_certificates_right c
 
-exponent d = prefix d + suffix d
+-- | hom. image of 0^p 1 -> 1 0^s with extensions
+-- (cf. https://github.com/jwaldmann/matchbox/issues/19#issuecomment-124984330 )
+-- there is a closure 1010 -> 0110 which is not cycle-nonterminating.
+-- If we attach a letter 1 to the right, we get 10101 -> 01101
+-- and this suddenly is of (cycle-nonterminating) shape
+-- u v -> v u (for u = 101, v = 01). 
+cycle_loop_certificates_left c = do
+   (sl,sr) <- D.splits $ D.source c
+   guard $ not $ D.null sl
+   guard $ not $ D.null sr
+   let (uu,pp) = root sl
+   let (tl,tr) = D.splitAt (D.length sr) $ D.target c
+   guard $ sr == tl
+   e <- [ 0 .. D.length tr ]
+   let (ext,rest) = D.splitAt e tr
+   ss <- exponentof uu $ rest <> ext
+   guard $ pp <= ss
+   return $ Cycle_Loop
+     { u = uu, v = sr <> ext
+     , p = pp, q = 1, r = 1, s = ss
+     , extension = Right e
+     , closure = c, time = Nothing
+     }
 
-compatible s t =
-   if D.null (base s) then True
-   else base s == base t && exponent s <= exponent t
+cycle_loop_certificates_right c = do
+   (sl,sr) <- D.splits $ D.source c
+   guard $ not $ D.null sl
+   guard $ not $ D.null sr
+   let (vv,qq) = root sr
+   let (tl,tr) = D.splitAtEnd (D.length sl) $ D.target c
+   guard $ sl == tr
+   e <- [ 0 .. D.length tl ]
+   let (rest,ext) = D.splitAtEnd e tl
+   rr <- exponentof vv $ ext <> rest
+   guard $ qq <= rr
+   return $ Cycle_Loop
+     { u = ext <> sl, v = vv
+     , p = 1, q = qq, r = rr, s = 1
+     , extension = Left e
+     , closure = c, time = Nothing
+     }
 
-decompositions s = do
-   (pre, cosuff) <- D.splits s
-   let (pb,pe) = root pre
-   (co, suff) <- D.splits cosuff
-   let (sb,se) = root suff
-   guard $ pb == sb || D.null pb || D.null sb
-   let b = if D.null pb then sb else pb
-   return $ Decomposition
-     { prefix = pe, core = co, base = b, suffix = se }
-
-decomap s = M.fromListWith (++) $ do
-  d <- decompositions s
-  return (core d, [ d ])
-
-
--- * classical style ( hom. image of  0 1^r -> 1^s 0 )
-        
-cycle_loop_certificates c = do
+     
+-- | hom. image of  0^p 1^q -> 1^r 0^s
+-- for p == s && q <= r  ||  q == r && p <= s
+cycle_loop_certificates_plain c = do
    (sl,sr) <- D.splits $ D.source c
    guard $ not $ D.null sl
    guard $ not $ D.null sr

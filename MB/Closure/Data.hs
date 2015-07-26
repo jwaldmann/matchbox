@@ -19,7 +19,8 @@ module MB.Closure.Data
 
 ( OC () , S (), size, source, target
 , rule, lefts, rights, insides, outsides
-, splits, splitAt, null, length, isPrefixOf, tails, pack
+, splits, splitAt, splitAtEnd
+, null, length, isPrefixOf, tails, pack
 , assert_leq
 , pretty_with
 )
