@@ -67,7 +67,7 @@ looping c = or $ do
 data Certificate = Cycle_Loop
   { u :: D.S, v :: D.S
   , p :: Int, q :: Int, r :: Int, s :: Int
-  , extension :: Either Int Int
+  , extension :: Maybe (Either D.S D.S)
   , time :: Maybe Time
   , closure :: D.OC
   }
@@ -87,7 +87,9 @@ pretty_with full z@Cycle_Loop{} = vcat
        , text $ "  to  target = v^" ++ show (r z) ++ " u^" ++ show (s z)
        , text $ "where u = " ++ show (u z)
        , text $ "      v = " ++ show (v z)
-       , text $ "extension " ++ show (extension z)
+       , case extension z of
+            Just e -> text $ "closure was extended " ++ show e
+            Nothing -> mempty
        ] else mempty
     , D.pretty_with full $ closure z
     , case time z of Just t -> pretty t ; Nothing -> mempty
@@ -126,7 +128,7 @@ cycle_loop_certificates_left c = do
    return $ Cycle_Loop
      { u = uu, v = sr <> ext
      , p = pp, q = 1, r = 1, s = ss
-     , extension = Right e
+     , extension = do guard $ e > 0 ; return $ Right ext
      , closure = c, time = Nothing
      }
 
@@ -144,7 +146,7 @@ cycle_loop_certificates_right c = do
    return $ Cycle_Loop
      { u = ext <> sl, v = vv
      , p = 1, q = qq, r = rr, s = 1
-     , extension = Left e
+     , extension = do guard $ e > 0 ; return $ Left ext
      , closure = c, time = Nothing
      }
 
