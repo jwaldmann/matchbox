@@ -202,7 +202,9 @@ handle_dp config sys = do
     let dp = TPDB.DP.Transform.dp sys 
     proof <- handle_scc config dp
     return $ P.Proof { P.input =  sys
-                  , P.claim = P.claim proof
+                  , P.claim = case P.claim proof of
+                        P.Top_Termination -> P.Termination
+                        c -> c
                   , P.reason = P.DP_Transform proof 
                   }
 
@@ -238,6 +240,7 @@ nostrictrules conf dp = do
             , P.claim = case O.mode conf of
                 O.Termination -> P.Termination
                 O.Cycle_Termination -> P.Cycle_Termination
+                O.Complexity {} -> P.Termination
             , P.reason = P.No_Strict_Rules 
             }
 
