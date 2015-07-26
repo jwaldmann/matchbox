@@ -10,7 +10,7 @@ export LD_LIBRARY_PATH=.
     --$solver \
     --natural \
     --bits=$bits \
-    --con=$con \
+    --con=$con --small \
     --cores \
     --latex \
     +RTS -N -M32G -K1G -RTS \

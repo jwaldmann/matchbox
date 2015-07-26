@@ -8,11 +8,10 @@ export LD_LIBRARY_PATH=.
 
 ./MB.exe --dp \
     --$solver \
-    --natural --arctic \
+    --natural \
     --bits=$bits \
-    --con=$con \
+    --con=$con --small \
     --cores \
-    --latex \
     +RTS -N -M32G -K1G -RTS \
     $1  \
     2>/dev/null

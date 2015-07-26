@@ -14,7 +14,9 @@ target=matchbox2015
 # will be $target.bin
 # note that source release/$target.sh must exist
 
-ghc --make  \
+# -fllvm -fforce-recomp 
+
+ghc --make \
     -O2 -funbox-strict-fields -rtsopts -threaded \
     $source -o $exe
 
