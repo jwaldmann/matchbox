@@ -48,6 +48,8 @@ g08 = [ ("0000","0110"), ("1001","0010")]
 g10 = [ ("0000","0111"), ("1001","0010")]
 b18 = [ ("aba","bba"),("bbb","ba"),("bb","aaa")]
 
+eps = [ ("bdb","ad") , ("ad","db") , ("a","bbb"), ("d","") ]
+
 test1 = take 1 $ loops hw1
 test2 = take 1 $ loops g03
 test3 = take 1 $ loops g08
@@ -121,6 +123,7 @@ pretty_with full z@Cycle_Loop{} = vcat
 brief :: Certificate -> Doc
 brief = pretty_with False
 
+loop_certificates :: D.OC -> [Certificate]
 loop_certificates c = do
    guard $ looping c
    return $ Standard_Loop { closure = c, time = Nothing }
@@ -173,7 +176,7 @@ cycle_loop_certificates c = do
          || (pp <= ss && qq == rr)
    return $ Cycle_Loop
      { u = uu, v = vv , p = pp, q = qq, r = rr, s = ss
-     , closure = c
+     , closure = c, time = Nothing
      }
 
 divides s t = 0 == mod t s
