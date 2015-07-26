@@ -162,7 +162,7 @@ make r s t p = OC
   -- we want small left-hand sides (sources)
   -- because they are much more likely to start a loop
   , size = ( fromIntegral $ length s)
-         + ( truncate $ logBase 2 $ fromIntegral $ length t )
+         + ( truncate $ logBase 2 $ succ $ fromIntegral $ length t )
   }
 
 overlap p c d s t =
