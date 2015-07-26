@@ -166,6 +166,7 @@ cycle_loop_certificates_plain c = do
          || (pp <= ss && qq == rr)
    return $ Cycle_Loop
      { u = uu, v = vv , p = pp, q = qq, r = rr, s = ss
+     , extension = Nothing
      , closure = c, time = Nothing
      }
 
