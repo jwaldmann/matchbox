@@ -1,3 +1,5 @@
+{-# language CPP #-}
+
 -- | forward/overlap closures for string rewriting,
 --
 -- with hard-coded representation
@@ -32,30 +34,61 @@ import Data.Hashable
 import Control.Monad ( guard )
 import Data.Function (on)
 
+#define BS 1
+#define TEXT 0
+#define LIST 0
+
+#if (BS)
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Char8 as C
 
 import Data.ByteString.Search.KMP (indices)
+-- import Data.ByteString.Search (indices)
+-- import Data.ByteString.Search.DFA (indices)
+#endif
 
 import TPDB.Pretty hiding ((<>))
 
 -- import qualified Data.ByteString.Lazy as B
 -- import qualified Data.ByteString.Lazy.Char8 as C
 
--- import qualified Data.Text as B
+#if (TEXT)
+import qualified Data.Text as B
 -- import qualified Data.Text.Lazy as B
+#endif
 
--- import qualified Data.List as B
+#if (LIST)
+import qualified Data.List as B
+#endif
 
+#if (BS)
 type S = B.ByteString
--- type S = B.Text
--- type S = [Char]
+#endif
 
+#if (TEXT)
+type S = B.Text
+#endif
+
+#if (LIST)
+type S = [Char]
+#endif
+
+#if (BS)
 instance Pretty B.ByteString where pretty = text . C.unpack
+#endif
 
--- pack = B.pack
+#if (BS)
 pack = C.pack
--- pack = id
+#endif
+
+#if (TEXT)
+instance Pretty B.Text where pretty = text . B.unpack
+pack = B.pack
+#endif
+
+#if (LIST)
+pack = id
+#endif
 
 length = B.length
 null = B.null
@@ -75,8 +108,8 @@ data OC = OC { source :: ! S
 instance Pretty OC where  pretty = pretty_with True
 
 pretty_with full c = "Closure" <+> vcat 
-    [ "source :" <+> ( text $ C.unpack $ source c )
-    , "target :" <+> ( text $ C.unpack $ target c )
+    [ "source :" <+> ( pretty $ source c )
+    , "target :" <+> ( pretty $ target c )
     , "steps  :" <+> ( pretty $ steps c )
     , if full then "reason :" <+> ( pretty $ reason c )
       else mempty
@@ -182,3 +215,12 @@ outsides mw c d = do
   return $ overlap (Outside $ fromIntegral i) c d
     (d1 <> source c <> d22) (target d) 
 
+#if (TEXT || LIST)
+-- Data.Text.indices cannot be used because it goes for
+-- nonoverlapping occurences
+indices s t = do
+  i <- [ 0 .. B.length t ]
+  guard $ B.isPrefixOf s $ B.drop i t
+  return i
+#endif
+    
