@@ -31,6 +31,7 @@ strip $dir/bin/$exe
 
 cp -v release/README $dir
 cp -v -P /usr/local/lib64/{libboolector.so,libgcc_s.so.1,libstdc++.so.6,libstdc++.so.6.0.21} $dir/bin/
+cp -v -P /usr/lib/{libgmp.so.3,libgmp.so.3.5.2} $dir/bin/
 cp -v release/starexec_run_*.sh $dir/bin/
 
 rm -f $dir.zip
