@@ -4,11 +4,12 @@ solver=satchmo
 domain=natural
 bits=4
 con=0
+pow=4
 
 export LD_LIBRARY_PATH=.
 
 ./MB.exe  \
-    --complexity \
+    --complexity --power-triangular=$pow \
     --$solver \
     --$domain \
     --bits=$bits \

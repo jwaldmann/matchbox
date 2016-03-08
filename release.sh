@@ -7,7 +7,7 @@
 source=MB.hs
 exe=MB.exe
 
-target=matchbox2015
+target=matchbox2016
 # target=matchbox-compress
 
 # name of the binary in the release package 
@@ -17,7 +17,7 @@ target=matchbox2015
 # -fllvm -fforce-recomp 
 
 ghc --make \
-    -O2 -funbox-strict-fields -rtsopts -threaded \
+    -O2 -funbox-strict-fields -rtsopts -threaded -fno-omit-yields \
     $source -o $exe
 
 dir=$target-$(date -I)

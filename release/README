@@ -18,7 +18,8 @@ Methods used:
 * Dependency Pairs transformation
 * removal of rules by
    * Standard matrix interpretations
-   * Arctic matrix interpretations 
+   * Arctic matrix interpretations
+* Polyhedral constraints
 
 *****************************************************
 
