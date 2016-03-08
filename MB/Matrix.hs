@@ -30,6 +30,7 @@ import qualified SMT.Matrix as M
 import qualified Data.Map as M
 import qualified Data.Set as S
 import qualified Data.List
+import Data.Traversable (mapAccumL)
 import Data.Maybe (catMaybes )
 import Control.Monad ( forM, void, foldM )
 import Control.Monad.Identity
@@ -398,6 +399,21 @@ system dict mdict idict opts sys = do
           O.Complexity {} -> L.positive dict l
         L.assert dict [s]
         return (f, l)
+
+    case O.power_triangular opts of
+      Nothing -> return ()
+      Just p -> do
+        maximum_matrix <- M.make mdict (dim,dim)
+        forM (opairs >>= \ (f,l) -> L.lin l) $ \ m -> do
+          ok <- M.weakly_greater mdict maximum_matrix m
+          M.assert mdict [ok]
+        let go 1 a = return [a]
+            go p a = do
+              b <- M.times mdict a maximum_matrix
+              (a:) <$> go (p-1) b
+        powers <- go p maximum_matrix
+        oks <- forM powers $ \ pow -> M.is_triangular mdict pow
+        M.assert mdict oks
 
     case O.mode opts of
       O.Complexity (Just d) | d < dim -> do

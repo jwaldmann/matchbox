@@ -24,7 +24,6 @@ data Dictionary m num val bool =
                       -> m (Linear num)
                 , triangular :: Int -> (Int,Int) 
                       -> m (Linear num)
-                 -- | coefficients may also be negative
                 , any_make :: Int -> (Int,Int) 
                       -> m (Linear num)
                 -- | coefficients in lin are {-1,0,1}, in abs: may be larger

@@ -40,6 +40,7 @@ data Options =
              , direction :: Direction
              , remove_all :: Bool
              , triangular :: Bool
+             , power_triangular :: Maybe Int
              , dependency_pairs :: Bool
              , usable_rules :: Bool  
              , fromtop :: Bool
@@ -72,6 +73,7 @@ options0 = Options
          , constraints = 0
          , remove_all = False
          , triangular = False
+         , power_triangular = Nothing
          , small_constraints = False
          , dependency_pairs = False
          , usable_rules = False
@@ -172,6 +174,10 @@ options =
     , Option [] [ "triangular" ]
         ( NoArg ( \ opts -> opts { triangular = True } ) )
         "use upper triangular shape (with --all, proves polynomial complexity)"
+
+    , Option [] [ "power-triangular" ]
+        ( ReqArg ( \ s opts -> opts { power_triangular = Just $ read s } ) "Int" )
+        "max matrix has upper triangular power (with --all, proves polynomial complexity)"
 
     , Option [] [ "small-constraints" ]
         ( OptArg ( \ s opts -> opts { small_constraints = case s of

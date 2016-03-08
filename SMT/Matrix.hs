@@ -1,3 +1,5 @@
+{-# language LambdaCase #-}
+
 module SMT.Matrix where
 
 import qualified SMT.Dictionary as D
@@ -22,8 +24,9 @@ data Dictionary m num val bool =
      Dictionary { domain :: D.Domain
                 , make :: (Int,Int) -> m (Matrix num)
                 , triangular :: (Int,Int) -> m (Matrix num)
+                , is_triangular :: Matrix num -> m bool
                 , any_make :: (Int,Int) -> m (Matrix num)
-                , small_make :: (Int,Int) -> m (Matrix num) 
+                , small_make :: (Int,Int) -> m (Matrix num)
                 , decode :: 
                       Matrix num -> m (Matrix val)
                 , weakly_monotone :: 
@@ -84,7 +87,20 @@ matrix  d = Dictionary
                     else if r == c then D.small_nn_number d
                     else D.nconstant d S.zero
          return $ Matrix { dim = (to,from)
-                         , contents = cs} 
+                         , contents = cs}
+    , is_triangular = \ case 
+        Zero {} -> D.bconstant d True
+        Unit {} -> D.bconstant d True
+        Matrix { dim = (to,from), contents = cs } -> do
+          zero <- D.nconstant d S.zero
+          one  <- D.nconstant d S.one
+          oks <- forM (zip [1..to] cs)  $ \ (r,row) -> forM (zip [1..from] row) $ \ (c,this) ->
+            case compare r c of
+              GT -> D.ge d zero this
+              EQ -> D.ge d one  this
+              LT -> D.bconstant d True
+          D.and d $ concat oks
+         
     , any_make = \ (to, from) -> do
          cs <- forM [1..to] $ \ r ->
                forM [1..from] $ \ c ->
