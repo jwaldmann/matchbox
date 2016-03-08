@@ -97,7 +97,7 @@ options =
     [ Option [ ] [ "complexity" ]
       (OptArg ( \ ms opts -> opts
          { mode = Complexity $ fmap read ms
-         , triangular = True
+         -- , triangular = True
          , remove_all = True
          , use_natural = True
          , dependency_pairs = False

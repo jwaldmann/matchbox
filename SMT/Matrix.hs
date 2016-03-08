@@ -252,3 +252,5 @@ transpose m = case m of
 
 diagonal (  Matrix {dim=(a,b), contents = cs} ) | a == b =
   map (\ i ->  cs !! i !! i ) [ 0 .. a-1]
+
+

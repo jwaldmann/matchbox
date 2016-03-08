@@ -39,6 +39,7 @@ import qualified TPDB.Convert
 import TPDB.Xml.Pretty ( document )
 import Text.PrettyPrint.Leijen.Text (hPutDoc)
 import qualified Data.Map as M
+import Data.Maybe (isJust)
 
 import Control.Monad ( guard, when, forM, mzero )
 import Control.Monad.IO.Class (liftIO)
@@ -72,6 +73,20 @@ main = do
     let config = config0 { O.cores = case O.cores config0 of
           Just nc -> Just nc ; Nothing -> Just nc
                         }
+
+    when (O.triangular config && isJust (O.power_triangular config)) $ do
+        error $ unlines
+           [ "options --triangular and --power_triangular are mutually exclusive"
+           , show config
+           ]
+    case O.mode config of
+      O.Complexity {} ->
+        when (not (O.triangular config) && not (isJust $ O.power_triangular config) ) $ do
+           error $ unlines
+             [ "option --complexity needs --triangular or --power-triangular Int"
+             , show config
+             ]
+      _ -> return ()
     
     trs <- TPDB.Input.get_trs filePath
 
