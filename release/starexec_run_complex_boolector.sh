@@ -8,7 +8,7 @@ con=2
 export LD_LIBRARY_PATH=.
 
 ./MB.exe  \
-    --complexity \
+    --complexity --power-triangular=$pow \
     --$solver \
     --$domain \
     --bits=$bits \
